@@ -10,7 +10,32 @@ permissions:
   contents: write
 
 jobs:
+  create-release:
+    runs-on: ubuntu-latest
+    outputs:
+      release-id: ${{ steps.create.outputs.id }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Create Release with auto-generated notes
+        id: create
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data: release } = await github.rest.repos.createRelease({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              tag_name: context.ref.replace('refs/tags/', ''),
+              name: `Mermaid Code ${context.ref.replace('refs/tags/', '')}`,
+              draft: true,
+              generate_release_notes: true,
+            });
+            core.setOutput('id', release.id);
+
   build:
+    needs: create-release
     strategy:
       fail-fast: false
       matrix:
@@ -53,17 +78,14 @@ jobs:
         shell: bash
         run: |
           VERSION=${GITHUB_REF_NAME#v}
-          # Update tauri.conf.json
           sed -i.bak "s/\"version\": \".*\"/\"version\": \"$VERSION\"/" src-tauri/tauri.conf.json
-          # Update package.json
           sed -i.bak "s/\"version\": \".*\"/\"version\": \"$VERSION\"/" package.json
 
       - uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tagName: ${{ github.ref_name }}
-          releaseName: 'Mermaid Code ${{ github.ref_name }}'
+          releaseId: ${{ needs.create-release.outputs.release-id }}
           releaseDraft: true
           prerelease: false
           args: --target ${{ matrix.target }}
