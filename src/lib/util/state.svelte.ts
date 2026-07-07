@@ -15,16 +15,10 @@ import { deserializeState, pakoSerde, serializeState } from './serde';
 import { errorDebug, formatJSON, getUTMSource, MCBaseURL } from './util';
 
 export const defaultState: State = {
-  code: `flowchart TD
-    A[Christmas] -->|Get money| B(Go shopping)
-    B --> C{Let me think}
-    C -->|One| D[Laptop]
-    C -->|Two| E[iPhone]
-    C -->|Three| F[fa:fa-car Car]
-  `,
+  code: '',
   grid: true,
   mermaid: formatJSON({
-    theme: 'default'
+    theme: 'redux'
   }),
   panZoom: true,
   rough: false,
@@ -46,7 +40,18 @@ const CODE_STORE_KEY = 'codeStore';
 
 // The single mutable input state; only update() below may write to it.
 // The fallback is cloned so mutations never write through to defaultState.
-const input = $state<State>(readJSON(CODE_STORE_KEY, { ...defaultState }));
+const storedState = readJSON(CODE_STORE_KEY, { ...defaultState });
+// Guard against stored states where mermaid is empty or invalid JSON
+if (!storedState.mermaid) {
+  storedState.mermaid = defaultState.mermaid;
+} else {
+  try {
+    JSON.parse(storedState.mermaid);
+  } catch {
+    storedState.mermaid = defaultState.mermaid;
+  }
+}
+const input = $state<State>(storedState);
 
 // inputState is shared externally when exporting via URL, History, etc.
 // It is reactive for reads; the read-only type keeps writes inside this
@@ -72,6 +77,10 @@ let lastDiagramType = '';
 const processState = async (state: State) => {
   const processed = validatedStateOf(state, '');
   // No changes should be done to fields part of `state`.
+  if (!state.code.trim()) {
+    processed.serialized = serializeState(state);
+    return processed;
+  }
   try {
     processed.serialized = serializeState(state);
     const { diagramType } = await parse(state.code);
@@ -81,7 +90,7 @@ const processState = async (state: State) => {
       setTimeout(() => window.location.reload(), 500);
     }
     lastDiagramType = diagramType;
-    JSON.parse(state.mermaid);
+    JSON.parse(state.mermaid || '{}');
   } catch (error) {
     processed.error = error as Error;
     errorDebug();
@@ -162,11 +171,12 @@ export const validatedState = {
 
 const urlsCurrent = $derived.by(() => {
   const { code, serialized } = validatedCurrent;
-  const { krokiRendererUrl, rendererUrl } = env;
+  const { domain, krokiRendererUrl, rendererUrl } = env;
+  const origin = domain ? `https://${domain}` : window.location.origin;
   const png = rendererUrl ? `${rendererUrl}/img/${serialized}?type=png` : '';
   return {
     kroki: krokiRendererUrl ? `${krokiRendererUrl}/mermaid/svg/${pakoSerde.serialize(code)}` : '',
-    mdCode: png ? `[![](${png})](${window.location.href})` : '',
+    mdCode: png ? `[![](${png})](${origin}${resolve('/edit', {})}#${serialized})` : '',
     mermaidChart: ({
       medium,
       campaign
@@ -196,6 +206,7 @@ const urlsCurrent = $derived.by(() => {
       };
     },
     new: `${resolve('/edit', {})}#${serializeState(defaultState)}`,
+    edit: `${origin}${resolve('/edit', {})}#${serialized}`,
     png,
     svg: rendererUrl ? `${rendererUrl}/svg/${serialized}` : '',
     view: `${resolve('/view', {})}#${serialized}`
@@ -342,8 +353,24 @@ export const updateConfig = (config: string): void => {
 export const toggleDarkTheme = (dark: boolean): void => {
   update((state) => {
     const config = JSON.parse(state.mermaid) as MermaidConfig;
-    if (!config.theme || ['dark', 'default'].includes(config.theme)) {
-      config.theme = dark ? 'dark' : 'default';
+    const lightToDark: Record<string, string> = {
+      default: 'dark',
+      forest: 'dark',
+      neutral: 'dark',
+      base: 'dark',
+      neo: 'neo-dark',
+      redux: 'redux-dark'
+    };
+    const darkToLight: Record<string, string> = {
+      dark: 'default',
+      'neo-dark': 'neo',
+      'redux-dark': 'redux'
+    };
+    const current = config.theme ?? 'default';
+    if (dark && current in lightToDark) {
+      config.theme = lightToDark[current] as MermaidConfig['theme'];
+    } else if (!dark && current in darkToLight) {
+      config.theme = darkToLight[current] as MermaidConfig['theme'];
     }
     state.mermaid = formatJSON(config);
   });

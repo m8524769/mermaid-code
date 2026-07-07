@@ -77,12 +77,18 @@
 
         const scroll = view?.parentElement?.scrollTop;
         delete container.dataset.processed;
+
+        if (!code.trim()) {
+          container.innerHTML = '';
+          return;
+        }
+
         const viewID = uniqueID('graph-');
         const {
           svg,
           bindFunctions,
           diagramType: detectedDiagramType
-        } = await renderDiagram(JSON.parse(state.mermaid) as MermaidConfig, code, viewID);
+        } = await renderDiagram(JSON.parse(state.mermaid || '{}') as MermaidConfig, code, viewID);
         diagramType = detectedDiagramType;
         if (svg.length > 0) {
           // eslint-disable-next-line svelte/no-dom-manipulating
@@ -156,7 +162,7 @@
   id="view"
   bind:this={view}
   class={['h-full w-full', shouldShowGrid && `grid-bg-${mode.current}`, error && 'opacity-50']}>
-  <div id="container" bind:this={container} class="h-full overflow-auto"></div>
+  <div id="container" bind:this={container} class="h-full cursor-grab overflow-auto active:cursor-grabbing"></div>
 </div>
 
 <style>

@@ -588,10 +588,68 @@ export const initEditor = (monacoEditor: typeof Monaco): void => {
   });
 
   monacoEditor.languages.registerCompletionItemProvider('mermaid', {
-    provideCompletionItems: () => {
-      return {
-        suggestions: []
+    provideCompletionItems: (model, position) => {
+      const firstLine = model.getLineContent(1);
+      const word = model.getWordUntilPosition(position);
+      const range = {
+        startLineNumber: position.lineNumber,
+        endLineNumber: position.lineNumber,
+        startColumn: word.startColumn,
+        endColumn: word.endColumn
       };
+
+      // Detect current diagram type from first line
+      const diagramEntry = Object.entries(keywords).find(([, def]) =>
+        def.typeKeywords.some((tk) => new RegExp(`^\\s*${tk}\\b`, 'i').test(firstLine))
+      );
+
+      const allTypeKeywords = Object.values(keywords).flatMap((d) => d.typeKeywords);
+      const CompletionItemKind = monacoEditor.languages.CompletionItemKind;
+
+      // On the first line (or if no diagram detected yet), suggest diagram type names
+      if (position.lineNumber === 1 || !diagramEntry) {
+        const typeSuggestions = allTypeKeywords.map((tk) => ({
+          detail: 'diagram type',
+          insertText: tk,
+          kind: CompletionItemKind.Module,
+          label: tk,
+          range
+        }));
+
+        // If a diagram type is already present on line 1, also offer its inline keywords
+        // (e.g. direction flags like TD/LR that follow "flowchart" on the same line)
+        const inlineKeywords = diagramEntry
+          ? diagramEntry[1].keywords.map((kw) => ({
+              detail: 'keyword',
+              insertText: kw,
+              kind: CompletionItemKind.Keyword,
+              label: kw,
+              range
+            }))
+          : [];
+
+        return { suggestions: [...typeSuggestions, ...inlineKeywords] };
+      }
+
+      const [, def] = diagramEntry;
+      const suggestions = [
+        ...def.keywords.map((kw) => ({
+          detail: 'keyword',
+          insertText: kw,
+          kind: CompletionItemKind.Keyword,
+          label: kw,
+          range
+        })),
+        ...def.blockKeywords.map((kw) => ({
+          detail: 'block keyword',
+          insertText: kw,
+          kind: CompletionItemKind.Class,
+          label: kw,
+          range
+        }))
+      ];
+
+      return { suggestions };
     }
   });
 

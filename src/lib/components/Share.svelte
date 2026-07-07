@@ -26,7 +26,7 @@
           <img class="size-5" src={asset('/favicon.svg')} alt="Mermaid Live Editor" />
           Mermaid Live Editor
         </h2>
-        <CopyInput value={window.location.href} />
+        <CopyInput value={urls.current.edit} />
         <Dialog.Description>
           The content of the diagrams you create never leaves your browser.
         </Dialog.Description>

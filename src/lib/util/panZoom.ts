@@ -1,5 +1,6 @@
 import type { State } from '$/types';
 import Hammer from 'hammerjs';
+import throttle from 'lodash-es/throttle';
 import type { Point } from 'mermaid/dist/types.js';
 import panzoom from 'svg-pan-zoom';
 type PanZoom = typeof panzoom;
@@ -10,13 +11,20 @@ export class PanZoomState {
   private pzoom: PanZoom | undefined;
   private isDirty = false;
   private resizeObserver: ResizeObserver;
+  private svgEl: SVGElement | undefined;
 
   public isPanEnabled: boolean;
   public onPanZoomChange?: (pan: Point, zoom: number) => void;
 
+  private readonly notifyViewportChange = throttle((pan: Point, zoom: number) => {
+    this.onPanZoomChange?.(pan, zoom);
+  }, 200);
+
   constructor() {
     this.isPanEnabled = true;
-    this.resizeObserver = new ResizeObserver(() => {
+    this.resizeObserver = new ResizeObserver((entries) => {
+      const { width, height } = entries[0].contentRect;
+      if (width === 0 || height === 0) return;
       this.resize();
       if (!this.isDirty) {
         this.reset();
@@ -25,6 +33,7 @@ export class PanZoomState {
   }
 
   public updateElement(diagramView: SVGElement, { pan, zoom }: Pick<State, 'pan' | 'zoom'>) {
+    this.svgEl = diagramView;
     this.pzoom?.destroy();
     let hammer: HammerManager | undefined;
     this.pzoom = panzoom(diagramView, {
@@ -83,7 +92,7 @@ export class PanZoomState {
         this.zoom = this.pzoom?.getZoom();
         this.isDirty = true;
         if (this.zoom) {
-          this.onPanZoomChange?.(this.pan, this.zoom);
+          this.notifyViewportChange(this.pan, this.zoom);
         }
       },
       onZoom: (zoom) => {
@@ -91,7 +100,7 @@ export class PanZoomState {
         this.pan = this.pzoom?.getPan();
         this.isDirty = true;
         if (this.pan) {
-          this.onPanZoomChange?.(this.pan, this.zoom);
+          this.notifyViewportChange(this.pan, this.zoom);
         }
       },
       panEnabled: true,
@@ -134,6 +143,8 @@ export class PanZoomState {
   }
 
   public resize() {
+    const rect = this.svgEl?.getBoundingClientRect();
+    if (!rect || rect.width === 0 || rect.height === 0) return;
     this.pzoom?.resize();
     if (!this.isDirty) {
       this.reset();

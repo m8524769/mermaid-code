@@ -6,14 +6,17 @@
   import { AIPromptViewZoneManager } from '$lib/util/AIPromptViewZoneManager';
   import { initEditor } from '$lib/util/monacoExtra';
   import { errorDebug } from '$lib/util/util';
+  import debounce from 'lodash-es/debounce';
   import { mode } from 'mode-watcher';
   import * as monaco from 'monaco-editor';
   import monacoEditorWorker from 'monaco-editor/esm/vs/editor/editor.worker?worker';
   import monacoJsonWorker from 'monaco-editor/esm/vs/language/json/json.worker?worker';
+  import { initVimMode } from 'monaco-vim';
   import { onMount } from 'svelte';
   import AIPromptPopup from './AIPromptPopup.svelte';
 
   const { onUpdate }: EditorProps = $props();
+  const debouncedOnUpdate = debounce((text: string) => onUpdate(text), 100);
 
   let divElement: HTMLDivElement | undefined = $state();
   let aiPromptPopupElement: HTMLDivElement | undefined = $state();
@@ -23,7 +26,7 @@
       enabled: false
     },
     overviewRulerLanes: 0,
-    glyphMargin: true,
+    glyphMargin: false,
     lineNumbersMinChars: 4
   } satisfies monaco.editor.IStandaloneEditorConstructionOptions;
   let currentText = '';
@@ -34,6 +37,27 @@
   let input = $state('');
   let lastMouseLine = 0;
   const aiPromptManager = new AIPromptViewZoneManager();
+
+  const VIM_MODE_KEY = 'mermaid-vim-mode';
+  let vimEnabled = $state(localStorage.getItem(VIM_MODE_KEY) === 'true');
+  let vimStatusBarElement: HTMLDivElement | undefined = $state();
+  let vimAdapter: ReturnType<typeof initVimMode> | undefined;
+
+  const applyVimMode = (enabled: boolean) => {
+    if (!editor) return;
+    if (enabled && !vimAdapter) {
+      vimAdapter = initVimMode(editor, vimStatusBarElement);
+    } else if (!enabled && vimAdapter) {
+      vimAdapter.dispose();
+      vimAdapter = undefined;
+    }
+  };
+
+  const toggleVimMode = () => {
+    vimEnabled = !vimEnabled;
+    localStorage.setItem(VIM_MODE_KEY, String(vimEnabled));
+    applyVimMode(vimEnabled);
+  };
 
   const applyEditorTheme = (currentMode: typeof mode.current) => {
     if (!editor) return;
@@ -143,11 +167,11 @@
 
     editor.onDidChangeModelContent(({ isFlush }) => {
       const newText = editor?.getValue();
-      if (!newText || currentText === newText || isFlush || isUpdatingFromState) {
+      if (newText == null || currentText === newText || isFlush || isUpdatingFromState) {
         return;
       }
       currentText = newText;
-      onUpdate(currentText);
+      debouncedOnUpdate(currentText);
     });
 
     editor.onMouseMove((e) => {
@@ -179,7 +203,10 @@
 
     renderAIPromptGutterGlyphIcon();
 
+    applyVimMode(vimEnabled);
+
     return () => {
+      vimAdapter?.dispose();
       resizeObserver.disconnect();
       jsonModel.dispose();
       mermaidModel.dispose();
@@ -249,6 +276,15 @@
         );
         closePopup();
       }} />
+  </div>
+  <div class="absolute bottom-0 left-0 flex w-full items-center bg-muted/80 px-2 text-xs text-muted-foreground">
+    <div bind:this={vimStatusBarElement} class="flex-1 font-mono"></div>
+    <button
+      class="ml-auto cursor-pointer select-none px-1 py-0.5 hover:text-foreground"
+      onclick={toggleVimMode}
+      title="Toggle Vim mode">
+      VIM {vimEnabled ? 'ON' : 'OFF'}
+    </button>
   </div>
 </div>
 
