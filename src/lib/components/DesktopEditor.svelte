@@ -52,7 +52,19 @@
       // Register :w and :write to trigger save (VimMode.Vim not in type defs)
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (VimMode as any).Vim?.defineEx('write', 'w', () => {
-        if (fileState.activeTabId) void fileState.saveTab(fileState.activeTabId);
+        if (fileState.activeTabId) {
+          void fileState.saveTab(fileState.activeTabId);
+        } else {
+          // No active tab — save as file (same as Save As button in draft mode)
+          const now = new Date();
+          const pad = (n: number) => String(n).padStart(2, '0');
+          const date = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+          const time = `${pad(now.getHours())}.${pad(now.getMinutes())}.${pad(now.getSeconds())}`;
+          const defaultName = `Diagram ${date} at ${time}.mmd`;
+          void saveFileAs(validatedState.current.code, defaultName).then((handle) => {
+            if (handle) void fileState.openFile(handle.path);
+          });
+        }
       });
     } else if (!enabled && vimAdapter) {
       vimAdapter.dispose();

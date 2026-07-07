@@ -125,12 +125,14 @@ interface PersistedTabs {
 const tabsStorageKey = (folder: string) => `${FOLDER_TABS_PREFIX}${folder}`;
 
 const saveTabsToStorage = (): void => {
-  if (!rootPath) return;
+  // Use rootPath if a folder is open, otherwise derive key from the first tab's directory
+  const key = rootPath ?? pathDirname(tabs[0]?.path ?? '');
+  if (!key) return;
   const data: PersistedTabs = {
     paths: tabs.map((t) => t.path),
     activePath: tabs.find((t) => t.id === activeTabId)?.path ?? null
   };
-  localStorage.setItem(tabsStorageKey(rootPath), JSON.stringify(data));
+  localStorage.setItem(tabsStorageKey(key), JSON.stringify(data));
 };
 
 const openFolderPath = async (path: string): Promise<void> => {
@@ -257,7 +259,7 @@ export const fileState = {
     }
     // Only open text-based files
     const ext = path.split('.').pop()?.toLowerCase() ?? '';
-    const supported = ['mmd', 'md', 'txt', 'json', 'yaml', 'yml'];
+    const supported = ['mmd', 'mermaid'];
     if (!supported.includes(ext)) {
       notify(`Cannot edit this file type: .${ext}`);
       return;
@@ -315,20 +317,21 @@ export const fileState = {
     tab.isDirty = code !== tab.savedCode;
   },
 
-  async saveTab(id: string): Promise<void> {
+  async saveTab(id: string, { silent = false }: { silent?: boolean } = {}): Promise<void> {
     const tab = tabs.find((t) => t.id === id);
     if (!tab) return;
     try {
       await writeTextFile(tab.path, tab.code);
       tab.savedCode = tab.code;
       tab.isDirty = false;
+      if (!silent) notify(`Saved: ${tab.name}`);
     } catch {
       notify(`Failed to save: ${tab.name}`);
     }
   },
 
   async saveAllTabs(): Promise<void> {
-    await Promise.all(tabs.filter((t) => t.isDirty).map((t) => fileState.saveTab(t.id)));
+    await Promise.all(tabs.filter((t) => t.isDirty).map((t) => fileState.saveTab(t.id, { silent: true })));
   },
 
   async createFile(dirPath: string): Promise<void> {
@@ -341,6 +344,11 @@ export const fileState = {
     try {
       await fsCreateFile(path);
       await refreshTree();
+      // Expand the target directory so the new file is visible
+      const node = findNode(tree, dirPath);
+      if (node && node.isDir && !node.expanded) {
+        await fileState.toggleDir(dirPath);
+      }
       await fileState.openFile(path);
     } catch {
       notify(`Failed to create file in ${pathBasename(dirPath)}`);
@@ -348,11 +356,20 @@ export const fileState = {
   },
 
   async createDir(dirPath: string): Promise<void> {
-    const name = `new-folder-${Date.now()}`;
+    const now = new Date();
+    const pad = (n: number) => String(n).padStart(2, '0');
+    const date = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+    const time = `${pad(now.getHours())}.${pad(now.getMinutes())}.${pad(now.getSeconds())}`;
+    const name = `New Folder ${date} at ${time}`;
     const path = joinPath(dirPath, name);
     try {
       await fsCreateDir(path);
       await refreshTree();
+      // Expand the parent directory so the new folder is visible
+      const node = findNode(tree, dirPath);
+      if (node && node.isDir && !node.expanded) {
+        await fileState.toggleDir(dirPath);
+      }
     } catch {
       notify(`Failed to create folder`);
     }
@@ -430,7 +447,7 @@ export const autoSaveTick = (): (() => void) => {
   if (!isAutoSave || !activeTab?.isDirty) return () => {};
   const id = activeTab.id;
   const timer = setTimeout(() => {
-    void fileState.saveTab(id);
+    void fileState.saveTab(id, { silent: true });
   }, 2000);
   return () => clearTimeout(timer);
 };

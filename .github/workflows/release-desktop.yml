@@ -48,6 +48,16 @@ jobs:
 
       - run: pnpm install
 
+      - name: Set version from tag
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: bash
+        run: |
+          VERSION=${GITHUB_REF_NAME#v}
+          # Update tauri.conf.json
+          sed -i.bak "s/\"version\": \".*\"/\"version\": \"$VERSION\"/" src-tauri/tauri.conf.json
+          # Update package.json
+          sed -i.bak "s/\"version\": \".*\"/\"version\": \"$VERSION\"/" package.json
+
       - uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

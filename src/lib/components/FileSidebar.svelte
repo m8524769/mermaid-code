@@ -77,6 +77,7 @@
     {/if}
   </div>
 
+  {#if fileState.activeTabId}
   <div class="flex items-center justify-between border-t px-2 py-1 text-xs text-muted-foreground">
     <span>Auto-save</span>
     <button
@@ -88,4 +89,5 @@
       {fileState.isAutoSave ? 'ON' : 'OFF'}
     </button>
   </div>
+  {/if}
 </div>

@@ -26,6 +26,7 @@
   import { shouldShowEditorChooser } from '$/util/migration/domainMigration';
   import { PanZoomState } from '$/util/panZoom';
   import { fileState } from '$/util/fileState.svelte';
+  import { isTauri, saveFileAs } from '$/util/fileSystem';
   import { validatedState, updateCodeStore, urls } from '$/util/state.svelte';
   import { logEvent, logMermaidChartClick } from '$/util/stats';
   import { initHandler } from '$/util/util';
@@ -56,6 +57,19 @@
   ];
 
   let width = $state(0);
+
+  const saveDraftAsFile = async () => {
+    const code = validatedState.current.code;
+    const now = new Date();
+    const pad = (n: number) => String(n).padStart(2, '0');
+    const date = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+    const time = `${pad(now.getHours())}.${pad(now.getMinutes())}.${pad(now.getSeconds())}`;
+    const defaultName = `Diagram ${date} at ${time}.mmd`;
+    const handle = await saveFileAs(code, defaultName);
+    if (handle) {
+      await fileState.openFile(handle.path);
+    }
+  };
   let isMobile = $derived(width < 640);
   let isViewMode = $state(true);
   let showEditorChooser = $state(false);
@@ -119,6 +133,21 @@
       <HistoryIcon />
     </Toggle>
     <Share />
+    {#if isTauri()}
+      {#if fileState.activeTabId}
+        <Button
+          size="sm"
+          variant="accent"
+          onclick={() => fileState.saveTab(fileState.activeTabId!)}
+          title="Save (⌘S)">
+          Save
+        </Button>
+      {:else}
+        <Button size="sm" variant="accent" onclick={saveDraftAsFile} title="Save draft as file">
+          Save As
+        </Button>
+      {/if}
+    {/if}
     <McWrapper>
       <Button
         variant="accent"

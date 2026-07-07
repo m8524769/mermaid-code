@@ -17,7 +17,7 @@ export const openFile = async (): Promise<FileResult | null> => {
     const { readTextFile } = await import('@tauri-apps/plugin-fs');
 
     const path = await open({
-      filters: [{ name: 'Mermaid', extensions: ['mmd', 'md', 'txt'] }],
+      filters: [{ name: 'Mermaid', extensions: ['mmd', 'mermaid'] }],
       multiple: false
     });
     if (!path) return null;
@@ -30,7 +30,7 @@ export const openFile = async (): Promise<FileResult | null> => {
   // Browser fallback via File System Access API or input[type=file]
   if ('showOpenFilePicker' in window) {
     const [handle] = await (window as any).showOpenFilePicker({
-      types: [{ description: 'Mermaid', accept: { 'text/plain': ['.mmd', '.md', '.txt'] } }]
+      types: [{ description: 'Mermaid', accept: { 'text/plain': ['.mmd', '.mermaid'] } }]
     });
     const file = await handle.getFile();
     const code = await file.text();
@@ -41,7 +41,7 @@ export const openFile = async (): Promise<FileResult | null> => {
   return new Promise((resolve) => {
     const input = document.createElement('input');
     input.type = 'file';
-    input.accept = '.mmd,.md,.txt';
+    input.accept = '.mmd,.mermaid';
     input.onchange = async () => {
       const file = input.files?.[0];
       if (!file) { resolve(null); return; }
