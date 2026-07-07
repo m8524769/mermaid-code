@@ -28,8 +28,17 @@
   };
 
   const commitRename = async (node: FileTreeNode) => {
-    if (renameValue && renameValue !== node.name) {
-      await fileState.renameNode(node.path, renameValue);
+    let newName = renameValue.trim();
+    if (!newName) { renamingPath = null; return; }
+    // For files, preserve the original extension if the user didn't type one
+    if (!node.isDir) {
+      const origExt = node.name.includes('.') ? node.name.slice(node.name.lastIndexOf('.')) : '';
+      if (origExt && !newName.includes('.')) {
+        newName = newName + origExt;
+      }
+    }
+    if (newName !== node.name) {
+      await fileState.renameNode(node.path, newName);
     }
     renamingPath = null;
   };
