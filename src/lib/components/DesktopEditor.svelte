@@ -13,7 +13,7 @@
   import * as monaco from 'monaco-editor';
   import monacoEditorWorker from 'monaco-editor/esm/vs/editor/editor.worker?worker';
   import monacoJsonWorker from 'monaco-editor/esm/vs/language/json/json.worker?worker';
-  import { initVimMode } from 'monaco-vim';
+  import { initVimMode, VimMode } from 'monaco-vim';
   import { onMount } from 'svelte';
   import AIPromptPopup from './AIPromptPopup.svelte';
 
@@ -49,6 +49,11 @@
     if (!editor) return;
     if (enabled && !vimAdapter) {
       vimAdapter = initVimMode(editor, vimStatusBarElement);
+      // Register :w and :write to trigger save (VimMode.Vim not in type defs)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (VimMode as any).Vim?.defineEx('write', 'w', () => {
+        if (fileState.activeTabId) void fileState.saveTab(fileState.activeTabId);
+      });
     } else if (!enabled && vimAdapter) {
       vimAdapter.dispose();
       vimAdapter = undefined;

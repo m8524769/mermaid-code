@@ -3,6 +3,7 @@
   import * as Popover from '$/components/ui/popover';
   import { Switch } from '$/components/ui/switch';
   import { env } from '$/util/env';
+  import { isTauri } from '$/util/fileSystem';
   import { urls } from '$/util/state.svelte';
   import { logMermaidChartClick } from '$/util/stats';
   import { cn } from '$/utils';
@@ -32,8 +33,10 @@
   }
 
   const menuItems: MenuItem[] = $derived([
-    { label: 'New', icon: AddIcon, href: urls.current.new, renderer: menuItem },
-    { label: 'Duplicate', icon: DuplicateIcon, href: window.location.href, renderer: menuItem },
+    ...(!isTauri() ? [
+      { label: 'New', icon: AddIcon, href: urls.current.new, renderer: menuItem },
+      { label: 'Duplicate', icon: DuplicateIcon, href: window.location.href, renderer: menuItem },
+    ] : []),
     {
       href: urls.current.mermaidChart({ medium: 'main_menu' }).playground,
       icon: PlaygroundIcon,
