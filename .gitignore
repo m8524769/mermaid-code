@@ -10,6 +10,9 @@
 /node_modules
 /snapshots.js
 
+# Tauri
+/src-tauri/target/
+
 # Playwright
 /test-results/
 /playwright-report/

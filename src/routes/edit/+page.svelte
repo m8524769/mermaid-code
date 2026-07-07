@@ -4,6 +4,7 @@
   import DiagramDocButton from '$/components/DiagramDocumentationButton.svelte';
   import Editor from '$/components/Editor.svelte';
   import EnhancedEditsButton from '$/components/EnhancedEditsButton.svelte';
+  import FileSidebar from '$/components/FileSidebar.svelte';
   import History from '$/components/History/History.svelte';
   import { startAutoSave } from '$/components/History/historyState.svelte';
   import McWrapper from '$/components/McWrapper.svelte';
@@ -14,6 +15,7 @@
   import Preset from '$/components/Preset.svelte';
   import Share from '$/components/Share.svelte';
   import SyncRoughToolbar from '$/components/SyncRoughToolbar.svelte';
+  import TabBar from '$/components/TabBar.svelte';
   import { Button } from '$/components/ui/button';
   import * as Resizable from '$/components/ui/resizable';
   import { Switch } from '$/components/ui/switch';
@@ -23,11 +25,13 @@
   import type { EditorMode, Tab } from '$/types';
   import { shouldShowEditorChooser } from '$/util/migration/domainMigration';
   import { PanZoomState } from '$/util/panZoom';
+  import { fileState } from '$/util/fileState.svelte';
   import { validatedState, updateCodeStore, urls } from '$/util/state.svelte';
   import { logEvent, logMermaidChartClick } from '$/util/stats';
   import { initHandler } from '$/util/util';
   import { onMount } from 'svelte';
   import CodeIcon from '~icons/custom/code';
+  import FolderIcon from '~icons/material-symbols/folder-outline-rounded';
   import HistoryIcon from '~icons/material-symbols/history';
   import GearIcon from '~icons/material-symbols/settings-outline-rounded';
 
@@ -68,12 +72,29 @@
   onMount(() => startAutoSave());
 
   let isHistoryOpen = $state(false);
+  let isSidebarOpen = $state(localStorage.getItem('mermaid-sidebar-open') === 'true');
+
+  $effect(() => {
+    localStorage.setItem('mermaid-sidebar-open', String(isSidebarOpen));
+  });
 
   let editorPane: Resizable.Pane | undefined;
+  let sidebarPane: Resizable.Pane | undefined;
+
   $effect(() => {
     if (isMobile) {
       editorPane?.resize(50);
     }
+  });
+
+  $effect(() => {
+    const editorSize = editorPane?.getSize() ?? 30;
+    if (isSidebarOpen) {
+      sidebarPane?.expand();
+    } else {
+      sidebarPane?.collapse();
+    }
+    editorPane?.resize(editorSize);
   });
 </script>
 
@@ -91,6 +112,9 @@
   {/snippet}
 
   <Navbar mobileToggle={isMobile ? mobileToggle : undefined}>
+    <Toggle bind:pressed={isSidebarOpen} size="sm" title="File Explorer" aria-label="File Explorer">
+      <FolderIcon />
+    </Toggle>
     <Toggle bind:pressed={isHistoryOpen} size="sm" title="History" aria-label="History">
       <HistoryIcon />
     </Toggle>
@@ -116,10 +140,21 @@
       ]}>
       <Resizable.PaneGroup
         direction="horizontal"
-        autoSaveId="liveEditor"
+        autoSaveId="liveEditor-v2"
         class="gap-4 p-2 pt-0 sm:gap-0 sm:p-6 sm:pt-0">
+        <Resizable.Pane
+          collapsible
+          collapsedSize={0}
+          minSize={12}
+          defaultSize={18}
+          class="hidden h-full flex-col sm:flex"
+          bind:this={sidebarPane}>
+          <FileSidebar />
+        </Resizable.Pane>
+        <Resizable.Handle class="hidden opacity-0 sm:block" />
         <Resizable.Pane bind:this={editorPane} defaultSize={30} minSize={15}>
           <div class="flex h-full flex-col gap-4 sm:gap-6">
+            <TabBar />
             <Card
               onselect={tabSelectHandler}
               isOpen
@@ -138,7 +173,7 @@
             </div>
           </div>
         </Resizable.Pane>
-        <Resizable.Handle class="mr-1 hidden opacity-0 sm:block" />
+        <Resizable.Handle class="hidden opacity-0 sm:block" />
         <Resizable.Pane minSize={15} class="relative flex h-full flex-1 flex-col overflow-hidden">
           <View {panZoomState} shouldShowGrid={validatedState.current.grid} />
           <div class="absolute top-0 left-5 hidden md:block"><EnhancedEditsButton /></div>

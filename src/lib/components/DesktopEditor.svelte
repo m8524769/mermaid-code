@@ -3,6 +3,8 @@
   import { env } from '$/util/env';
   import { urls, validatedState } from '$/util/state.svelte';
   import { logMermaidChartClick } from '$/util/stats';
+  import { fileState } from '$/util/fileState.svelte';
+  import { saveFileAs } from '$/util/fileSystem';
   import { AIPromptViewZoneManager } from '$lib/util/AIPromptViewZoneManager';
   import { initEditor } from '$lib/util/monacoExtra';
   import { errorDebug } from '$lib/util/util';
@@ -155,6 +157,42 @@
     editor = monaco.editor.create(divElement, editorOptions);
     aiPromptManager.setEditor(editor);
     decorationsCollection = editor.createDecorationsCollection([]);
+
+    editor.addAction({
+      id: 'file-save',
+      label: 'Save File',
+      keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS],
+      run: () => {
+        if (fileState.activeTabId) {
+          void fileState.saveTab(fileState.activeTabId);
+        }
+      }
+    });
+    editor.addAction({
+      id: 'file-save-as',
+      label: 'Save File As',
+      keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyMod.Shift | monaco.KeyCode.KeyS],
+      run: () => {
+        const tab = fileState.tabs.find((t) => t.id === fileState.activeTabId);
+        if (tab) void saveFileAs(tab.code, tab.name);
+      }
+    });
+    editor.addAction({
+      id: 'file-close-tab',
+      label: 'Close Tab',
+      keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyW],
+      run: () => {
+        if (fileState.activeTabId) void fileState.closeTab(fileState.activeTabId);
+      }
+    });
+    editor.addAction({
+      id: 'file-new',
+      label: 'New File',
+      keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyT],
+      run: () => {
+        if (fileState.rootPath) void fileState.createFile(fileState.rootPath);
+      }
+    });
 
     editor.onMouseDown((e) => {
       const isGutter = e.target.type === monaco.editor.MouseTargetType.GUTTER_GLYPH_MARGIN;

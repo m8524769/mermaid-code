@@ -1,6 +1,8 @@
 <script lang="ts">
   import { Toaster } from '$/components/ui/sonner/index.js';
   import { loadingState } from '$/util/loading.svelte';
+  import { fileState } from '$/util/fileState.svelte';
+  import { isTauri } from '$/util/fileSystem';
   import { toggleDarkTheme } from '$/util/state.svelte';
   import { initHandler } from '$/util/util';
   import { base } from '$app/paths';
@@ -21,6 +23,17 @@
       void initHandler();
     });
 
+    // Disable native browser/webview context menu so bits-ui ContextMenu can work.
+    // bits-ui sets data-context-menu-trigger on ContextMenu.Trigger elements —
+    // only suppress the native menu outside those elements.
+    if (isTauri()) {
+      document.addEventListener('contextmenu', (e) => {
+        const target = e.target as Element | null;
+        if (!target?.closest('[data-context-menu-trigger]')) {
+          e.preventDefault();
+        }
+      });
+    }
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker
         .register(`${base}/service-worker.js`, { scope: `${base}/` })
@@ -30,6 +43,25 @@
         .catch(function (error) {
           console.log('Service worker registration failed, error:', error);
         });
+    }
+
+    if (isTauri()) {
+      void (async () => {
+        const { getCurrentWindow } = await import('@tauri-apps/api/window');
+        const appWindow = getCurrentWindow();
+        await appWindow.onCloseRequested(async (event) => {
+          const dirtyTabs = fileState.tabs.filter((t) => t.isDirty);
+          if (dirtyTabs.length > 0) {
+            const names = dirtyTabs.map((t) => t.name).join(', ');
+            const { confirm } = await import('@tauri-apps/plugin-dialog');
+            const ok = await confirm(`You have unsaved changes in: ${names}\n\nQuit without saving?`);
+            if (!ok) event.preventDefault();
+            else fileState.stopWatching();
+          } else {
+            fileState.stopWatching();
+          }
+        });
+      })();
     }
   });
 

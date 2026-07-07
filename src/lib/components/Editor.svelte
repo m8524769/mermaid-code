@@ -6,6 +6,7 @@
   import { Button } from '$/components/ui/button';
   import { TID } from '$/constants';
   import { env } from '$/util/env';
+  import { fileState } from '$lib/util/fileState.svelte';
   import { updateCode, updateConfig, urls, validatedState } from '$lib/util/state.svelte';
   import { logMermaidChartClick } from '$lib/util/stats';
   import { debounce } from 'lodash-es';
@@ -14,6 +15,9 @@
   const { isMobile } = $props<{ isMobile: boolean }>();
   const onUpdate = (text: string) => {
     if (validatedState.current.editorMode === 'code') {
+      if (fileState.activeTabId) {
+        fileState.updateTabCode(fileState.activeTabId, text);
+      }
       updateCode(text);
     } else {
       updateConfig(text);
