@@ -135,7 +135,7 @@ export const readDir = async (path: string): Promise<DirEntry[]> => {
   const entries = await tauriReadDir(path);
   return entries.map((e) => ({
     name: e.name,
-    path: `${path}/${e.name}`,
+    path: `${path}${path.includes('\\') ? '\\' : '/'}${e.name}`,
     isDirectory: e.isDirectory,
     isFile: e.isFile
   }));

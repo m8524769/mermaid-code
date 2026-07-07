@@ -54,7 +54,7 @@
   </div>
 
   <div class="flex-1 overflow-y-auto py-1">
-    {#if fileState.tree.length === 0}
+    {#if !fileState.rootPath}
       {#if isTauri()}
         <div class="flex flex-col items-center gap-3 px-4 py-8">
           <p class="text-center text-xs text-muted-foreground">
@@ -72,6 +72,10 @@
           File manager requires the desktop app.
         </p>
       {/if}
+    {:else if fileState.tree.length === 0}
+      <p class="px-3 py-4 text-center text-xs text-muted-foreground">
+        This folder is empty.
+      </p>
     {:else}
       <FileTree nodes={fileState.tree} />
     {/if}

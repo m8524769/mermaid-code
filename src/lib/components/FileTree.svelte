@@ -57,6 +57,7 @@
       style:padding-left="{depth * 12 + 4}px"
       role="button"
       tabindex="0"
+      title={node.name}
       onclick={() => {
         if (node.isDir) fileState.toggleDir(node.path);
         else fileState.openFile(node.path);

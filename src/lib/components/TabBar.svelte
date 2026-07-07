@@ -51,6 +51,7 @@
         ]}
         role="tab"
         tabindex="0"
+        title={tab.path}
         draggable="true"
         ondragstart={() => onDragStart(tab)}
         ondragover={(e) => e.preventDefault()}
