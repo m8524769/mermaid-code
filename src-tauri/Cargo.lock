@@ -1791,7 +1791,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "mermaid-live-editor"
+name = "mermaid-code"
 version = "0.1.0"
 dependencies = [
  "serde",

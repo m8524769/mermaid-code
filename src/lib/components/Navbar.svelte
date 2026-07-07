@@ -8,10 +8,10 @@
 </script>
 
 <script lang="ts">
-  import { resolve } from '$app/paths';
   import MainMenu from '$/components/MainMenu.svelte';
   import { Button } from '$/components/ui/button';
   import { Separator } from '$/components/ui/separator';
+  import { resolve } from '$app/paths';
   import { dismissPromotion, getActivePromotion } from '$lib/util/promos/promo.svelte';
   import { untrack, type ComponentProps, type Snippet } from 'svelte';
   import MermaidIcon from '~icons/custom/mermaid';
@@ -32,8 +32,8 @@
   const githubLinks: Links = [
     { title: 'Mermaid JS', href: 'https://github.com/mermaid-js/mermaid' },
     {
-      title: 'Mermaid Live Editor',
-      href: 'https://github.com/mermaid-js/mermaid-live-editor'
+      title: 'Mermaid Code',
+      href: 'https://github.com/m8524769/mermaid-code'
     },
     {
       title: 'Mermaid CLI',
@@ -88,7 +88,7 @@
       {#if !mobileToggle}
         Mermaid
       {/if}
-      Live Editor
+      Code
     </a>
   </div>
   <div
