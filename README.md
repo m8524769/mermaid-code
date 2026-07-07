@@ -2,6 +2,8 @@
 
 A local-first Mermaid diagram editor built on [Mermaid Live Editor](https://github.com/mermaid-js/mermaid-live-editor), enhanced with desktop-native features via [Tauri](https://tauri.app).
 
+![Mermaid Code showcase](showcase.gif)
+
 Download the latest installer for macOS or Windows from the [Releases](https://github.com/m8524769/mermaid-code/releases) page.
 
 ## Enhancements over Mermaid Live Editor
