@@ -115,7 +115,7 @@
       {:else}
         <span class="min-w-0 flex-1 truncate">{node.name}</span>
         {#if !node.isDir && fileState.tabs.find((t) => t.path === node.path)?.isDirty}
-          <span class="shrink-0 text-orange-400">●</span>
+          <span class="mr-0.5 size-[5px] shrink-0 rounded-full bg-orange-400"></span>
         {/if}
       {/if}
 

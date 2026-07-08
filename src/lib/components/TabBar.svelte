@@ -60,7 +60,7 @@
         onkeydown={(e) => e.key === 'Enter' && fileState.switchTab(tab.id)}>
         <span class="min-w-0 flex-1 truncate">{tab.name}</span>
         {#if tab.isDirty}
-          <span class="shrink-0 text-orange-400">●</span>
+          <span class="size-[5px] shrink-0 rounded-full bg-orange-400"></span>
         {/if}
         <button
           class={[
