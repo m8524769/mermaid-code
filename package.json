@@ -1,6 +1,6 @@
 {
   "name": "mermaid-code",
-  "version": "2.0.67",
+  "version": "0.1.9",
   "type": "module",
   "license": "MIT",
   "scripts": {
@@ -12,6 +12,7 @@
     "tauri": "tauri",
     "tauri:dev": "tauri dev",
     "tauri:build": "tauri build",
+    "release": "sh scripts/release.sh",
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
     "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
     "lint": "prettier --check --cache . && eslint .",
