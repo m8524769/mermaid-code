@@ -2,6 +2,18 @@
 
 All notable changes to Mermaid Code are documented here.
 
+## [v0.1.9] - 2026-07-08
+
+### Fixed
+
+- **Deleted folder closes tabs**: deleting a folder now automatically closes all tabs whose files were inside it
+- **UI polish**: muted icon colors on inactive states for sidebar buttons, file tree action buttons, tab bar close button, and New File button; hover states now use consistent foreground color
+
+### Changed
+
+- Zoom scroll sensitivity increased from `0.1` (library default) to `0.2`
+- Sidebar title tooltip now shows the full folder path on hover
+
 ## [v0.1.8] - 2026-07-08
 
 ### Fixed
