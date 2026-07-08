@@ -49,6 +49,40 @@
     if (!editor) return;
     if (enabled && !vimAdapter) {
       vimAdapter = initVimMode(editor, vimStatusBarElement);
+
+      // Bridge vim yank to system clipboard by overriding the unnamed register
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const Vim = (VimMode as any).Vim;
+      if (Vim) {
+        const clipboardRegister = {
+          text: '',
+          linewise: false,
+          blockwise: false,
+          setText(text: string, linewise: boolean, blockwise: boolean) {
+            this.text = text;
+            this.linewise = linewise ?? false;
+            this.blockwise = blockwise ?? false;
+            void navigator.clipboard.writeText(text);
+          },
+          pushText(text: string, linewise: boolean) {
+            this.setText(text, linewise, false);
+          },
+          clear() { this.text = ''; },
+          toString() { return this.text; }
+        };
+        // Override unnamed register (") so y/d/c all write to system clipboard
+        try {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const ctrl = (Vim as any).getVimGlobalState_?.()?.registerController
+            ?? (Vim as any).vimGlobalState?.registerController;
+          if (ctrl) {
+            ctrl.unnamedRegister = clipboardRegister;
+            ctrl.registers['"'] = clipboardRegister;
+          }
+        } catch { /* ignore */ }
+        try { Vim.defineRegister('+', clipboardRegister); } catch { /* already defined */ }
+        try { Vim.defineRegister('*', clipboardRegister); } catch { /* already defined */ }
+      }
       // Register :w and :write to trigger save (VimMode.Vim not in type defs)
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (VimMode as any).Vim?.defineEx('write', 'w', () => {
@@ -93,11 +127,33 @@
     'json',
     monaco.Uri.parse('internal://config.json')
   );
-  const mermaidModel = monaco.editor.createModel(
+  // Default mermaid model for draft mode (no active tab)
+  const defaultMermaidModel = monaco.editor.createModel(
     '',
     'mermaid',
     monaco.Uri.parse('internal://mermaid.mmd')
   );
+  // Per-tab models: each tab gets its own model so undo history is isolated
+  const tabModels = new Map<string, monaco.editor.ITextModel>();
+
+  const getOrCreateTabModel = (tabId: string, code: string): monaco.editor.ITextModel => {
+    let model = tabModels.get(tabId);
+    if (!model) {
+      model = monaco.editor.createModel(code, 'mermaid');
+      tabModels.set(tabId, model);
+    }
+    return model;
+  };
+
+  const getMermaidModel = (): monaco.editor.ITextModel => {
+    const activeTabId = fileState.activeTabId;
+    if (activeTabId) {
+      // Use the tab's actual code (not validatedState.current.code which may be stale during async processState)
+      const tabCode = fileState.tabs.find((t) => t.id === activeTabId)?.code ?? validatedState.current.code;
+      return getOrCreateTabModel(activeTabId, tabCode);
+    }
+    return defaultMermaidModel;
+  };
 
   const renderAIPromptGutterGlyphIcon = () => {
     decorationsCollection?.clear();
@@ -109,7 +165,7 @@
       return;
     }
 
-    if (lastMouseLine > 0 && model.id === mermaidModel.id) {
+    if (lastMouseLine > 0 && model.id === getMermaidModel().id) {
       decorationsCollection?.set([
         {
           range: new monaco.Range(lastMouseLine, 1, lastMouseLine, 1),
@@ -232,7 +288,7 @@
     editor.onMouseMove((e) => {
       if (!editor) return;
       if (showPopup) return;
-      if (editor.getModel()?.id !== mermaidModel.id) return;
+      if (editor.getModel()?.id !== getMermaidModel().id) return;
 
       lastMouseLine = e.target.position?.lineNumber ?? 0;
       renderAIPromptGutterGlyphIcon();
@@ -264,7 +320,9 @@
       vimAdapter?.dispose();
       resizeObserver.disconnect();
       jsonModel.dispose();
-      mermaidModel.dispose();
+      defaultMermaidModel.dispose();
+      for (const model of tabModels.values()) model.dispose();
+      tabModels.clear();
       aiPromptManager.destroy();
       editor?.dispose();
     };
@@ -276,21 +334,26 @@
       return;
     }
 
-    const model = editorMode === 'code' ? mermaidModel : jsonModel;
+    const model = editorMode === 'code' ? getMermaidModel() : jsonModel;
 
-    if (editor.getModel()?.id !== model.id) {
+    const modelSwitched = editor.getModel()?.id !== model.id;
+    if (modelSwitched) {
       editor.setModel(model);
       renderAIPromptGutterGlyphIcon();
     }
 
     // Clear decorations if not in 'code' mode, or if the model changes
-    if (editorMode !== 'code' || editor.getModel()?.id !== mermaidModel.id) {
+    if (editorMode !== 'code' || editor.getModel()?.id !== getMermaidModel().id) {
       decorationsCollection?.clear();
     }
 
     // Update editor text if it's different
     const newText = editorMode === 'code' ? code : mermaid;
-    if (newText !== currentText) {
+    if (modelSwitched) {
+      // Model already initialized with correct content in getOrCreateTabModel.
+      // Sync currentText to the model's actual value — do NOT executeEdits (would pollute undo history).
+      currentText = model.getValue();
+    } else if (newText !== currentText) {
       isUpdatingFromState = true;
       try {
         editor.setScrollTop(0);

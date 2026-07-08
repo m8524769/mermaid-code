@@ -12,7 +12,7 @@ import {
   writeTextFile
 } from '$/util/fileSystem';
 import { notify } from '$/util/notify';
-import { updateCode } from '$/util/state.svelte';
+import { inputState, updateCode, updateCodeStore } from '$/util/state.svelte';
 import debounce from 'lodash-es/debounce';
 
 // Cross-platform path join: works on both Unix (/) and Windows (\)
@@ -41,6 +41,8 @@ export interface Tab {
   code: string;
   savedCode: string;
   isDirty: boolean;
+  pan?: { x: number; y: number };
+  zoom?: number;
 }
 
 export interface FileTreeNode {
@@ -302,10 +304,21 @@ export const fileState = {
   },
 
   switchTab(id: string): void {
+    // Save current tab's pan/zoom before switching
+    const currentTab = tabs.find((t) => t.id === activeTabId);
+    if (currentTab) {
+      currentTab.pan = inputState.pan;
+      currentTab.zoom = inputState.zoom;
+    }
+
     activeTabId = id;
     const tab = tabs.find((t) => t.id === id);
     if (tab) {
-      updateCode(tab.code, { updateDiagram: true });
+      updateCode(tab.code, { updateDiagram: true, resetPanZoom: true });
+      // Restore this tab's pan/zoom if it has one
+      if (tab.pan !== undefined || tab.zoom !== undefined) {
+        updateCodeStore({ pan: tab.pan, zoom: tab.zoom });
+      }
     }
     saveTabsToStorage();
   },

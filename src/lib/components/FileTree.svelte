@@ -47,8 +47,12 @@
     fileState.tabs.find((t) => t.id === fileState.activeTabId)?.path === path;
 
   const focus = (el: HTMLElement) => {
-    el.focus();
-    (el as HTMLInputElement).select?.();
+    const input = el as HTMLInputElement;
+    input.focus();
+    const value = input.value;
+    const dotIndex = value.lastIndexOf('.');
+    const end = dotIndex > 0 ? dotIndex : value.length;
+    input.setSelectionRange(0, end);
   };
 </script>
 
