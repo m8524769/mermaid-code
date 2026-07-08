@@ -29,18 +29,19 @@
 <div class="flex h-full flex-col overflow-hidden border-r">
   <div class="flex items-center gap-1 border-b px-2 py-1.5">
     <span
-      class="min-w-0 flex-1 truncate text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+      class="min-w-0 flex-1 truncate text-xs font-semibold uppercase tracking-wide text-muted-foreground"
+      title={fileState.rootPath ?? undefined}>
       {pathLabel ?? 'Explorer'}
     </span>
     {#if isTauri() && fileState.rootPath}
       <button
-        class="rounded p-0.5 hover:bg-muted"
+        class="rounded p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground"
         title="New File"
         onclick={() => fileState.createFile(fileState.rootPath!)}>
         <AddIcon class="size-4" />
       </button>
       <button
-        class="rounded p-0.5 hover:bg-muted"
+        class="rounded p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground"
         title="New Folder"
         onclick={() => fileState.createDir(fileState.rootPath!)}>
         <FolderAddIcon class="size-4" />
@@ -48,7 +49,7 @@
     {/if}
     {#if isTauri()}
       <button
-        class="rounded p-0.5 hover:bg-muted"
+        class="rounded p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground"
         title="Open Folder"
         onclick={() => fileState.openFolder()}>
         <FolderOpenIcon class="size-4" />

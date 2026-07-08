@@ -64,7 +64,10 @@
         {/if}
         <button
           class={[
-            'shrink-0 rounded p-0.5 hover:bg-muted',
+            'shrink-0 rounded p-0.5 hover:text-foreground',
+            tab.id === fileState.activeTabId
+              ? 'text-muted-foreground hover:bg-muted'
+              : 'hover:bg-background',
             !tab.isDirty && 'opacity-0 group-hover:opacity-100'
           ]}
           onclick={(e) => handleClose(e, tab.id)}
@@ -75,7 +78,7 @@
     {/each}
     {#if fileState.rootPath}
       <button
-        class="flex shrink-0 items-center px-2 hover:bg-muted/60 text-muted-foreground"
+        class="flex shrink-0 items-center px-2 hover:bg-muted/60 hover:text-foreground text-muted-foreground"
         onclick={handleNew}
         title="New File">
         <AddIcon class="size-4" />

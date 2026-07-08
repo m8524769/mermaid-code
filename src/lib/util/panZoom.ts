@@ -87,6 +87,7 @@ export class PanZoomState {
       fit: true,
       maxZoom: 12,
       minZoom: 0.2,
+      zoomScaleSensitivity: 0.2,
       onPan: (pan) => {
         this.pan = pan;
         this.zoom = this.pzoom?.getZoom();

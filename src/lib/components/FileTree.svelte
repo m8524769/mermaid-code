@@ -128,20 +128,20 @@
         tabindex="-1">
         {#if node.isDir}
           <button
-            class="cursor-pointer rounded bg-background p-0.5 hover:bg-muted"
+            class="cursor-pointer rounded bg-background p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground"
             title="New File"
             onclick={() => fileState.createFile(node.path)}>
             <AddIcon class="size-3.5" />
           </button>
           <button
-            class="cursor-pointer rounded bg-background p-0.5 hover:bg-muted"
+            class="cursor-pointer rounded bg-background p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground"
             title="New Folder"
             onclick={() => fileState.createDir(node.path)}>
             <FolderAddIcon class="size-3.5" />
           </button>
         {/if}
         <button
-          class="cursor-pointer rounded bg-background p-0.5 hover:bg-muted"
+          class="cursor-pointer rounded bg-background p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground"
           title="Rename"
           onclick={() => startRename(node)}>
           <EditIcon class="size-3.5" />

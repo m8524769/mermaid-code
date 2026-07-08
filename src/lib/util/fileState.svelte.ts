@@ -506,10 +506,22 @@ const handleWatchEvent = async (event: import('$/util/fileSystem').WatchEvent): 
   }
   if (typeof kind === 'object' && 'remove' in kind) {
     for (const p of event.paths) {
-      const tab = tabs.find((t) => t.path === p);
-      if (tab) {
+      // Match tabs whose path equals the removed path OR is inside a removed directory
+      const affected = tabs.filter(
+        (t) => t.path === p || t.path.startsWith(p + '/') || t.path.startsWith(p + '\\')
+      );
+      for (const tab of affected) {
         notify(`"${tab.name}" was deleted externally`);
-        tab.name = `${tab.name} (deleted)`;
+        tabs = tabs.filter((t) => t.id !== tab.id);
+        if (activeTabId === tab.id) {
+          const next = tabs[0] ?? null;
+          activeTabId = next?.id ?? null;
+          if (next) {
+            updateCode(next.code, { updateDiagram: true });
+          } else {
+            updateCode('', { updateDiagram: true });
+          }
+        }
       }
     }
   }
