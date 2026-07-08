@@ -67,21 +67,36 @@
           pushText(text: string, linewise: boolean) {
             this.setText(text, linewise, false);
           },
-          clear() { this.text = ''; },
-          toString() { return this.text; }
+          clear() {
+            this.text = '';
+          },
+          toString() {
+            return this.text;
+          }
         };
         // Override unnamed register (") so y/d/c all write to system clipboard
         try {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const ctrl = (Vim as any).getVimGlobalState_?.()?.registerController
-            ?? (Vim as any).vimGlobalState?.registerController;
+          const ctrl =
+            (Vim as any).getVimGlobalState_?.()?.registerController ??
+            (Vim as any).vimGlobalState?.registerController;
           if (ctrl) {
             ctrl.unnamedRegister = clipboardRegister;
             ctrl.registers['"'] = clipboardRegister;
           }
-        } catch { /* ignore */ }
-        try { Vim.defineRegister('+', clipboardRegister); } catch { /* already defined */ }
-        try { Vim.defineRegister('*', clipboardRegister); } catch { /* already defined */ }
+        } catch {
+          /* ignore */
+        }
+        try {
+          Vim.defineRegister('+', clipboardRegister);
+        } catch {
+          /* already defined */
+        }
+        try {
+          Vim.defineRegister('*', clipboardRegister);
+        } catch {
+          /* already defined */
+        }
       }
       // Register :w and :write to trigger save (VimMode.Vim not in type defs)
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -149,7 +164,8 @@
     const activeTabId = fileState.activeTabId;
     if (activeTabId) {
       // Use the tab's actual code (not validatedState.current.code which may be stale during async processState)
-      const tabCode = fileState.tabs.find((t) => t.id === activeTabId)?.code ?? validatedState.current.code;
+      const tabCode =
+        fileState.tabs.find((t) => t.id === activeTabId)?.code ?? validatedState.current.code;
       return getOrCreateTabModel(activeTabId, tabCode);
     }
     return defaultMermaidModel;
@@ -395,7 +411,8 @@
         closePopup();
       }} />
   </div>
-  <div class="absolute bottom-0 left-0 flex w-full items-center bg-muted/80 px-2 text-xs text-muted-foreground">
+  <div
+    class="absolute bottom-0 left-0 flex w-full items-center bg-muted/80 px-2 text-xs text-muted-foreground">
     <div bind:this={vimStatusBarElement} class="flex-1 font-mono"></div>
     <button
       class="ml-auto cursor-pointer select-none px-1 py-0.5 hover:text-foreground"

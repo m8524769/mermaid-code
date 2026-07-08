@@ -54,7 +54,9 @@
           if (dirtyTabs.length > 0) {
             const names = dirtyTabs.map((t) => t.name).join(', ');
             const { confirm } = await import('@tauri-apps/plugin-dialog');
-            const ok = await confirm(`You have unsaved changes in: ${names}\n\nQuit without saving?`);
+            const ok = await confirm(
+              `You have unsaved changes in: ${names}\n\nQuit without saving?`
+            );
             if (!ok) event.preventDefault();
             else fileState.stopWatching();
           } else {

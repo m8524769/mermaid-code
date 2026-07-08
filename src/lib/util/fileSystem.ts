@@ -44,7 +44,10 @@ export const openFile = async (): Promise<FileResult | null> => {
     input.accept = '.mmd,.mermaid';
     input.onchange = async () => {
       const file = input.files?.[0];
-      if (!file) { resolve(null); return; }
+      if (!file) {
+        resolve(null);
+        return;
+      }
       const code = await file.text();
       resolve({ handle: { path: file.name, name: file.name }, code });
     };
@@ -52,7 +55,10 @@ export const openFile = async (): Promise<FileResult | null> => {
   });
 };
 
-export const saveFile = async (handle: FileHandle & { _fsHandle?: any }, content: string): Promise<boolean> => {
+export const saveFile = async (
+  handle: FileHandle & { _fsHandle?: any },
+  content: string
+): Promise<boolean> => {
   if (isTauri()) {
     const { writeTextFile } = await import('@tauri-apps/plugin-fs');
     await writeTextFile(handle.path, content);
@@ -69,7 +75,10 @@ export const saveFile = async (handle: FileHandle & { _fsHandle?: any }, content
   return false;
 };
 
-export const saveFileAs = async (content: string, defaultName = 'diagram.mmd'): Promise<FileHandle | null> => {
+export const saveFileAs = async (
+  content: string,
+  defaultName = 'diagram.mmd'
+): Promise<FileHandle | null> => {
   if (isTauri()) {
     const { save } = await import('@tauri-apps/plugin-dialog');
     const { writeTextFile } = await import('@tauri-apps/plugin-fs');

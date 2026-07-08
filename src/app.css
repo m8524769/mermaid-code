@@ -108,7 +108,8 @@
   body {
     @apply h-screen w-screen overflow-hidden bg-background text-foreground;
   }
-  button, [role="button"] {
+  button,
+  [role='button'] {
     cursor: pointer;
   }
 }

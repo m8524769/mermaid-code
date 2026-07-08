@@ -9,11 +9,13 @@ Download the latest installer for macOS or Windows from the [Releases](https://g
 ## Enhancements over Mermaid Live Editor
 
 ### Desktop App (Tauri)
+
 - Native macOS/Windows application
 - Local file system access — open, edit, and save `.mmd` files directly
 - App quit guard: prompts when unsaved changes exist on close
 
 ### File Manager Sidebar
+
 - Open any local folder and browse its file tree
 - Multi-tab editing — open multiple diagrams simultaneously
 - Tab and active file restored per folder on next launch
@@ -21,6 +23,7 @@ Download the latest installer for macOS or Windows from the [Releases](https://g
 - Hover actions: new file, new folder, rename, delete
 
 ### Editor
+
 - **Vim mode** — toggle with the VIM ON/OFF button in the status bar
 - **Keyword autocomplete** — diagram-type-aware suggestions
 

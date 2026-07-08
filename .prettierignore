@@ -7,3 +7,6 @@ coverage/**
 __snapshots__/**
 snapshots.js
 pnpm-lock.yaml
+src-tauri/target/**
+src-tauri/gen/**
+src-tauri/Cargo.lock

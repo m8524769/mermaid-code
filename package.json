@@ -125,7 +125,9 @@
     "uuid": "14.0.0"
   },
   "lint-staged": {
-    "*.{ts,svelte,js,css,md,json}": []
+    "*.{ts,svelte,js,css,md,json}": [
+      "prettier --write"
+    ]
   },
   "engines": {
     "node": ">=24.16.0"

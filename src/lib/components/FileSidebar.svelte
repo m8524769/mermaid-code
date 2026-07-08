@@ -8,7 +8,9 @@
   import { onMount } from 'svelte';
 
   const pathLabel = $derived(
-    fileState.rootPath ? fileState.rootPath.split(/[/\\]/).filter(Boolean).pop() ?? fileState.rootPath : null
+    fileState.rootPath
+      ? (fileState.rootPath.split(/[/\\]/).filter(Boolean).pop() ?? fileState.rootPath)
+      : null
   );
 
   onMount(() => {
@@ -26,7 +28,8 @@
 
 <div class="flex h-full flex-col overflow-hidden border-r">
   <div class="flex items-center gap-1 border-b px-2 py-1.5">
-    <span class="min-w-0 flex-1 truncate text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+    <span
+      class="min-w-0 flex-1 truncate text-xs font-semibold uppercase tracking-wide text-muted-foreground">
       {pathLabel ?? 'Explorer'}
     </span>
     {#if isTauri() && fileState.rootPath}
@@ -73,25 +76,25 @@
         </p>
       {/if}
     {:else if fileState.tree.length === 0}
-      <p class="px-3 py-4 text-center text-xs text-muted-foreground">
-        This folder is empty.
-      </p>
+      <p class="px-3 py-4 text-center text-xs text-muted-foreground">This folder is empty.</p>
     {:else}
       <FileTree nodes={fileState.tree} />
     {/if}
   </div>
 
   {#if fileState.activeTabId}
-  <div class="flex items-center justify-between border-t px-2 py-1 text-xs text-muted-foreground">
-    <span>Auto-save</span>
-    <button
-      class={[
-        'rounded px-1.5 py-0.5 text-xs',
-        fileState.isAutoSave ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-muted/80'
-      ]}
-      onclick={() => fileState.toggleAutoSave()}>
-      {fileState.isAutoSave ? 'ON' : 'OFF'}
-    </button>
-  </div>
+    <div class="flex items-center justify-between border-t px-2 py-1 text-xs text-muted-foreground">
+      <span>Auto-save</span>
+      <button
+        class={[
+          'rounded px-1.5 py-0.5 text-xs',
+          fileState.isAutoSave
+            ? 'bg-primary text-primary-foreground'
+            : 'bg-muted text-muted-foreground hover:bg-muted/80'
+        ]}
+        onclick={() => fileState.toggleAutoSave()}>
+        {fileState.isAutoSave ? 'ON' : 'OFF'}
+      </button>
+    </div>
   {/if}
 </div>

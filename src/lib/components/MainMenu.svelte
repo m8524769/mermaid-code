@@ -33,10 +33,17 @@
   }
 
   const menuItems: MenuItem[] = $derived([
-    ...(!isTauri() ? [
-      { label: 'New', icon: AddIcon, href: urls.current.new, renderer: menuItem },
-      { label: 'Duplicate', icon: DuplicateIcon, href: window.location.href, renderer: menuItem },
-    ] : []),
+    ...(!isTauri()
+      ? [
+          { label: 'New', icon: AddIcon, href: urls.current.new, renderer: menuItem },
+          {
+            label: 'Duplicate',
+            icon: DuplicateIcon,
+            href: window.location.href,
+            renderer: menuItem
+          }
+        ]
+      : []),
     {
       href: urls.current.mermaidChart({ medium: 'main_menu' }).playground,
       icon: PlaygroundIcon,

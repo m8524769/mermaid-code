@@ -191,7 +191,9 @@ const findNode = (nodes: FileTreeNode[], path: string): FileTreeNode | null => {
 const refreshNodeChildren = async (node: FileTreeNode): Promise<void> => {
   if (!node.isDir || !node.expanded) return;
   const entries = await readDir(node.path);
-  const newChildren = sortNodes(filterEntries(entries).map((e) => buildNode(e.name, e.path, e.isDirectory)));
+  const newChildren = sortNodes(
+    filterEntries(entries).map((e) => buildNode(e.name, e.path, e.isDirectory))
+  );
   // Preserve expanded state of children that still exist
   for (const newChild of newChildren) {
     const old = node.children.find((c) => c.path === newChild.path);
@@ -210,7 +212,9 @@ const refreshNodeChildren = async (node: FileTreeNode): Promise<void> => {
 const refreshTree = async (): Promise<void> => {
   if (!rootPath) return;
   const entries = await readDir(rootPath);
-  const newRoot = sortNodes(filterEntries(entries).map((e) => buildNode(e.name, e.path, e.isDirectory)));
+  const newRoot = sortNodes(
+    filterEntries(entries).map((e) => buildNode(e.name, e.path, e.isDirectory))
+  );
   // Preserve expanded state from current tree
   for (const newNode of newRoot) {
     const old = tree.find((n) => n.path === newNode.path);
@@ -230,11 +234,21 @@ const refreshTree = async (): Promise<void> => {
 const debouncedRefreshTree = debounce(() => void refreshTree(), 1000);
 
 export const fileState = {
-  get tabs() { return tabs; },
-  get activeTabId() { return activeTabId; },
-  get rootPath() { return rootPath; },
-  get tree() { return tree; },
-  get isAutoSave() { return isAutoSave; },
+  get tabs() {
+    return tabs;
+  },
+  get activeTabId() {
+    return activeTabId;
+  },
+  get rootPath() {
+    return rootPath;
+  },
+  get tree() {
+    return tree;
+  },
+  get isAutoSave() {
+    return isAutoSave;
+  },
 
   async openFolder(): Promise<void> {
     const path = await openFolderDialog();
@@ -344,7 +358,9 @@ export const fileState = {
   },
 
   async saveAllTabs(): Promise<void> {
-    await Promise.all(tabs.filter((t) => t.isDirty).map((t) => fileState.saveTab(t.id, { silent: true })));
+    await Promise.all(
+      tabs.filter((t) => t.isDirty).map((t) => fileState.saveTab(t.id, { silent: true }))
+    );
   },
 
   async createFile(dirPath: string): Promise<void> {
@@ -394,9 +410,7 @@ export const fileState = {
     try {
       await fsRename(oldPath, newPath);
       // Update any open tabs with this path
-      tabs = tabs.map((t) =>
-        t.path === oldPath ? { ...t, path: newPath, name: newName } : t
-      );
+      tabs = tabs.map((t) => (t.path === oldPath ? { ...t, path: newPath, name: newName } : t));
       await refreshTree();
     } catch {
       notify(`Failed to rename`);
@@ -499,4 +513,4 @@ const handleWatchEvent = async (event: import('$/util/fileSystem').WatchEvent): 
       }
     }
   }
-}
+};

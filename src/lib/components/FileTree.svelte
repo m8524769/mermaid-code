@@ -29,7 +29,10 @@
 
   const commitRename = async (node: FileTreeNode) => {
     let newName = renameValue.trim();
-    if (!newName) { renamingPath = null; return; }
+    if (!newName) {
+      renamingPath = null;
+      return;
+    }
     // For files, preserve the original extension if the user didn't type one
     if (!node.isDir) {
       const origExt = node.name.includes('.') ? node.name.slice(node.name.lastIndexOf('.')) : '';
@@ -57,7 +60,9 @@
 </script>
 
 <svelte:window
-  onclick={() => { menuPath = null; }}
+  onclick={() => {
+    menuPath = null;
+  }}
   onkeydown={(e) => e.key === 'Escape' && (menuPath = null)} />
 
 {#each nodes as node (node.path)}
@@ -65,7 +70,8 @@
     <div
       class={[
         'flex cursor-pointer items-center gap-1 rounded px-1 py-0.5 text-sm text-muted-foreground hover:bg-muted hover:text-foreground',
-        isActive(node.path) && 'bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground'
+        isActive(node.path) &&
+          'bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground'
       ]}
       style:padding-left="{depth * 12 + 4}px"
       role="button"
@@ -114,7 +120,8 @@
       {/if}
 
       <!-- Hover action buttons -->
-      <div class="ml-auto hidden shrink-0 items-center gap-0.5 group-hover:flex"
+      <div
+        class="ml-auto hidden shrink-0 items-center gap-0.5 group-hover:flex"
         onclick={(e) => e.stopPropagation()}
         onkeydown={(e) => e.stopPropagation()}
         role="toolbar"
