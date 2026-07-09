@@ -366,8 +366,10 @@
     // Update editor text if it's different
     const newText = editorMode === 'code' ? code : mermaid;
     if (modelSwitched) {
-      // Model already initialized with correct content in getOrCreateTabModel.
-      // Sync currentText to the model's actual value — do NOT executeEdits (would pollute undo history).
+      if (model === jsonModel && newText !== model.getValue()) {
+        // jsonModel is always created empty; populate it on first switch to config mode
+        model.setValue(newText);
+      }
       currentText = model.getValue();
     } else if (newText !== currentText) {
       isUpdatingFromState = true;

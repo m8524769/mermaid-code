@@ -45,6 +45,16 @@
 </script>
 
 <div class="flex h-full flex-col">
+  {#if validatedState.current.editorMode === 'config'}
+    <div class="shrink-0 border-b bg-muted/40 px-3 py-1.5 text-xs text-muted-foreground">
+      <span class="mb-1 block">Available themes:</span>
+      <div class="flex flex-wrap gap-1">
+        {#each ['default', 'base', 'dark', 'forest', 'neutral', 'neo', 'neo-dark', 'redux', 'redux-dark'] as theme}
+          <code class="rounded bg-muted px-1 py-0.5">{theme}</code>
+        {/each}
+      </div>
+    </div>
+  {/if}
   {#if isMobile}
     <MobileEditor {onUpdate} />
   {:else}
