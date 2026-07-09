@@ -42,16 +42,81 @@
       showErrorDebounced.cancel();
     };
   });
+
+  const THEMES = [
+    'default',
+    'base',
+    'dark',
+    'forest',
+    'neutral',
+    'neo',
+    'neo-dark',
+    'redux',
+    'redux-dark'
+  ];
+  const LAYOUTS = ['dagre', 'elk', 'tidy-tree'];
+
+  const parsedConfig = $derived.by(() => {
+    try {
+      return JSON.parse(validatedState.current.mermaid || '{}') as Record<string, unknown>;
+    } catch {
+      return {} as Record<string, unknown>;
+    }
+  });
+
+  const setConfigField = (key: string, value: string) => {
+    try {
+      const config = JSON.parse(validatedState.current.mermaid || '{}') as Record<string, unknown>;
+      if (value) {
+        config[key] = value;
+      } else {
+        delete config[key];
+      }
+      updateConfig(JSON.stringify(config, null, 2));
+    } catch {}
+  };
 </script>
 
 <div class="flex h-full flex-col">
   {#if validatedState.current.editorMode === 'config'}
-    <div class="shrink-0 border-b bg-muted/40 px-3 py-1.5 text-xs text-muted-foreground">
-      <span class="mb-1 block">Available themes:</span>
-      <div class="flex flex-wrap gap-1">
-        {#each ['default', 'base', 'dark', 'forest', 'neutral', 'neo', 'neo-dark', 'redux', 'redux-dark'] as theme}
-          <code class="rounded bg-muted px-1 py-0.5">{theme}</code>
-        {/each}
+    <div class="shrink-0 border-b bg-muted/40 px-3 py-2 text-xs">
+      <div class="flex flex-col gap-2">
+        <div class="flex items-center gap-2">
+          <label class="w-20 shrink-0 text-muted-foreground" for="cfg-theme">Theme</label>
+          <select
+            id="cfg-theme"
+            class="flex-1 rounded border bg-background px-1.5 py-0.5 text-xs"
+            value={String(parsedConfig.theme ?? '')}
+            onchange={(e) => setConfigField('theme', e.currentTarget.value)}>
+            <option value="">— default —</option>
+            {#each THEMES as t}
+              <option value={t}>{t}</option>
+            {/each}
+          </select>
+        </div>
+        <div class="flex items-center gap-2">
+          <label class="w-20 shrink-0 text-muted-foreground" for="cfg-layout">Layout</label>
+          <select
+            id="cfg-layout"
+            class="flex-1 rounded border bg-background px-1.5 py-0.5 text-xs"
+            value={String(parsedConfig.layout ?? '')}
+            onchange={(e) => setConfigField('layout', e.currentTarget.value)}>
+            <option value="">— default (dagre) —</option>
+            {#each LAYOUTS as l}
+              <option value={l}>{l}</option>
+            {/each}
+          </select>
+        </div>
+        <div class="flex items-center gap-2">
+          <label class="w-20 shrink-0 text-muted-foreground" for="cfg-font">Font</label>
+          <input
+            id="cfg-font"
+            type="text"
+            class="flex-1 rounded border bg-background px-1.5 py-0.5 text-xs"
+            placeholder="arial, sans-serif"
+            value={String(parsedConfig.fontFamily ?? '')}
+            onchange={(e) => setConfigField('fontFamily', e.currentTarget.value)} />
+        </div>
       </div>
     </div>
   {/if}
