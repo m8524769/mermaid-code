@@ -396,26 +396,27 @@
   });
 </script>
 
-<div class="relative h-full grow overflow-hidden">
-  <div bind:this={divElement} id="editor" class="h-full w-full"></div>
-  <div bind:this={aiPromptPopupElement}>
-    <AIPromptPopup
-      show={showPopup}
-      bind:input
-      onHeightChange={(height) => aiPromptManager.updateHeight(height)}
-      onClose={closePopup}
-      onTryFree={() => {
-        logMermaidChartClick('vibeDiagramming');
-        window.open(
-          urls.current.mermaidChart({ medium: 'vibe_diagramming' }).save,
-          '_blank',
-          'noopener'
-        );
-        closePopup();
-      }} />
+<div class="flex h-full grow flex-col overflow-hidden">
+  <div class="relative min-h-0 flex-1">
+    <div bind:this={divElement} id="editor" class="h-full w-full"></div>
+    <div bind:this={aiPromptPopupElement}>
+      <AIPromptPopup
+        show={showPopup}
+        bind:input
+        onHeightChange={(height) => aiPromptManager.updateHeight(height)}
+        onClose={closePopup}
+        onTryFree={() => {
+          logMermaidChartClick('vibeDiagramming');
+          window.open(
+            urls.current.mermaidChart({ medium: 'vibe_diagramming' }).save,
+            '_blank',
+            'noopener'
+          );
+          closePopup();
+        }} />
+    </div>
   </div>
-  <div
-    class="absolute bottom-0 left-0 flex w-full items-center bg-muted/80 px-2 text-xs text-muted-foreground">
+  <div class="flex w-full shrink-0 items-center bg-muted/80 px-2 text-xs text-muted-foreground">
     <div bind:this={vimStatusBarElement} class="flex-1 font-mono"></div>
     <button
       class="ml-auto cursor-pointer select-none px-1 py-0.5 hover:text-foreground"
