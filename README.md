@@ -27,6 +27,11 @@ Download the latest installer for macOS or Windows from the [Releases](https://g
 - **Vim mode** — toggle with the VIM ON/OFF button in the status bar
 - **Keyword autocomplete** — diagram-type-aware suggestions
 
+### Config Tab
+
+- **Visual form** — set theme, layout, and font family without editing JSON directly
+- **Pin to code** — inserts the current config as a YAML frontmatter block at the top of the diagram code; re-clicking replaces the existing block
+
 ---
 
 ## Requirements
