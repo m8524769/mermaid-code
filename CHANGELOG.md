@@ -2,6 +2,31 @@
 
 All notable changes to Mermaid Code are documented here.
 
+## [v0.1.13] - 2026-07-09
+
+### Added
+
+- **Relative line numbers in Vim mode**: editor switches to `lineNumbers: 'relative'` when Vim mode is enabled, restores to absolute on disable
+
+### Fixed
+
+- **ZenUML infinite reload loop**: switching away from ZenUML no longer triggers repeated page reloads
+- **Pin to code preserves existing frontmatter**: other fields (e.g. `title`, nested `flowchart` config) are no longer overwritten when pinning theme/layout/fontFamily
+
+### Changed
+
+- **ZenUML removed from Sample Diagrams**: due to global style injection side effects that cannot be cleaned up without a page reload
+
+## [v0.1.12] - 2026-07-09
+
+### Added
+
+- **Pin to code**: Config tab now has a "Pin to code" button that inserts the current config as YAML frontmatter into the diagram code
+
+### Changed
+
+- **`@mermaid-js/layout-elk` upgraded to 0.2.2**
+
 ## [v0.1.11] - 2026-07-09
 
 ### Added
