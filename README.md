@@ -1,6 +1,6 @@
-# Mermaid Code
-
 [![GitHub Release](https://img.shields.io/github/v/release/m8524769/mermaid-code?style=flat-square)](https://github.com/m8524769/mermaid-code/releases)
+
+# Mermaid Code
 
 A local-first Mermaid diagram editor built on [Mermaid Live Editor](https://github.com/mermaid-js/mermaid-live-editor), enhanced with desktop-native features via [Tauri](https://tauri.app).
 
