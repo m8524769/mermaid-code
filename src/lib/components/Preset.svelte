@@ -10,40 +10,7 @@
   import ShapesIcon from '~icons/material-symbols/account-tree-outline-rounded';
   import ChevronDownIcon from '~icons/material-symbols/keyboard-arrow-down-rounded';
 
-  const extras: Record<string, SampleExample[]> = {
-    ZenUML: [
-      {
-        title: 'Order Service',
-        isDefault: true,
-        code: `zenuml
-    title Order Service
-    @Actor Client #FFEBE6
-    @Boundary OrderController #0747A6
-    @EC2 <<BFF>> OrderService #E3FCEF
-    group BusinessService {
-      @Lambda PurchaseService
-      @AzureFunction InvoiceService
-    }
-
-    @Starter(Client)
-    // \`POST /orders\`
-    OrderController.post(payload) {
-      OrderService.create(payload) {
-        order = new Order(payload)
-        if(order != null) {
-          par {
-            PurchaseService.createPO(order)
-            InvoiceService.createInvoice(order)
-          }
-        }
-      }
-    }
-    `
-      }
-    ]
-  };
-
-  const samples = { ...getSampleDiagrams(), ...extras };
+  const samples = { ...getSampleDiagrams() };
 
   const loadSampleDiagram = (diagramType: string, example: SampleExample): void => {
     updateCode(example.code, {

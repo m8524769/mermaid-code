@@ -87,7 +87,13 @@ const processState = async (state: State) => {
     processed.diagramType = diagramType;
     if (lastDiagramType === 'zenuml' && diagramType !== lastDiagramType) {
       // Temp Hack to refresh page after displaying ZenUML.
-      setTimeout(() => window.location.reload(), 500);
+      // Guard against infinite reload loop: only reload once per session.
+      if (sessionStorage.getItem('zenuml-reloaded') !== '1') {
+        sessionStorage.setItem('zenuml-reloaded', '1');
+        setTimeout(() => window.location.reload(), 500);
+        return processed;
+      }
+      sessionStorage.removeItem('zenuml-reloaded');
     }
     lastDiagramType = diagramType;
     JSON.parse(state.mermaid || '{}');

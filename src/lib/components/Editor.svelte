@@ -98,22 +98,46 @@
   };
 
   const pinConfigToCode = () => {
-    const config = parsedConfig;
-    const entries = Object.entries(config).filter(([, v]) => v !== undefined && v !== '');
-    if (entries.length === 0) return;
-
-    // Build YAML frontmatter (only simple key: value, no nested objects)
-    const yamlLines = ['---', 'config:'];
-    for (const [k, v] of entries) {
-      yamlLines.push(`  ${k}: ${v}`);
-    }
-    yamlLines.push('---');
-    const frontmatter = yamlLines.join('\n');
-
+    const formFields = ['theme', 'layout', 'fontFamily'] as const;
     const code = validatedState.current.code;
-    const updated = /^---\n[\s\S]*?\n---\n?/.test(code)
-      ? code.replace(/^---\n[\s\S]*?\n---\n?/, frontmatter + '\n')
-      : frontmatter + '\n' + code;
+
+    // Operate on raw YAML lines to preserve nested objects and other fields
+    const applyToFrontmatter = (raw: string): string => {
+      const lines = raw.split('\n');
+      if (!lines.some((l) => /^config:\s*$/.test(l))) {
+        lines.push('config:');
+      }
+      for (const key of formFields) {
+        const val = String(parsedConfig[key] ?? '');
+        const idx = lines.findIndex((l) => new RegExp(`^  ${key}:`).test(l));
+        if (val) {
+          if (idx >= 0) {
+            lines[idx] = `  ${key}: ${val}`;
+          } else {
+            const configIdx = lines.findIndex((l) => /^config:\s*$/.test(l));
+            lines.splice(configIdx + 1, 0, `  ${key}: ${val}`);
+          }
+        } else if (idx >= 0) {
+          lines.splice(idx, 1);
+        }
+      }
+      return lines.join('\n');
+    };
+
+    const frontmatterMatch = code.match(/^---\n([\s\S]*?)\n---/);
+    let updated: string;
+    if (frontmatterMatch) {
+      const newBody = applyToFrontmatter(frontmatterMatch[1]);
+      updated = code.replace(/^---\n[\s\S]*?\n---\n?/, `---\n${newBody}\n---\n`);
+    } else {
+      const newLines = ['---', 'config:'];
+      for (const key of formFields) {
+        const val = String(parsedConfig[key] ?? '');
+        if (val) newLines.push(`  ${key}: ${val}`);
+      }
+      newLines.push('---');
+      updated = newLines.join('\n') + '\n' + code;
+    }
 
     updateCode(updated, { updateDiagram: true });
     if (fileState.activeTabId) {

@@ -119,6 +119,7 @@
       vimAdapter.dispose();
       vimAdapter = undefined;
     }
+    editor.updateOptions({ lineNumbers: enabled ? 'relative' : 'on' });
   };
 
   const toggleVimMode = () => {
