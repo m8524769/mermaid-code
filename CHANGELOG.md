@@ -2,6 +2,17 @@
 
 All notable changes to Mermaid Code are documented here.
 
+## [v0.1.10] - 2026-07-09
+
+### Added
+
+- **Theme hint in Config tab**: available mermaid theme names are now listed as badges at the top of the Config editor
+
+### Fixed
+
+- **Config tab empty on first open**: switching to the Config tab now correctly populates the editor with the current mermaid config
+- **Dirty indicator dot**: replaced Unicode `●` with a CSS `rounded-full` element for consistent cross-platform sizing
+
 ## [v0.1.9] - 2026-07-08
 
 ### Fixed
