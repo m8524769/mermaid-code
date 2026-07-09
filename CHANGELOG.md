@@ -2,6 +2,12 @@
 
 All notable changes to Mermaid Code are documented here.
 
+## [v0.1.11] - 2026-07-09
+
+### Added
+
+- **Config form**: theme, layout, and font family can now be set via a visual form at the top of the Config tab, synchronized with the JSON editor below
+
 ## [v0.1.10] - 2026-07-09
 
 ### Added
