@@ -1,11 +1,18 @@
 <script lang="ts">
   import { fileState, autoSaveTick } from '$/util/fileState.svelte';
   import { isTauri } from '$/util/fileSystem';
+  import { persisted } from '$/util/persist.svelte';
   import FileTree from '$/components/FileTree.svelte';
+  import ThumbnailGrid from '$/components/ThumbnailGrid.svelte';
   import FolderOpenIcon from '~icons/material-symbols/folder-open-rounded';
   import AddIcon from '~icons/material-symbols/add-rounded';
   import FolderAddIcon from '~icons/material-symbols/create-new-folder-outline-rounded';
+  import ViewListIcon from '~icons/material-symbols/view-list-rounded';
+  import GridViewIcon from '~icons/material-symbols/grid-view-rounded';
   import { onMount } from 'svelte';
+
+  const viewMode = persisted<'tree' | 'grid'>('mermaid-sidebar-view', 'grid');
+  let renderContainer: HTMLDivElement | undefined = $state();
 
   const pathLabel = $derived(
     fileState.rootPath
@@ -35,14 +42,41 @@
     </span>
     {#if isTauri() && fileState.rootPath}
       <button
+        class={[
+          'rounded p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground',
+          viewMode.value === 'tree' && 'bg-muted'
+        ]}
+        title="Tree view"
+        onclick={() => (viewMode.value = 'tree')}>
+        <ViewListIcon class="size-4" />
+      </button>
+      <button
+        class={[
+          'rounded p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground',
+          viewMode.value === 'grid' && 'bg-muted'
+        ]}
+        title="Thumbnail grid"
+        onclick={() => (viewMode.value = 'grid')}>
+        <GridViewIcon class="size-4" />
+      </button>
+      <div class="mx-0.5 h-3.5 w-px bg-border"></div>
+      <button
         class="rounded p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground"
         title="New File"
         onclick={() => fileState.createFile(fileState.rootPath!)}>
         <AddIcon class="size-4" />
       </button>
       <button
-        class="rounded p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground"
-        title="New Folder"
+        class={[
+          'rounded p-0.5',
+          viewMode.value === 'grid'
+            ? 'pointer-events-none text-muted-foreground/40'
+            : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+        ]}
+        title={viewMode.value === 'grid'
+          ? 'New Folder (not available in thumbnail view)'
+          : 'New Folder'}
+        disabled={viewMode.value === 'grid'}
         onclick={() => fileState.createDir(fileState.rootPath!)}>
         <FolderAddIcon class="size-4" />
       </button>
@@ -78,6 +112,8 @@
       {/if}
     {:else if fileState.tree.length === 0}
       <p class="px-3 py-4 text-center text-xs text-muted-foreground">This folder is empty.</p>
+    {:else if viewMode.value === 'grid' && renderContainer}
+      <ThumbnailGrid />
     {:else}
       <FileTree nodes={fileState.tree} />
     {/if}
@@ -98,4 +134,10 @@
       </button>
     </div>
   {/if}
+
+  <div
+    bind:this={renderContainer}
+    style="position:absolute;width:0;height:0;overflow:hidden;pointer-events:none;opacity:0"
+    aria-hidden="true">
+  </div>
 </div>

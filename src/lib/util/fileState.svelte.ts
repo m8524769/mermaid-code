@@ -1,4 +1,5 @@
 import { v4 as uuidV4 } from 'uuid';
+import { thumbnailCache } from '$/util/thumbnailState.svelte';
 import {
   confirmDialog,
   createDir as fsCreateDir,
@@ -70,7 +71,7 @@ const sortNodes = (nodes: FileTreeNode[]): FileTreeNode[] =>
   });
 
 // Directories that are too large or irrelevant to watch/display
-const IGNORED_DIRS = new Set([
+export const IGNORED_DIRS = new Set([
   'node_modules',
   '.git',
   '.svelte-kit',
@@ -372,6 +373,7 @@ export const fileState = {
     const path = joinPath(dirPath, name);
     try {
       await fsCreateFile(path);
+      thumbnailCache.setLastCreated(path);
       await refreshTree();
       // Expand the target directory so the new file is visible
       const node = findNode(tree, dirPath);
@@ -502,6 +504,7 @@ const handleWatchEvent = async (event: import('$/util/fileSystem').WatchEvent): 
           }
         } catch {}
       }
+      thumbnailCache.invalidate(p);
     }
   }
   if (typeof kind === 'object' && 'remove' in kind) {
@@ -523,6 +526,7 @@ const handleWatchEvent = async (event: import('$/util/fileSystem').WatchEvent): 
           }
         }
       }
+      thumbnailCache.invalidate(p);
     }
   }
 };
