@@ -416,6 +416,8 @@ export const fileState = {
       await fsRename(oldPath, newPath);
       // Update any open tabs with this path
       tabs = tabs.map((t) => (t.path === oldPath ? { ...t, path: newPath, name: newName } : t));
+      // Clear lastCreated so no file gets pinned to top after a rename
+      thumbnailCache.setLastCreated('');
       await refreshTree();
     } catch {
       notify(`Failed to rename`);

@@ -43,11 +43,12 @@
       return;
     }
     void collectAllFiles(root).then((files) => {
+      const sorted = files.sort((a, b) => a.localeCompare(b));
       const last = thumbnailCache.lastCreated;
-      if (last && files.includes(last)) {
-        flatFiles = [last, ...files.filter((f) => f !== last)];
+      if (last && sorted.includes(last)) {
+        flatFiles = [last, ...sorted.filter((f) => f !== last)];
       } else {
-        flatFiles = files;
+        flatFiles = sorted;
       }
     });
   });
