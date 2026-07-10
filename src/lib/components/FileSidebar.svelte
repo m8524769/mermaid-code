@@ -13,6 +13,14 @@
 
   const viewMode = persisted<'tree' | 'grid'>('mermaid-sidebar-view', 'grid');
   let renderContainer: HTMLDivElement | undefined = $state();
+  let searchQuery = $state('');
+
+  // Clear search when folder changes
+  $effect(() => {
+    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+    fileState.rootPath;
+    searchQuery = '';
+  });
 
   const pathLabel = $derived(
     fileState.rootPath
@@ -91,6 +99,15 @@
     {/if}
   </div>
 
+  {#if fileState.rootPath}
+    <div class="px-2 py-1">
+      <input
+        class="w-full rounded bg-muted/50 px-2 py-0.5 text-xs outline-none placeholder:text-muted-foreground/60 focus:ring-1 focus:ring-primary"
+        placeholder="Search files..."
+        bind:value={searchQuery} />
+    </div>
+  {/if}
+
   <div class="flex-1 overflow-y-auto py-1">
     {#if !fileState.rootPath}
       {#if isTauri()}
@@ -113,9 +130,9 @@
     {:else if fileState.tree.length === 0}
       <p class="px-3 py-4 text-center text-xs text-muted-foreground">This folder is empty.</p>
     {:else if viewMode.value === 'grid' && renderContainer}
-      <ThumbnailGrid />
+      <ThumbnailGrid query={searchQuery} />
     {:else}
-      <FileTree nodes={fileState.tree} />
+      <FileTree nodes={fileState.tree} query={searchQuery} />
     {/if}
   </div>
 

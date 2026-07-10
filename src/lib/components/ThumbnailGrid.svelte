@@ -8,6 +8,11 @@
   import DeleteIcon from '~icons/material-symbols/delete-outline-rounded';
   import type { MermaidConfig } from 'mermaid';
 
+  interface Props {
+    query?: string;
+  }
+  let { query = '' }: Props = $props();
+
   const getThumbnailConfig = (): MermaidConfig => {
     try {
       const config = JSON.parse(validatedState.current.mermaid || '{}') as MermaidConfig;
@@ -163,7 +168,9 @@
 <div
   bind:this={containerEl}
   class={['grid gap-2 overflow-y-auto p-2', containerWidth >= 240 ? 'grid-cols-2' : 'grid-cols-1']}>
-  {#each flatFiles as path (path)}
+  {#each flatFiles.filter((p) => !query || basename(p)
+        .toLowerCase()
+        .includes(query.toLowerCase())) as path (path)}
     {@const entry = thumbnailCache.get(path)}
     <div
       class={[
@@ -205,6 +212,9 @@
         {:else}
           <div class="flex items-center gap-0.5">
             <p class="min-w-0 flex-1 truncate text-xs text-muted-foreground">{basename(path)}</p>
+            {#if fileState.tabs.find((t) => t.path === path)?.isDirty}
+              <span class="mr-0.5 size-[5px] shrink-0 rounded-full bg-orange-400"></span>
+            {/if}
             <div
               class="w-0 shrink-0 overflow-hidden group-hover:w-auto"
               onclick={(e) => e.stopPropagation()}

@@ -13,9 +13,19 @@
   interface Props {
     nodes: FileTreeNode[];
     depth?: number;
+    query?: string;
   }
 
-  let { nodes, depth = 0 }: Props = $props();
+  let { nodes, depth = 0, query = '' }: Props = $props();
+
+  function nodeMatchesQuery(node: FileTreeNode, q: string): boolean {
+    if (!q) return true;
+    const lq = q.toLowerCase();
+    if (!node.isDir) return node.name.toLowerCase().includes(lq);
+    return (
+      node.name.toLowerCase().includes(lq) || node.children.some((c) => nodeMatchesQuery(c, lq))
+    );
+  }
 
   let renamingPath = $state<string | null>(null);
   let renameValue = $state('');
@@ -65,7 +75,7 @@
   }}
   onkeydown={(e) => e.key === 'Escape' && (menuPath = null)} />
 
-{#each nodes as node (node.path)}
+{#each nodes.filter((n) => nodeMatchesQuery(n, query)) as node (node.path)}
   <div class="group relative">
     <div
       class={[
@@ -156,7 +166,7 @@
     </div>
   </div>
 
-  {#if node.isDir && node.expanded && node.children.length > 0}
-    <FileTree nodes={node.children} depth={depth + 1} />
+  {#if node.isDir && (node.expanded || query) && node.children.length > 0}
+    <FileTree nodes={node.children} depth={depth + 1} {query} />
   {/if}
 {/each}
