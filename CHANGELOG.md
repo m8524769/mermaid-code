@@ -2,6 +2,12 @@
 
 All notable changes to Mermaid Code are documented here.
 
+## [v0.2.3] - 2026-07-10
+
+### Added
+
+- **Drag and drop**: drag `.mmd`/`.mermaid` files or folders onto the app window to open them
+
 ## [v0.2.2] - 2026-07-10
 
 ### Added
