@@ -2,6 +2,18 @@
 
 All notable changes to Mermaid Code are documented here.
 
+## [v0.2.0] - 2026-07-10
+
+### Added
+
+- **Thumbnail grid view**: sidebar now supports a thumbnail grid view showing SVG previews of all `.mmd`/`.mermaid` files in the opened folder (including subdirectories); switch between tree and grid view with the toggle buttons in the sidebar header; view preference is persisted
+- **Onboarding tooltip**: first-time users see a tooltip pointing to the File Explorer button after 3 seconds, which disappears once the sidebar is opened
+
+### Fixed
+
+- **Editor horizontal scrollbar**: VIM status bar no longer overlaps the Monaco editor's horizontal scrollbar
+- **Ignored files**: `.DS_Store`, `Thumbs.db`, and `desktop.ini` are now excluded from the file tree
+
 ## [v0.1.13] - 2026-07-09
 
 ### Added
