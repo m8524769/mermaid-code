@@ -31,6 +31,7 @@
   import { logEvent, logMermaidChartClick } from '$/util/stats';
   import { initHandler } from '$/util/util';
   import { onMount } from 'svelte';
+  import { fade } from 'svelte/transition';
   import CodeIcon from '~icons/custom/code';
   import FolderIcon from '~icons/material-symbols/folder-outline-rounded';
   import HistoryIcon from '~icons/material-symbols/history';
@@ -86,10 +87,43 @@
   onMount(() => startAutoSave());
 
   let isHistoryOpen = $state(false);
-  let isSidebarOpen = $state(localStorage.getItem('mermaid-sidebar-open') === 'true');
+  const SIDEBAR_KEY = 'mermaid-sidebar-open';
+  const ONBOARDED_KEY = 'mermaid-onboarded';
+  let isSidebarOpen = $state(localStorage.getItem(SIDEBAR_KEY) === 'true');
+  let showSidebarHint = $state(false);
+  let sidebarToggleEl: HTMLElement | undefined = $state();
+  let hintRight = $state(0);
+  let hintTop = $state(0);
+
+  const updateHintPos = () => {
+    if (!sidebarToggleEl) return;
+    const r = sidebarToggleEl.getBoundingClientRect();
+    hintRight = window.innerWidth - r.right + r.width / 2;
+    hintTop = r.bottom + 8;
+  };
+
+  if (isTauri() && localStorage.getItem(ONBOARDED_KEY) === null) {
+    setTimeout(() => {
+      showSidebarHint = true;
+    }, 3000);
+  }
 
   $effect(() => {
-    localStorage.setItem('mermaid-sidebar-open', String(isSidebarOpen));
+    if (!showSidebarHint || !sidebarToggleEl) return;
+    updateHintPos();
+    window.addEventListener('resize', updateHintPos);
+    return () => window.removeEventListener('resize', updateHintPos);
+  });
+
+  $effect(() => {
+    localStorage.setItem(SIDEBAR_KEY, String(isSidebarOpen));
+  });
+
+  $effect(() => {
+    if (isSidebarOpen && showSidebarHint) {
+      showSidebarHint = false;
+      localStorage.setItem(ONBOARDED_KEY, '1');
+    }
   });
 
   let editorPane: Resizable.Pane | undefined;
@@ -126,9 +160,25 @@
   {/snippet}
 
   <Navbar mobileToggle={isMobile ? mobileToggle : undefined}>
-    <Toggle bind:pressed={isSidebarOpen} size="sm" title="File Explorer" aria-label="File Explorer">
-      <FolderIcon />
-    </Toggle>
+    <div class="relative" bind:this={sidebarToggleEl}>
+      <Toggle
+        bind:pressed={isSidebarOpen}
+        size="sm"
+        title="File Explorer"
+        aria-label="File Explorer">
+        <FolderIcon />
+      </Toggle>
+      {#if showSidebarHint}
+        <div
+          class="fixed z-50 translate-x-1/2 whitespace-nowrap rounded-md bg-primary px-3 py-1.5 text-xs text-primary-foreground shadow-md transition-opacity duration-500"
+          style="top:{hintTop}px;right:{hintRight}px"
+          in:fade={{ duration: 500 }}
+          out:fade={{ duration: 300 }}>
+          Open File Explorer
+          <div class="absolute -top-1 right-1/2 h-2 w-2 translate-x-1/2 rotate-45 bg-primary"></div>
+        </div>
+      {/if}
+    </div>
     <Toggle bind:pressed={isHistoryOpen} size="sm" title="History" aria-label="History">
       <HistoryIcon />
     </Toggle>

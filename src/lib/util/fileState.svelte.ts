@@ -88,12 +88,15 @@ export const IGNORED_DIRS = new Set([
   '.yarn'
 ]);
 
+const IGNORED_FILES = new Set(['.DS_Store', 'Thumbs.db', 'desktop.ini']);
+
 const filterEntries = <T extends { name: string; isDir?: boolean; isDirectory?: boolean }>(
   entries: T[]
 ): T[] =>
   entries.filter((e) => {
     const isDir = 'isDir' in e ? e.isDir : e.isDirectory;
-    return !(isDir && IGNORED_DIRS.has(e.name));
+    if (isDir) return !IGNORED_DIRS.has(e.name);
+    return !IGNORED_FILES.has(e.name);
   });
 
 let tabs = $state<Tab[]>([]);
