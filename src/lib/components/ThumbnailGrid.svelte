@@ -39,6 +39,30 @@
 
   let flatFiles = $state<string[]>([]);
 
+  // Tracks files whose thumbnails are stale due to config change
+  const staleList = new Set<string>();
+
+  // When config changes: invalidate + re-render current file immediately,
+  // mark all others as stale (re-rendered on next click)
+  let lastMermaid = validatedState.current.mermaid;
+  $effect(() => {
+    const current = validatedState.current.mermaid;
+    if (current === lastMermaid) return;
+    lastMermaid = current;
+    const activePath = fileState.tabs.find((t) => t.id === fileState.activeTabId)?.path;
+    for (const p of flatFiles) {
+      if (p === activePath) {
+        thumbnailCache.invalidate(p);
+        if (!queue.includes(p)) {
+          queue.push(p);
+          void processQueue();
+        }
+      } else {
+        staleList.add(p);
+      }
+    }
+  });
+
   $effect(() => {
     const root = fileState.rootPath;
     // Re-scan when tree changes (new file/folder created, file deleted, etc.)
@@ -182,7 +206,17 @@
       role="button"
       tabindex="0"
       title={path}
-      onclick={() => fileState.openFile(path)}
+      onclick={() => {
+        if (staleList.has(path)) {
+          staleList.delete(path);
+          thumbnailCache.invalidate(path);
+          if (!queue.includes(path)) {
+            queue.push(path);
+            void processQueue();
+          }
+        }
+        fileState.openFile(path);
+      }}
       onkeydown={(e) => e.key === 'Enter' && fileState.openFile(path)}>
       <div class="aspect-video w-full overflow-hidden rounded bg-muted/30">
         {#if entry?.svg}

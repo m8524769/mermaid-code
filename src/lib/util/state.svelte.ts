@@ -17,9 +17,7 @@ import { errorDebug, formatJSON, getUTMSource, MCBaseURL } from './util';
 export const defaultState: State = {
   code: '',
   grid: true,
-  mermaid: formatJSON({
-    theme: 'redux'
-  }),
+  mermaid: formatJSON({}),
   panZoom: true,
   rough: false,
   updateDiagram: true

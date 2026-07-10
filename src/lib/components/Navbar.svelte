@@ -11,7 +11,6 @@
   import MainMenu from '$/components/MainMenu.svelte';
   import { Button } from '$/components/ui/button';
   import { Separator } from '$/components/ui/separator';
-  import { resolve } from '$app/paths';
   import { dismissPromotion, getActivePromotion } from '$lib/util/promos/promo.svelte';
   import { untrack, type ComponentProps, type Snippet } from 'svelte';
   import MermaidIcon from '~icons/custom/mermaid';
@@ -84,12 +83,12 @@
   <div class="flex flex-1 items-center gap-2">
     <MainMenu />
     <MermaidIcon class="size-6" />
-    <a href={resolve('/', {})} class="whitespace-nowrap text-accent">
+    <span class="whitespace-nowrap text-accent">
       {#if !mobileToggle}
         Mermaid
       {/if}
       Code
-    </a>
+    </span>
   </div>
   <div
     id="menu"

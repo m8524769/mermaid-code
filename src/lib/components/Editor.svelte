@@ -60,6 +60,7 @@
     'redux',
     'redux-dark'
   ];
+  const LOOKS = ['classic', 'neo'];
   const LAYOUTS = ['dagre', 'elk', 'tidy-tree'];
 
   const parsedConfig = $derived.by(() => {
@@ -98,7 +99,7 @@
   };
 
   const pinConfigToCode = () => {
-    const formFields = ['theme', 'layout', 'fontFamily'] as const;
+    const formFields = ['theme', 'look', 'layout', 'fontFamily'] as const;
     const code = validatedState.current.code;
 
     // Operate on raw YAML lines to preserve nested objects and other fields
@@ -159,7 +160,7 @@
             class="flex-1 rounded border bg-background px-1.5 py-0.5 text-xs"
             value={String(parsedConfig.theme ?? '')}
             onchange={(e) => setConfigField('theme', e.currentTarget.value)}>
-            <option value="">— default —</option>
+            <option value="">— default (default) —</option>
             {#each THEMES as t}
               <option value={t}>{t}</option>
             {/each}
@@ -168,6 +169,24 @@
             <span
               class="shrink-0 text-yellow-500"
               title="Overridden in code: {frontmatterConfig.theme}">⚠</span>
+          {/if}
+        </div>
+        <div class="flex items-center gap-2">
+          <label class="w-20 shrink-0 text-muted-foreground" for="cfg-look">Look</label>
+          <select
+            id="cfg-look"
+            class="flex-1 rounded border bg-background px-1.5 py-0.5 text-xs"
+            value={String(parsedConfig.look ?? '')}
+            onchange={(e) => setConfigField('look', e.currentTarget.value)}>
+            <option value="">— default (classic) —</option>
+            {#each LOOKS as l}
+              <option value={l}>{l}</option>
+            {/each}
+          </select>
+          {#if isOverridden('look')}
+            <span
+              class="shrink-0 text-yellow-500"
+              title="Overridden in code: {frontmatterConfig.look}">⚠</span>
           {/if}
         </div>
         <div class="flex items-center gap-2">
