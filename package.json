@@ -1,6 +1,6 @@
 {
   "name": "mermaid-code",
-  "version": "0.1.13",
+  "version": "0.2.0",
   "type": "module",
   "license": "MIT",
   "scripts": {
