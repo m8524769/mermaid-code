@@ -64,6 +64,16 @@ pnpm tauri:build
 
 ---
 
+## Troubleshooting
+
+### App freezes or crashes
+
+If the app becomes unresponsive or crashes, it may be caused by a diagram or config that causes mermaid to hang during rendering.
+
+**Workaround:** Move the suspected `.mmd` file(s) to a different folder outside the opened directory, then relaunch the app. Once the app is responsive again, move the files back and identify the problematic diagram or config.
+
+---
+
 ## Original Project
 
 Fork of [mermaid-live-editor](https://github.com/mermaid-js/mermaid-live-editor).
