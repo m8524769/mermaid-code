@@ -4,7 +4,7 @@
   import { urls, validatedState } from '$/util/state.svelte';
   import { logMermaidChartClick } from '$/util/stats';
   import { fileState } from '$/util/fileState.svelte';
-  import { saveFileAs } from '$/util/fileSystem';
+  import { saveFileAs, isTauri } from '$/util/fileSystem';
   import { AIPromptViewZoneManager } from '$lib/util/AIPromptViewZoneManager';
   import { initEditor } from '$lib/util/monacoExtra';
   import { errorDebug } from '$lib/util/util';
@@ -97,6 +97,12 @@
         } catch {
           /* already defined */
         }
+        // H → ^ (first non-blank), L → $ (end of line)
+        for (const m of ['normal', 'visual', 'operator']) {
+          Vim.map('H', '^', m);
+          Vim.map('L', '$', m);
+        }
+        Vim.map('jk', '<Esc>', 'insert');
       }
       // Register :w and :write to trigger save (VimMode.Vim not in type defs)
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -113,6 +119,23 @@
           void saveFileAs(validatedState.current.code, defaultName).then((handle) => {
             if (handle) void fileState.openFile(handle.path);
           });
+        }
+      });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (VimMode as any).Vim?.defineEx('quit', 'q', () => {
+        if (fileState.activeTabId) {
+          void fileState.closeTab(fileState.activeTabId);
+        } else if (isTauri()) {
+          void import('@tauri-apps/api/window').then(({ getCurrentWindow }) =>
+            getCurrentWindow().close()
+          );
+        }
+      });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (VimMode as any).Vim?.defineEx('wq', 'wq', async () => {
+        if (fileState.activeTabId) {
+          await fileState.saveTab(fileState.activeTabId);
+          void fileState.closeTab(fileState.activeTabId);
         }
       });
     } else if (!enabled && vimAdapter) {
