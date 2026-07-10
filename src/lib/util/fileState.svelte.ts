@@ -260,6 +260,10 @@ export const fileState = {
     await openFolderPath(path);
   },
 
+  async openFolderByPath(path: string): Promise<void> {
+    await openFolderPath(path);
+  },
+
   async restoreLastFolder(): Promise<void> {
     const folderPath = localStorage.getItem(LAST_FOLDER_KEY);
     if (!folderPath) return;

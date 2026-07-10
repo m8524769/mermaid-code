@@ -23,11 +23,11 @@
   import VersionSecurityToolbar from '$/components/VersionSecurityToolbar.svelte';
   import View from '$/components/View.svelte';
   import type { EditorMode, Tab } from '$/types';
-  import { shouldShowEditorChooser } from '$/util/migration/domainMigration';
-  import { PanZoomState } from '$/util/panZoom';
   import { fileState } from '$/util/fileState.svelte';
   import { isTauri, saveFileAs } from '$/util/fileSystem';
-  import { validatedState, updateCodeStore, urls } from '$/util/state.svelte';
+  import { shouldShowEditorChooser } from '$/util/migration/domainMigration';
+  import { PanZoomState } from '$/util/panZoom';
+  import { updateCodeStore, urls, validatedState } from '$/util/state.svelte';
   import { logEvent, logMermaidChartClick } from '$/util/stats';
   import { initHandler } from '$/util/util';
   import { onMount } from 'svelte';
@@ -75,12 +75,40 @@
   let isViewMode = $state(true);
   let showEditorChooser = $state(false);
 
+  let isDraggingOver = $state(false);
+
   onMount(async () => {
     showEditorChooser = shouldShowEditorChooser();
     await initHandler();
     window.addEventListener('appinstalled', () => {
       logEvent('pwaInstalled', { isMobile });
     });
+
+    if (isTauri()) {
+      const { getCurrentWebview } = await import('@tauri-apps/api/webview');
+      const { stat } = await import('@tauri-apps/plugin-fs');
+      getCurrentWebview().onDragDropEvent(async (event) => {
+        if (event.payload.type === 'over') {
+          isDraggingOver = true;
+        } else if (event.payload.type === 'drop') {
+          isDraggingOver = false;
+          for (const path of event.payload.paths) {
+            try {
+              const info = await stat(path);
+              if (info.isDirectory) {
+                await fileState.openFolderByPath(path);
+              } else {
+                await fileState.openFile(path);
+              }
+            } catch {
+              // ignore unreadable paths
+            }
+          }
+        } else {
+          isDraggingOver = false;
+        }
+      });
+    }
   });
 
   // Record the Timeline for the whole session, not just while the panel is open.
@@ -146,7 +174,17 @@
   });
 </script>
 
-<div class="flex h-full flex-col overflow-hidden">
+<div class="relative flex h-full flex-col overflow-hidden">
+  {#if isDraggingOver}
+    <div
+      class="absolute inset-0 z-50 flex items-center justify-center bg-primary/10 backdrop-blur-[1px]"
+      style="pointer-events:none">
+      <div
+        class="rounded-xl border-2 border-dashed border-muted-foreground bg-background/80 px-8 py-6 text-sm font-medium text-muted-foreground shadow-lg">
+        Drop to open
+      </div>
+    </div>
+  {/if}
   {#snippet mobileToggle()}
     <div class="flex items-center gap-2">
       Edit <Switch
