@@ -2,6 +2,17 @@
 
 All notable changes to Mermaid Code are documented here.
 
+## [v0.2.2] - 2026-07-10
+
+### Added
+
+- **`look` config field**: Config tab now includes a Look selector (`classic` / `neo`)
+- **Thumbnail stale tracking**: changing the config immediately re-renders the current file's thumbnail; other files' thumbnails are refreshed on next click
+
+### Changed
+
+- Default mermaid config changed from `{"theme": "default"}` to `{}` (same behavior, cleaner)
+
 ## [v0.2.1] - 2026-07-10
 
 ### Added
