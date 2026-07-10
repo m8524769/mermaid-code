@@ -18,7 +18,7 @@ Download the latest installer for macOS or Windows from the [Releases](https://g
 
 ### File Manager Sidebar
 
-- Open any local folder and browse its file tree
+- Open any local folder and browse its file tree or thumbnail grid view (SVG previews of all diagrams in the folder and subdirectories)
 - Multi-tab editing — open multiple diagrams simultaneously
 - Tab and active file restored per folder on next launch
 - Auto-save with toggle (default on, 2s debounce)

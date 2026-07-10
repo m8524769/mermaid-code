@@ -2,6 +2,17 @@
 
 All notable changes to Mermaid Code are documented here.
 
+## [v0.2.1] - 2026-07-10
+
+### Added
+
+- **Sidebar search bar**: filter files by filename in both tree and grid views; search auto-clears when switching folders
+- **Dirty indicator in thumbnail view**: unsaved files now show the orange dot in the thumbnail grid, matching the tree view
+
+### Fixed
+
+- **Thumbnail rename sorting**: renaming a file no longer incorrectly pins it to the top of the grid
+
 ## [v0.2.0] - 2026-07-10
 
 ### Added
