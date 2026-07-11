@@ -307,23 +307,6 @@
       }
     });
 
-    editor.addAction({
-      id: 'edit-undo',
-      label: 'Undo',
-      contextMenuGroupId: '1_modification',
-      contextMenuOrder: 0,
-      keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyZ],
-      run: () => editor?.trigger('contextmenu', 'undo', null)
-    });
-    editor.addAction({
-      id: 'edit-redo',
-      label: 'Redo',
-      contextMenuGroupId: '1_modification',
-      contextMenuOrder: 1,
-      keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyMod.Shift | monaco.KeyCode.KeyZ],
-      run: () => editor?.trigger('contextmenu', 'redo', null)
-    });
-
     editor.onMouseDown((e) => {
       const isGutter = e.target.type === monaco.editor.MouseTargetType.GUTTER_GLYPH_MARGIN;
       if (isGutter && e.target.position?.lineNumber === lastMouseLine && lastMouseLine > 0) {
