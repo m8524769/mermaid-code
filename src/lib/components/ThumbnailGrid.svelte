@@ -1,6 +1,6 @@
 <script lang="ts">
   import { fileState, IGNORED_DIRS } from '$/util/fileState.svelte';
-  import { readTextFile, readDir } from '$/util/fileSystem';
+  import { readTextFile, readDir, confirmDialog } from '$/util/fileSystem';
   import { render } from '$/util/mermaid';
   import { thumbnailCache } from '$/util/thumbnailState.svelte';
   import { validatedState } from '$/util/state.svelte';
@@ -137,15 +137,20 @@
 
   const commitRename = async (path: string) => {
     let newName = renameValue.trim();
-    if (!newName) {
-      renamingPath = null;
-      return;
-    }
+    renamingPath = null;
+    if (!newName) return;
     const name = basename(path);
     const origExt = name.includes('.') ? name.slice(name.lastIndexOf('.')) : '';
     if (origExt && !newName.includes('.')) newName = newName + origExt;
-    if (newName !== name) await fileState.renameNode(path, newName);
-    renamingPath = null;
+    if (newName !== name) {
+      if (!/\.(mmd|mermaid)$/i.test(newName)) {
+        const ok = await confirmDialog(
+          `"${newName}" is not a supported file type (.mmd or .mermaid). Rename anyway?`
+        );
+        if (!ok) return;
+      }
+      await fileState.renameNode(path, newName);
+    }
   };
 
   const focus = (el: HTMLElement) => {

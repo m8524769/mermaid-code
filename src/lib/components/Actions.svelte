@@ -9,6 +9,8 @@
   import * as ToggleGroup from '$/components/ui/toggle-group';
   import { TID } from '$/constants';
   import { getDomain } from '$/util/util';
+  import { fileState } from '$/util/fileState.svelte';
+  import { notify } from '$/util/notify';
   import { browser } from '$app/environment';
   import { waitForRender } from '$lib/util/autoSync';
   import { inputState, updateCodeStore, urls, validatedState } from '$lib/util/state.svelte';
@@ -25,8 +27,14 @@
 
   type Exporter = (context: CanvasRenderingContext2D, image: HTMLImageElement) => () => void;
 
-  const getFileName = (extension: string) =>
-    `mermaid-diagram-${dayjs().format('YYYY-MM-DD-HHmmss')}.${extension}`;
+  const getFileName = (extension: string) => {
+    const activeTab = fileState.tabs.find((t) => t.id === fileState.activeTabId);
+    if (activeTab) {
+      const stem = activeTab.name.replace(/\.(mmd|mermaid)$/i, '');
+      return `${stem}.${extension}`;
+    }
+    return `mermaid-diagram-${dayjs().format('YYYY-MM-DD-HHmmss')}.${extension}`;
+  };
 
   /**
    * Fix text clipping in exported SVG for hand-drawn (rough) mode.
@@ -210,8 +218,19 @@ ${svgString}`);
     logEvent('copyClipboard');
   };
 
+  const notifyDownload = async (filename: string) => {
+    if (isTauri()) {
+      const { downloadDir } = await import('@tauri-apps/api/path');
+      const dir = await downloadDir();
+      notify(`Downloaded to ${dir}`);
+    } else {
+      notify(`Downloaded: ${filename}`);
+    }
+  };
+
   const onDownloadPNG = async (event: Event) => {
     await exportImage(event, downloadImage);
+    void notifyDownload(getFileName('png'));
     logEvent('download', {
       type: 'png'
     });
@@ -219,6 +238,7 @@ ${svgString}`);
 
   const onDownloadSVG = () => {
     simulateDownload(getFileName('svg'), `data:image/svg+xml;base64,${getBase64SVG()}`);
+    void notifyDownload(getFileName('svg'));
     logEvent('download', {
       type: 'svg'
     });

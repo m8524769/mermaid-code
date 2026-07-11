@@ -1,5 +1,6 @@
 <script lang="ts">
   import { fileState, type FileTreeNode } from '$/util/fileState.svelte';
+  import { confirmDialog } from '$/util/fileSystem';
   import FileTree from '$/components/FileTree.svelte';
   import FolderIcon from '~icons/material-symbols/folder-rounded';
   import FolderOpenIcon from '~icons/material-symbols/folder-open-rounded';
@@ -39,11 +40,8 @@
 
   const commitRename = async (node: FileTreeNode) => {
     let newName = renameValue.trim();
-    if (!newName) {
-      renamingPath = null;
-      return;
-    }
-    // For files, preserve the original extension if the user didn't type one
+    renamingPath = null;
+    if (!newName) return;
     if (!node.isDir) {
       const origExt = node.name.includes('.') ? node.name.slice(node.name.lastIndexOf('.')) : '';
       if (origExt && !newName.includes('.')) {
@@ -51,9 +49,14 @@
       }
     }
     if (newName !== node.name) {
+      if (!node.isDir && !/\.(mmd|mermaid)$/i.test(newName)) {
+        const ok = await confirmDialog(
+          `"${newName}" is not a supported file type (.mmd or .mermaid). Rename anyway?`
+        );
+        if (!ok) return;
+      }
       await fileState.renameNode(node.path, newName);
     }
-    renamingPath = null;
   };
 
   const isActive = (path: string) =>
