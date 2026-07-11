@@ -196,7 +196,7 @@
             class="flex-1 rounded border bg-background px-1.5 py-0.5 text-xs"
             value={String(parsedConfig.layout ?? '')}
             onchange={(e) => setConfigField('layout', e.currentTarget.value)}>
-            <option value="">— default (dagre) —</option>
+            <option value="">— auto —</option>
             {#each LAYOUTS as l}
               <option value={l}>{l}</option>
             {/each}

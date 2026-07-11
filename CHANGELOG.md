@@ -2,6 +2,19 @@
 
 All notable changes to Mermaid Code are documented here.
 
+## [v0.2.4] - 2026-07-11
+
+### Added
+
+- **Vim mode**: `:q` closes the current tab (exits the app when no tabs are open); `:wq` saves and closes; `H`/`L` mapped to `^`/`$`; `jk` mapped to `<Esc>` in insert mode
+- **Export filename**: PNG and SVG exports now use the current file's name instead of a timestamp
+- **Download notification**: a toast shows the download folder path after exporting PNG or SVG
+- **Rename warning**: renaming a file to an unsupported extension now prompts for confirmation
+
+### Fixed
+
+- **`:q` permission**: added `core:window:allow-close` capability so `:q` can close the window
+
 ## [v0.2.3] - 2026-07-10
 
 ### Added

@@ -37,7 +37,15 @@
     ],
     "macOS": {
       "infoPlist": "./Info.plist"
-    }
+    },
+    "fileAssociations": [
+      {
+        "ext": ["mmd", "mermaid"],
+        "name": "Mermaid Diagram",
+        "description": "Mermaid Diagram File",
+        "role": "Editor"
+      }
+    ]
   },
   "plugins": {
     "shell": {
