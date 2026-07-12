@@ -17,6 +17,7 @@
   import CloseIcon from '~icons/material-symbols/close-rounded';
   import GithubIcon from '~icons/mdi/github';
   import DropdownNavMenu from './DropdownNavMenu.svelte';
+  import { version as appVersion } from '../../../package.json';
 
   interface Props {
     mobileToggle?: Snippet;
@@ -83,12 +84,15 @@
   <div class="flex flex-1 items-center gap-2">
     <MainMenu />
     <MermaidIcon class="size-6" />
-    <span class="whitespace-nowrap text-accent">
-      {#if !mobileToggle}
-        Mermaid
-      {/if}
-      Code
-    </span>
+    <div class="flex items-baseline gap-1.5">
+      <span class="whitespace-nowrap text-accent">
+        {#if !mobileToggle}
+          Mermaid
+        {/if}
+        Code
+      </span>
+      <span class="text-xs text-muted-foreground">v{appVersion}</span>
+    </div>
   </div>
   <div
     id="menu"
