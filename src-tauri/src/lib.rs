@@ -1,3 +1,5 @@
+use tauri::Emitter;
+
 #[tauri::command]
 fn copy_image_to_clipboard(png_base64: String) -> Result<(), String> {
     use arboard::{Clipboard, ImageData};
@@ -20,9 +22,43 @@ fn copy_image_to_clipboard(png_base64: String) -> Result<(), String> {
         .map_err(|e| e.to_string())
 }
 
+fn emit_open_files(app: &tauri::AppHandle, paths: Vec<std::path::PathBuf>) {
+    let paths: Vec<String> = paths
+        .into_iter()
+        .filter(|p| {
+            p.extension()
+                .map(|ext| {
+                    let ext = ext.to_string_lossy().to_lowercase();
+                    ext == "mmd" || ext == "mermaid"
+                })
+                .unwrap_or(false)
+        })
+        .filter_map(|p| p.to_str().map(|s| s.to_string()))
+        .collect();
+
+    if !paths.is_empty() {
+        let _ = app.emit("open-files", paths);
+    }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_single_instance::init(|app, args, _cwd| {
+            use tauri::Manager;
+            // Focus the main window when a second instance is launched
+            if let Some(window) = app.get_webview_window("main") {
+                let _ = window.set_focus();
+            }
+            // Forward file paths from the new instance's args (Windows)
+            let paths: Vec<std::path::PathBuf> = args
+                .into_iter()
+                .skip(1) // skip the executable path
+                .map(std::path::PathBuf::from)
+                .filter(|p| p.exists())
+                .collect();
+            emit_open_files(app, paths);
+        }))
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_shell::init())

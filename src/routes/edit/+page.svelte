@@ -87,6 +87,15 @@
     if (isTauri()) {
       const { getCurrentWebview } = await import('@tauri-apps/api/webview');
       const { stat } = await import('@tauri-apps/plugin-fs');
+
+      // Listen for files opened via "Open with" or second instance (single-instance plugin)
+      const { listen } = await import('@tauri-apps/api/event');
+      listen<string[]>('open-files', async (event) => {
+        for (const path of event.payload) {
+          await fileState.openFile(path);
+        }
+      });
+
       getCurrentWebview().onDragDropEvent(async (event) => {
         if (event.payload.type === 'over') {
           isDraggingOver = true;
