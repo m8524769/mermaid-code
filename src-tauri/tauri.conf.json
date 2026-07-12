@@ -50,6 +50,15 @@
   "plugins": {
     "shell": {
       "open": true
+    },
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IERGMzdDMzE3Rjk5RTFEMEMKUldRTUhaNzVGOE0zMzgxZEhGYWNZOWplZGRkT1doUU1XK2xSWWtub2ZaT2dub0Ezd0oxc0o5TWkK",
+      "endpoints": [
+        "https://github.com/m8524769/mermaid-code/releases/latest/download/latest.json"
+      ],
+      "windows": {
+        "installMode": "passive"
+      }
     }
   }
 }

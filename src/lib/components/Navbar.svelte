@@ -18,6 +18,8 @@
   import GithubIcon from '~icons/mdi/github';
   import DropdownNavMenu from './DropdownNavMenu.svelte';
   import { version as appVersion } from '../../../package.json';
+  import { updateState } from '$/util/updateState.svelte';
+  import { notify } from '$/util/notify';
 
   interface Props {
     mobileToggle?: Snippet;
@@ -92,6 +94,14 @@
         Code
       </span>
       <span class="text-xs text-muted-foreground">v{appVersion}</span>
+      {#if updateState.pendingVersion}
+        <button
+          class="text-xs text-accent hover:underline"
+          title="v{updateState.pendingVersion} is available. Click to install."
+          onclick={() => updateState.install(() => notify('Downloading update...'))}>
+          ↑ v{updateState.pendingVersion}
+        </button>
+      {/if}
     </div>
   </div>
   <div

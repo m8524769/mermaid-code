@@ -3,6 +3,8 @@
   import { loadingState } from '$/util/loading.svelte';
   import { fileState } from '$/util/fileState.svelte';
   import { isTauri } from '$/util/fileSystem';
+  import { notify } from '$/util/notify';
+  import { updateState } from '$/util/updateState.svelte';
   import { toggleDarkTheme } from '$/util/state.svelte';
   import { initHandler } from '$/util/util';
   import { base } from '$app/paths';
@@ -63,6 +65,29 @@
             fileState.stopWatching();
           }
         });
+      })();
+
+      // Check for updates in background
+      void (async () => {
+        try {
+          const { check } = await import('@tauri-apps/plugin-updater');
+          const update = await check();
+          if (update) {
+            updateState.set(update.version, update);
+            const { confirm } = await import('@tauri-apps/plugin-dialog');
+            const ok = await confirm(
+              `Mermaid Code ${update.version} is available.\n\nInstall now?`,
+              { title: 'Update Available' }
+            );
+            if (ok) {
+              notify('Downloading update...');
+              await update.downloadAndInstall();
+              updateState.clear();
+            }
+          }
+        } catch {
+          // ignore update errors silently
+        }
       })();
     }
   });
