@@ -8,6 +8,16 @@ A local-first Mermaid diagram editor built on [Mermaid Live Editor](https://gith
 
 Download the latest installer for macOS or Windows from the [Releases](https://github.com/m8524769/mermaid-code/releases) page.
 
+### Install via Homebrew (macOS)
+
+```sh
+brew tap m8524769/tap
+brew install --cask mermaid-code
+```
+
+> Since the app is not signed with an Apple Developer certificate, macOS may block it on first launch.
+> Go to **System Settings → Privacy & Security** and click **Open Anyway** next to the Mermaid Code entry.
+
 ## Enhancements over Mermaid Live Editor
 
 ### Desktop App (Tauri)

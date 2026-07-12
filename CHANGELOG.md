@@ -2,6 +2,29 @@
 
 All notable changes to Mermaid Code are documented here.
 
+## [v0.3.3] - 2026-07-13
+
+### Added
+
+- **Homebrew tap**: available via `brew tap m8524769/tap && brew install --cask mermaid-code`
+
+### Fixed
+
+- **macOS relaunch after update**: app now correctly relaunches after installing an update
+
+## [v0.3.2] - 2026-07-13
+
+### Changed
+
+- **Update flow**: download and install are now separate steps; "Install & Restart" button appears after download completes
+
+## [v0.3.1] - 2026-07-13
+
+### Added
+
+- **Update progress**: download progress shown inline next to the version badge
+- **✓ latest badge**: shown next to version number when the app is confirmed up to date
+
 ## [v0.3.0] - 2026-07-12
 
 ### Added
