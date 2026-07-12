@@ -2,6 +2,20 @@
 
 All notable changes to Mermaid Code are documented here.
 
+## [v0.3.0] - 2026-07-12
+
+### Added
+
+- **Auto-update**: app checks for updates on launch and prompts the user to install; a version badge appears next to the title when an update is available, clicking it triggers the install
+
+## [v0.2.5] - 2026-07-12
+
+### Added
+
+- **Version info**: app version is now displayed next to the title in the navbar
+- **Single instance**: launching a second instance focuses the existing window instead of opening a new one
+- **File associations**: `.mmd` and `.mermaid` files are now associated with Mermaid Code on Windows
+
 ## [v0.2.4] - 2026-07-11
 
 ### Added
