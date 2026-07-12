@@ -1,6 +1,6 @@
 [package]
 name = "mermaid-code"
-version = "0.3.1"
+version = "0.3.2"
 description = "Mermaid Code"
 authors = ["m8524769"]
 edition = "2021"
