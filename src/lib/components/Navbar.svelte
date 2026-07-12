@@ -101,6 +101,8 @@
           onclick={() => updateState.install(() => notify('Downloading update...'))}>
           ↑ v{updateState.pendingVersion}
         </button>
+      {:else if updateState.isLatest}
+        <span class="text-xs text-muted-foreground/60">✓ latest</span>
       {/if}
     </div>
   </div>

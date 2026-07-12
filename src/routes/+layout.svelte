@@ -84,6 +84,8 @@
               await update.downloadAndInstall();
               updateState.clear();
             }
+          } else {
+            updateState.setLatest();
           }
         } catch {
           // ignore update errors silently
