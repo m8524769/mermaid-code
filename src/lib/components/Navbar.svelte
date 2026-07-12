@@ -95,12 +95,25 @@
       </span>
       <span class="text-xs text-muted-foreground">v{appVersion}</span>
       {#if updateState.pendingVersion}
-        <button
-          class="text-xs text-accent hover:underline"
-          title="v{updateState.pendingVersion} is available. Click to install."
-          onclick={() => updateState.install(() => notify('Downloading update...'))}>
-          ↑ v{updateState.pendingVersion}
-        </button>
+        {#if updateState.downloadProgress === null}
+          <button
+            class="text-xs text-accent hover:underline"
+            title="v{updateState.pendingVersion} is available. Click to download."
+            onclick={() => void updateState.download()}>
+            ↑ v{updateState.pendingVersion}
+          </button>
+        {:else if updateState.downloadProgress === 101}
+          <button
+            class="text-xs text-accent hover:underline"
+            title="Ready to install v{updateState.pendingVersion}"
+            onclick={() => void updateState.installDownloaded()}>
+            ↑ v{updateState.pendingVersion} — Install & Restart
+          </button>
+        {:else}
+          <span class="text-xs text-muted-foreground">
+            ↑ v{updateState.pendingVersion} ({updateState.downloadProgress}%)
+          </span>
+        {/if}
       {:else if updateState.isLatest}
         <span class="text-xs text-muted-foreground/60">✓ latest</span>
       {/if}

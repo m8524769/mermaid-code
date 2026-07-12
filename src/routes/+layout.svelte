@@ -76,13 +76,11 @@
             updateState.set(update.version, update);
             const { confirm } = await import('@tauri-apps/plugin-dialog');
             const ok = await confirm(
-              `Mermaid Code ${update.version} is available.\n\nInstall now?`,
+              `Mermaid Code ${update.version} is available.\n\nDownload now?`,
               { title: 'Update Available' }
             );
             if (ok) {
-              notify('Downloading update...');
-              await update.downloadAndInstall();
-              updateState.clear();
+              void updateState.download();
             }
           } else {
             updateState.setLatest();
