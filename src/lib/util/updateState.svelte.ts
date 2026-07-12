@@ -53,6 +53,12 @@ export const updateState = {
   async installDownloaded(): Promise<void> {
     if (!pendingUpdate || downloadProgress !== 101) return;
     await pendingUpdate.install();
+    // On macOS, install() doesn't relaunch automatically — do it manually
+    const { platform } = await import('@tauri-apps/plugin-os');
+    if ((await platform()) === 'macos') {
+      const { relaunch } = await import('@tauri-apps/plugin-process');
+      await relaunch();
+    }
     updateState.clear();
   }
 };
