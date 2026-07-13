@@ -101,17 +101,18 @@ jobs:
       - name: Update Homebrew tap
         env:
           TAP_TOKEN: ${{ secrets.TAP_GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           VERSION=${GITHUB_REF_NAME#v}
           ARM_URL="https://github.com/m8524769/mermaid-code/releases/download/v${VERSION}/Mermaid.Code_${VERSION}_aarch64.dmg"
           X64_URL="https://github.com/m8524769/mermaid-code/releases/download/v${VERSION}/Mermaid.Code_${VERSION}_x64.dmg"
-          ARM_SHA=$(curl -sL "$ARM_URL" | shasum -a 256 | cut -d' ' -f1)
-          X64_SHA=$(curl -sL "$X64_URL" | shasum -a 256 | cut -d' ' -f1)
+          ARM_SHA=$(curl -sL -H "Authorization: Bearer $GITHUB_TOKEN" "$ARM_URL" | shasum -a 256 | cut -d' ' -f1)
+          X64_SHA=$(curl -sL -H "Authorization: Bearer $GITHUB_TOKEN" "$X64_URL" | shasum -a 256 | cut -d' ' -f1)
           git clone https://x-access-token:${TAP_TOKEN}@github.com/m8524769/homebrew-tap.git
           cd homebrew-tap
           sed -i "s/version \".*\"/version \"${VERSION}\"/" Casks/mermaid-code.rb
-          sed -i "s/arm:   \".*\"/arm:   \"${ARM_SHA}\"/" Casks/mermaid-code.rb
-          sed -i "s/intel: \".*\"/intel: \"${X64_SHA}\"/" Casks/mermaid-code.rb
+          sed -i "s/arm:   \"[a-f0-9]*\"/arm:   \"${ARM_SHA}\"/" Casks/mermaid-code.rb
+          sed -i "s/intel: \"[a-f0-9]*\"/intel: \"${X64_SHA}\"/" Casks/mermaid-code.rb
           git config user.email "action@github.com"
           git config user.name "GitHub Action"
           git add Casks/mermaid-code.rb
