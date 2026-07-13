@@ -116,7 +116,7 @@
             Open a folder to start editing your diagrams.
           </p>
           <button
-            class="flex items-center gap-2 rounded-md bg-primary px-3 py-1.5 text-xs text-primary-foreground hover:bg-primary/90"
+            class="flex items-center gap-2 rounded-md bg-primary px-3 py-1.5 text-xs text-primary-foreground transition-colors hover:bg-primary/70"
             onclick={() => fileState.openFolder()}>
             <FolderOpenIcon class="size-4" />
             Open Folder

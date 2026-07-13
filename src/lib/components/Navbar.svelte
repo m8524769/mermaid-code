@@ -32,15 +32,11 @@
   type Links = ComponentProps<typeof DropdownNavMenu>['links'];
 
   const githubLinks: Links = [
-    { title: 'Mermaid JS', href: 'https://github.com/mermaid-js/mermaid' },
     {
       title: 'Mermaid Code',
       href: 'https://github.com/m8524769/mermaid-code'
     },
-    {
-      title: 'Mermaid CLI',
-      href: 'https://github.com/mermaid-js/mermaid-cli'
-    }
+    { title: 'Mermaid JS', href: 'https://github.com/mermaid-js/mermaid' }
   ];
 
   let activePromotion = $state(untrack(() => (hidePromotion ? undefined : getActivePromotion())));

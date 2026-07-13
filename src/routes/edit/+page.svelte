@@ -207,7 +207,7 @@
   {/snippet}
 
   <Navbar mobileToggle={isMobile ? mobileToggle : undefined}>
-    <div class="relative" bind:this={sidebarToggleEl}>
+    <div class="relative inline-flex items-center" bind:this={sidebarToggleEl}>
       <Toggle
         bind:pressed={isSidebarOpen}
         size="sm"

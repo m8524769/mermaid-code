@@ -60,11 +60,11 @@
     onclick={toggleCardOpen}
     onkeypress={toggleCardOpen}>
     {#if icon || title}
-      <span role="menubar" tabindex="0" class="flex w-fit items-center gap-3">
+      <span role="menubar" tabindex="0" class="flex min-w-0 flex-1 items-center gap-3">
         {#if icon}
-          <icon.component class={icon.class} />
+          <icon.component class={[icon.class, 'shrink-0']} />
         {/if}
-        {title}
+        <span class="truncate">{title}</span>
       </span>
     {/if}
     {#if isOpen && tabs && tabs.length > 0}
