@@ -226,9 +226,11 @@
         </div>
       {/if}
     </div>
-    <Toggle bind:pressed={isHistoryOpen} size="sm" title="History" aria-label="History">
-      <HistoryIcon />
-    </Toggle>
+    {#if !isTauri()}
+      <Toggle bind:pressed={isHistoryOpen} size="sm" title="History" aria-label="History">
+        <HistoryIcon />
+      </Toggle>
+    {/if}
     <Share />
     {#if isTauri()}
       {#if fileState.activeTabId}
