@@ -6,6 +6,17 @@ A local-first Mermaid diagram editor built on [Mermaid Live Editor](https://gith
 
 ![Mermaid Code showcase](showcase.gif)
 
+## Built for AI-First Workflows
+
+Mermaid Code works seamlessly with AI coding agents (Claude Code, Codex, etc.). Because diagrams live as plain `.mmd` files on your local filesystem, an agent can read your codebase and write diagrams directly — no copy-pasting, no browser automation required.
+
+```
+# Example: ask your AI agent to generate a diagram from code
+"Generate an architecture diagram for this module and save it to docs/architecture.mmd"
+```
+
+The built-in file watcher detects changes instantly and refreshes the preview, closing the loop between AI generation and visual feedback. This workflow is not possible with browser-based editors.
+
 Download the latest installer for macOS or Windows from the [Releases](https://github.com/m8524769/mermaid-code/releases) page.
 
 ### Install via Homebrew (macOS)
