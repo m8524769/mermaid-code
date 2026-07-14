@@ -8,6 +8,8 @@
     "core:window:allow-destroy",
     "core:window:allow-create",
     "core:window:allow-close",
+    "core:window:allow-set-fullscreen",
+    "core:window:allow-is-fullscreen",
     "core:webview:allow-create-webview-window",
     "core:event:allow-listen",
     "core:event:allow-unlisten",

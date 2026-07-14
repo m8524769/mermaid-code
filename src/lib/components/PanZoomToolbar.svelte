@@ -6,11 +6,20 @@
   import { isTauri } from '$/util/fileSystem';
   import { urls } from '$/util/state.svelte';
   import ExpandIcon from '~icons/material-symbols/open-in-full-rounded';
+  import CloseFullscreenIcon from '~icons/material-symbols/close-fullscreen-rounded';
   import ArrowsToCircleIcon from '~icons/material-symbols/screenshot-frame-2';
   import MagnifyingGlassPlusIcon from '~icons/material-symbols/zoom-in';
   import MagnifyingGlassMinusIcon from '~icons/material-symbols/zoom-out';
 
-  let { panZoomState }: { panZoomState: PanZoomState } = $props();
+  let {
+    panZoomState,
+    onPresentationToggle,
+    isPresentationMode = false
+  }: {
+    panZoomState: PanZoomState;
+    onPresentationToggle?: () => void;
+    isPresentationMode?: boolean;
+  } = $props();
 
   const openFullScreen = async () => {
     const viewUrl = urls.current.view;
@@ -19,8 +28,7 @@
       new WebviewWindow('view', {
         url: viewUrl,
         title: 'Mermaid Code — View',
-        width: 1024,
-        height: 768,
+        fullscreen: true,
         resizable: true,
         center: true
       });
@@ -46,7 +54,15 @@
     <MagnifyingGlassPlusIcon />
   </Button>
   <Separator orientation="vertical" class="hidden sm:block" />
-  <Button variant="ghost" size="icon" title="Full Screen" onclick={openFullScreen}>
-    <ExpandIcon />
+  <Button
+    variant="ghost"
+    size="icon"
+    title={isPresentationMode ? 'Exit Full Screen' : 'Full Screen'}
+    onclick={() => (onPresentationToggle ? onPresentationToggle() : openFullScreen())}>
+    {#if isPresentationMode}
+      <CloseFullscreenIcon />
+    {:else}
+      <ExpandIcon />
+    {/if}
   </Button>
 </FloatingToolbar>

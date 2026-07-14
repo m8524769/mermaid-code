@@ -165,6 +165,36 @@
 
   let editorPane: Resizable.Pane | undefined;
   let sidebarPane: Resizable.Pane | undefined;
+  let isPresentationMode = $state(false);
+
+  const togglePresentationMode = async () => {
+    if (!isTauri()) return;
+    const { getCurrentWindow } = await import('@tauri-apps/api/window');
+    const win = getCurrentWindow();
+    if (isPresentationMode) {
+      isPresentationMode = false;
+      editorPane?.expand();
+      await win.setFullscreen(false);
+    } else {
+      isPresentationMode = true;
+      editorPane?.collapse();
+      await win.setFullscreen(true);
+    }
+  };
+
+  // Poll to detect macOS native fullscreen exit (ESC or green button)
+  $effect(() => {
+    if (!isPresentationMode) return;
+    const interval = setInterval(async () => {
+      const { getCurrentWindow } = await import('@tauri-apps/api/window');
+      const isFs = await getCurrentWindow().isFullscreen();
+      if (!isFs) {
+        isPresentationMode = false;
+        editorPane?.expand();
+      }
+    }, 500);
+    return () => clearInterval(interval);
+  });
 
   $effect(() => {
     if (isMobile) {
@@ -280,7 +310,12 @@
           <FileSidebar />
         </Resizable.Pane>
         <Resizable.Handle class="hidden opacity-0 sm:block" />
-        <Resizable.Pane bind:this={editorPane} defaultSize={30} minSize={15}>
+        <Resizable.Pane
+          bind:this={editorPane}
+          defaultSize={30}
+          minSize={15}
+          collapsible
+          collapsedSize={0}>
           <div class="flex h-full flex-col gap-4 sm:gap-6">
             <TabBar />
             <Card
@@ -305,7 +340,12 @@
         <Resizable.Pane minSize={15} class="relative flex h-full flex-1 flex-col overflow-hidden">
           <View {panZoomState} shouldShowGrid={validatedState.current.grid} />
           <div class="absolute top-0 left-5 hidden md:block"><EnhancedEditsButton /></div>
-          <div class="absolute top-0 right-0"><PanZoomToolbar {panZoomState} /></div>
+          <div class="absolute top-0 right-0">
+            <PanZoomToolbar
+              {panZoomState}
+              onPresentationToggle={togglePresentationMode}
+              {isPresentationMode} />
+          </div>
           <div class="absolute right-0 bottom-0"><VersionSecurityToolbar /></div>
           <div class="absolute bottom-0 left-0 sm:left-5"><SyncRoughToolbar /></div>
         </Resizable.Pane>
