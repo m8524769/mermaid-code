@@ -175,14 +175,26 @@
       isPresentationMode = false;
       editorPane?.expand();
       await win.setFullscreen(false);
+      setTimeout(() => panZoomState.reset(), 100);
     } else {
       isPresentationMode = true;
       editorPane?.collapse();
       await win.setFullscreen(true);
+      setTimeout(() => panZoomState.reset(), 100);
     }
   };
 
-  // Poll to detect macOS native fullscreen exit (ESC or green button)
+  // ESC key exits presentation mode (needed on Windows; macOS handles via polling)
+  $effect(() => {
+    if (!isPresentationMode) return;
+    const handleKeydown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') void togglePresentationMode();
+    };
+    window.addEventListener('keydown', handleKeydown);
+    return () => window.removeEventListener('keydown', handleKeydown);
+  });
+
+  // Poll to detect macOS native fullscreen exit (green button)
   $effect(() => {
     if (!isPresentationMode) return;
     const interval = setInterval(async () => {
