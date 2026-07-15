@@ -2187,7 +2187,7 @@ dependencies = [
 
 [[package]]
 name = "mermaid-code"
-version = "0.3.5"
+version = "0.3.6"
 dependencies = [
  "arboard",
  "base64 0.22.1",
