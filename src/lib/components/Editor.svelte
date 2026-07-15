@@ -222,7 +222,13 @@
               title="Overridden in code: {frontmatterConfig.fontFamily}">⚠</span>
           {/if}
         </div>
-        <div class="flex justify-end">
+        <div class="flex justify-end gap-1">
+          <button
+            class="rounded px-2 py-0.5 text-xs text-muted-foreground hover:bg-muted hover:text-foreground"
+            title="Reset config to default"
+            onclick={() => updateConfig('{}')}>
+            Reset
+          </button>
           <button
             class="rounded px-2 py-0.5 text-xs text-muted-foreground hover:bg-muted hover:text-foreground"
             title="Insert config as YAML frontmatter into the diagram code"

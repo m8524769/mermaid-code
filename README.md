@@ -17,6 +17,8 @@ Mermaid Code works seamlessly with AI coding agents (Claude Code, Codex, etc.). 
 
 The built-in file watcher detects changes instantly and refreshes the preview, closing the loop between AI generation and visual feedback. This workflow is not possible with browser-based editors.
 
+Everything stays local — architecture diagrams, database schemas, and business flows never leave your machine. No terms of service, no data retention policies to worry about.
+
 Download the latest installer for macOS or Windows from the [Releases](https://github.com/m8524769/mermaid-code/releases) page.
 
 ### Install via Homebrew (macOS)
