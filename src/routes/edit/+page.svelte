@@ -166,6 +166,7 @@
   let editorPane: Resizable.Pane | undefined;
   let sidebarPane: Resizable.Pane | undefined;
   let isPresentationMode = $state(false);
+  let isEditorCollapsed = $state(false);
 
   const togglePresentationMode = async () => {
     if (!isTauri()) return;
@@ -327,7 +328,9 @@
           defaultSize={30}
           minSize={15}
           collapsible
-          collapsedSize={0}>
+          collapsedSize={0}
+          onCollapse={() => (isEditorCollapsed = true)}
+          onExpand={() => (isEditorCollapsed = false)}>
           <div class="flex h-full flex-col gap-4 sm:gap-6">
             <TabBar />
             <Card
@@ -352,6 +355,14 @@
         <Resizable.Pane minSize={15} class="relative flex h-full flex-1 flex-col overflow-hidden">
           <View {panZoomState} shouldShowGrid={validatedState.current.grid} />
           <div class="absolute top-0 left-5 hidden md:block"><EnhancedEditsButton /></div>
+          {#if isEditorCollapsed && !isPresentationMode}
+            <button
+              class="absolute top-1/2 left-0 -translate-y-1/2 flex h-16 w-7 cursor-pointer items-center justify-center rounded-r-lg bg-muted/60 px-1 py-3 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              onclick={() => editorPane?.expand()}
+              title="Show editor">
+              <CodeIcon class="size-4" />
+            </button>
+          {/if}
           <div class="absolute top-0 right-0">
             <PanZoomToolbar
               {panZoomState}

@@ -300,6 +300,9 @@ export const fileState = {
     tabs = [...tabs, tab];
     fileState.switchTab(tab.id);
     saveTabsToStorage();
+    // Watch the file's parent directory if not already watched (covers subdirs in grid view)
+    const dir = pathDirname(path);
+    if (dir && dir !== rootPath) await watchDir(dir);
   },
 
   async closeTab(id: string): Promise<void> {
