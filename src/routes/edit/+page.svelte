@@ -331,7 +331,7 @@
           collapsedSize={0}
           onCollapse={() => (isEditorCollapsed = true)}
           onExpand={() => (isEditorCollapsed = false)}>
-          <div class="flex h-full flex-col gap-4 sm:gap-6">
+          <div class="flex h-full flex-col">
             <TabBar />
             <Card
               onselect={tabSelectHandler}
@@ -345,7 +345,7 @@
               <Editor {isMobile} />
             </Card>
 
-            <div class="group flex flex-wrap justify-between gap-4 sm:gap-6">
+            <div class="group mt-4 flex flex-wrap justify-between gap-4 sm:mt-6 sm:gap-6">
               <Preset />
               <Actions />
             </div>

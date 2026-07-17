@@ -42,7 +42,7 @@
 </script>
 
 <div class="flex h-full flex-col overflow-hidden border-r">
-  <div class="flex items-center gap-1 border-b px-2 py-1.5">
+  <div class="flex h-8 items-center gap-1 border-b px-2">
     <span
       class="min-w-0 flex-1 truncate text-xs font-semibold uppercase tracking-wide text-muted-foreground"
       title={fileState.rootPath ?? undefined}>
