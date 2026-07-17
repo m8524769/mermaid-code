@@ -106,7 +106,7 @@ const DRAFT_TAB_PATH = '__draft__';
 const makeDraftTab = (): Tab => ({
   id: DRAFT_TAB_ID,
   path: DRAFT_TAB_PATH,
-  name: '[Draft]',
+  name: 'Draft',
   code: '',
   savedCode: '',
   isDirty: false,
@@ -508,6 +508,15 @@ export const fileState = {
   stopWatching(): void {
     for (const fn of watchMap.values()) fn();
     watchMap.clear();
+  },
+
+  /** Clear the draft tab content after saving. */
+  clearDraft(): void {
+    const draft = tabs.find((t) => t.isDraft);
+    if (!draft) return;
+    draft.code = '';
+    draft.savedCode = '';
+    draft.isDirty = false;
   }
 };
 

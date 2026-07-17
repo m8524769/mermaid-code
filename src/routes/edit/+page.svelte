@@ -68,6 +68,7 @@
     const defaultName = `Diagram ${date} at ${time}.mmd`;
     const handle = await saveFileAs(code, defaultName);
     if (handle) {
+      fileState.clearDraft();
       await fileState.openFile(handle.path);
     }
   };
