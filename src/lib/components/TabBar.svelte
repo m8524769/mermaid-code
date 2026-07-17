@@ -3,6 +3,11 @@
   import AddIcon from '~icons/material-symbols/add-rounded';
   import CloseIcon from '~icons/material-symbols/close-rounded';
 
+  interface Props {
+    standalone?: boolean;
+  }
+  let { standalone = false }: Props = $props();
+
   const handleClose = (e: MouseEvent, id: string) => {
     e.stopPropagation();
     void fileState.closeTab(id);
@@ -13,7 +18,11 @@
   };
 </script>
 
-<div class="flex h-8 shrink-0 items-stretch overflow-x-auto border-b bg-muted/30">
+<div
+  class={[
+    'flex h-8 shrink-0 items-stretch overflow-x-auto bg-muted/30',
+    standalone ? 'rounded-2xl border' : 'border-b'
+  ]}>
   {#each fileState.tabs as tab (tab.id)}
     <div
       class={[

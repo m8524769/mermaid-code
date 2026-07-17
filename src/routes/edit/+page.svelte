@@ -333,22 +333,24 @@
           onCollapse={() => (isEditorCollapsed = true)}
           onExpand={() => (isEditorCollapsed = false)}>
           <div class="flex h-full flex-col">
-            <TabBar />
-            <Card
-              onselect={tabSelectHandler}
-              isOpen
-              tabs={editorTabs}
-              activeTabID={validatedState.current.editorMode}
-              isClosable={false}>
-              {#snippet actions()}
-                <DiagramDocButton />
-              {/snippet}
-              <Editor {isMobile} />
-            </Card>
+            <TabBar standalone={!isSidebarOpen} />
+            <div class="mt-2 flex min-h-0 flex-1 flex-col">
+              <Card
+                onselect={tabSelectHandler}
+                isOpen
+                tabs={editorTabs}
+                activeTabID={validatedState.current.editorMode}
+                isClosable={false}>
+                {#snippet actions()}
+                  <DiagramDocButton />
+                {/snippet}
+                <Editor {isMobile} />
+              </Card>
 
-            <div class="group mt-4 flex flex-wrap justify-between gap-4 sm:mt-6 sm:gap-6">
-              <Preset />
-              <Actions />
+              <div class="group mt-4 flex flex-wrap justify-between gap-4 sm:mt-6 sm:gap-6">
+                <Preset />
+                <Actions />
+              </div>
             </div>
           </div>
         </Resizable.Pane>
