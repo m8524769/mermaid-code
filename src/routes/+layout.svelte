@@ -2,7 +2,7 @@
   import { Toaster } from '$/components/ui/sonner/index.js';
   import { loadingState } from '$/util/loading.svelte';
   import { fileState } from '$/util/fileState.svelte';
-  import { isTauri } from '$/util/fileSystem';
+  import { isTauri, saveFileAs } from '$/util/fileSystem';
   import { notify } from '$/util/notify';
   import { updateState } from '$/util/updateState.svelte';
   import { toggleDarkTheme } from '$/util/state.svelte';
@@ -52,18 +52,41 @@
         const { getCurrentWindow } = await import('@tauri-apps/api/window');
         const appWindow = getCurrentWindow();
         await appWindow.onCloseRequested(async (event) => {
-          const dirtyTabs = fileState.tabs.filter((t) => t.isDirty);
+          const draft = fileState.tabs.find((t) => t.isDraft && t.code.trim() !== '');
+          const dirtyTabs = fileState.tabs.filter((t) => t.isDirty && !t.isDraft);
+          const { confirm } = await import('@tauri-apps/plugin-dialog');
+
+          // Check unsaved real files first
           if (dirtyTabs.length > 0) {
             const names = dirtyTabs.map((t) => t.name).join(', ');
-            const { confirm } = await import('@tauri-apps/plugin-dialog');
             const ok = await confirm(
               `You have unsaved changes in: ${names}\n\nQuit without saving?`
             );
-            if (!ok) event.preventDefault();
-            else fileState.stopWatching();
-          } else {
-            fileState.stopWatching();
+            if (!ok) {
+              event.preventDefault();
+              return;
+            }
           }
+
+          // Then check draft
+          if (draft) {
+            event.preventDefault();
+            const save = await confirm('You have an unsaved draft. Save before closing?', {
+              title: 'Unsaved Draft',
+              okLabel: 'Save',
+              cancelLabel: 'Discard'
+            });
+            if (save) {
+              const now = new Date();
+              const pad = (n: number) => String(n).padStart(2, '0');
+              const date = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+              const time = `${pad(now.getHours())}.${pad(now.getMinutes())}.${pad(now.getSeconds())}`;
+              await saveFileAs(draft.code, `Diagram ${date} at ${time}.mmd`);
+            }
+          }
+
+          fileState.stopWatching();
+          await appWindow.destroy();
         });
       })();
 

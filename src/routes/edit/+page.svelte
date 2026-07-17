@@ -276,7 +276,7 @@
     {/if}
     <Share />
     {#if isTauri()}
-      {#if fileState.activeTabId}
+      {#if fileState.tabs.find((t) => t.id === fileState.activeTabId && !t.isDraft)}
         <Button
           size="sm"
           variant="accent"

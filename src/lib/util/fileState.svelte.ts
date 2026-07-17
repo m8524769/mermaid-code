@@ -42,6 +42,7 @@ export interface Tab {
   code: string;
   savedCode: string;
   isDirty: boolean;
+  isDraft?: boolean;
   pan?: { x: number; y: number };
   zoom?: number;
 }
@@ -99,8 +100,21 @@ const filterEntries = <T extends { name: string; isDir?: boolean; isDirectory?: 
     return !IGNORED_FILES.has(e.name);
   });
 
-let tabs = $state<Tab[]>([]);
-let activeTabId = $state<string | null>(null);
+const DRAFT_TAB_ID = 'draft';
+const DRAFT_TAB_PATH = '__draft__';
+
+const makeDraftTab = (): Tab => ({
+  id: DRAFT_TAB_ID,
+  path: DRAFT_TAB_PATH,
+  name: '[Draft]',
+  code: '',
+  savedCode: '',
+  isDirty: false,
+  isDraft: true
+});
+
+let tabs = $state<Tab[]>([makeDraftTab()]);
+let activeTabId = $state<string | null>(DRAFT_TAB_ID);
 let rootPath = $state<string | null>(null);
 let tree = $state<FileTreeNode[]>([]);
 let isAutoSave = $state(localStorage.getItem('mermaid-autosave') !== 'false');
@@ -131,12 +145,11 @@ interface PersistedTabs {
 const tabsStorageKey = (folder: string) => `${FOLDER_TABS_PREFIX}${folder}`;
 
 const saveTabsToStorage = (): void => {
-  // Use rootPath if a folder is open, otherwise derive key from the first tab's directory
-  const key = rootPath ?? pathDirname(tabs[0]?.path ?? '');
+  const key = rootPath ?? pathDirname(tabs.find((t) => !t.isDraft)?.path ?? '');
   if (!key) return;
   const data: PersistedTabs = {
-    paths: tabs.map((t) => t.path),
-    activePath: tabs.find((t) => t.id === activeTabId)?.path ?? null
+    paths: tabs.filter((t) => !t.isDraft).map((t) => t.path),
+    activePath: tabs.find((t) => t.id === activeTabId && !t.isDraft)?.path ?? null
   };
   localStorage.setItem(tabsStorageKey(key), JSON.stringify(data));
 };
@@ -146,10 +159,12 @@ const openFolderPath = async (path: string): Promise<void> => {
   saveTabsToStorage();
 
   fileState.stopWatching();
-  // Close all current tabs without prompting
-  tabs = [];
-  activeTabId = null;
-  updateCode('', { updateDiagram: true });
+  // Preserve draft tab if it has content; close all other tabs
+  const draftTab = tabs.find((t) => t.isDraft);
+  const keepDraft = draftTab && draftTab.code.trim() !== '';
+  tabs = keepDraft ? [draftTab!] : [makeDraftTab()];
+  activeTabId = tabs[0].id;
+  updateCode(tabs[0].code, { updateDiagram: true });
 
   rootPath = path;
   localStorage.setItem(LAST_FOLDER_KEY, path);
@@ -297,6 +312,11 @@ export const fileState = {
     }
     const name = pathBasename(path);
     const tab: Tab = { id: uuidV4(), path, name, code, savedCode: code, isDirty: false };
+    // Remove empty draft tab when opening a real file
+    const draftTab = tabs.find((t) => t.isDraft);
+    if (draftTab && !draftTab.code.trim()) {
+      tabs = tabs.filter((t) => !t.isDraft);
+    }
     tabs = [...tabs, tab];
     fileState.switchTab(tab.id);
     saveTabsToStorage();
@@ -308,7 +328,8 @@ export const fileState = {
   async closeTab(id: string): Promise<void> {
     const tab = tabs.find((t) => t.id === id);
     if (!tab) return;
-    if (tab.isDirty) {
+    // Draft tab: only confirm if it has content
+    if (!tab.isDraft && tab.isDirty) {
       const confirmed = await confirmDialog(
         `"${tab.name}" has unsaved changes. Close without saving?`
       );
@@ -316,8 +337,13 @@ export const fileState = {
     }
     const idx = tabs.findIndex((t) => t.id === id);
     tabs = tabs.filter((t) => t.id !== id);
+    // Restore Draft tab only when all real file tabs are closed
+    const hasRealTabs = tabs.some((t) => !t.isDraft);
+    if (!hasRealTabs && !tabs.some((t) => t.isDraft)) {
+      tabs = [makeDraftTab()];
+    }
     if (activeTabId === id) {
-      const next = tabs[idx] ?? tabs[idx - 1] ?? null;
+      const next = tabs[idx] ?? tabs[idx - 1] ?? tabs[0] ?? null;
       if (next) {
         fileState.switchTab(next.id);
       } else {
@@ -352,12 +378,12 @@ export const fileState = {
     const tab = tabs.find((t) => t.id === id);
     if (!tab) return;
     tab.code = code;
-    tab.isDirty = code !== tab.savedCode;
+    tab.isDirty = tab.isDraft ? code.trim() !== '' : code !== tab.savedCode;
   },
 
   async saveTab(id: string, { silent = false }: { silent?: boolean } = {}): Promise<void> {
     const tab = tabs.find((t) => t.id === id);
-    if (!tab) return;
+    if (!tab || tab.isDraft) return;
     try {
       await writeTextFile(tab.path, tab.code);
       tab.savedCode = tab.code;
@@ -446,6 +472,10 @@ export const fileState = {
       for (const tab of toClose) {
         tabs = tabs.filter((t) => t.id !== tab.id);
       }
+      // Restore Draft tab only when all real file tabs are closed
+      if (!tabs.some((t) => !t.isDraft) && !tabs.some((t) => t.isDraft)) {
+        tabs = [makeDraftTab()];
+      }
       if (toClose.some((t) => t.id === activeTabId)) {
         activeTabId = tabs[0]?.id ?? null;
         if (activeTabId) fileState.switchTab(activeTabId);
@@ -485,7 +515,7 @@ export const fileState = {
 // to ensure it runs inside a proper Svelte component effect context.
 export const autoSaveTick = (): (() => void) => {
   const activeTab = tabs.find((t) => t.id === activeTabId) ?? null;
-  if (!isAutoSave || !activeTab?.isDirty) return () => {};
+  if (!isAutoSave || !activeTab?.isDirty || activeTab.isDraft) return () => {};
   const id = activeTab.id;
   const timer = setTimeout(() => {
     void fileState.saveTab(id, { silent: true });
