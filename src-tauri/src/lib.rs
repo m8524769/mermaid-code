@@ -1,4 +1,17 @@
-use tauri::Emitter;
+use std::sync::Mutex;
+use tauri::{Emitter, Manager};
+use tauri_plugin_deep_link::DeepLinkExt;
+
+struct OpenedFiles(Mutex<Vec<String>>);
+
+#[tauri::command]
+fn get_opened_files(app: tauri::AppHandle) -> Vec<String> {
+    let state = app.state::<OpenedFiles>();
+    let mut files = state.0.lock().unwrap();
+    let result = files.clone();
+    files.clear();
+    result
+}
 
 #[tauri::command]
 fn copy_image_to_clipboard(png_base64: String) -> Result<(), String> {
@@ -22,8 +35,8 @@ fn copy_image_to_clipboard(png_base64: String) -> Result<(), String> {
         .map_err(|e| e.to_string())
 }
 
-fn emit_open_files(app: &tauri::AppHandle, paths: Vec<std::path::PathBuf>) {
-    let paths: Vec<String> = paths
+fn filter_mmd_paths(paths: Vec<std::path::PathBuf>) -> Vec<String> {
+    paths
         .into_iter()
         .filter(|p| {
             p.extension()
@@ -34,18 +47,21 @@ fn emit_open_files(app: &tauri::AppHandle, paths: Vec<std::path::PathBuf>) {
                 .unwrap_or(false)
         })
         .filter_map(|p| p.to_str().map(|s| s.to_string()))
-        .collect();
+        .collect()
+}
 
-    if !paths.is_empty() {
-        let _ = app.emit("open-files", paths);
+fn emit_open_files(app: &tauri::AppHandle, paths: Vec<std::path::PathBuf>) {
+    let filtered = filter_mmd_paths(paths);
+    if !filtered.is_empty() {
+        let _ = app.emit("open-files", filtered);
     }
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .manage(OpenedFiles(Mutex::new(vec![])))
         .plugin(tauri_plugin_single_instance::init(|app, args, _cwd| {
-            use tauri::Manager;
             // Focus the main window when a second instance is launched
             if let Some(window) = app.get_webview_window("main") {
                 let _ = window.set_focus();
@@ -53,28 +69,62 @@ pub fn run() {
             // Forward file paths from the new instance's args (Windows)
             let paths: Vec<std::path::PathBuf> = args
                 .into_iter()
-                .skip(1) // skip the executable path
+                .skip(1)
                 .map(std::path::PathBuf::from)
                 .filter(|p| p.exists())
                 .collect();
             emit_open_files(app, paths);
         }))
+        .plugin(tauri_plugin_deep_link::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_os::init())
         .plugin(tauri_plugin_process::init())
-        .invoke_handler(tauri::generate_handler![copy_image_to_clipboard])
+        .invoke_handler(tauri::generate_handler![copy_image_to_clipboard, get_opened_files])
         .setup(|app| {
             #[cfg(debug_assertions)]
             {
-                use tauri::Manager;
                 app.get_webview_window("main").unwrap().open_devtools();
             }
-            let _ = app;
+            // Windows: handle files passed on first launch via deep-link
+            if let Ok(Some(urls)) = app.deep_link().get_current() {
+                let paths: Vec<std::path::PathBuf> = urls
+                    .iter()
+                    .filter_map(|u| {
+                        if u.scheme() == "file" {
+                            u.to_file_path().ok()
+                        } else {
+                            Some(std::path::PathBuf::from(u.path()))
+                        }
+                    })
+                    .collect();
+                let filtered = filter_mmd_paths(paths);
+                if !filtered.is_empty() {
+                    app.state::<OpenedFiles>().0.lock().unwrap().extend(filtered);
+                }
+            }
             Ok(())
         })
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .build(tauri::generate_context!())
+        .expect("error while building tauri application")
+        .run(|app, event| {
+            // macOS: handle files opened via Finder / "Open with"
+            // Store in state; frontend calls get_opened_files() on mount to retrieve
+            #[cfg(target_os = "macos")]
+            if let tauri::RunEvent::Opened { urls } = event {
+                let paths: Vec<std::path::PathBuf> = urls
+                    .iter()
+                    .filter_map(|u| u.to_file_path().ok())
+                    .collect();
+                let filtered = filter_mmd_paths(paths);
+                if !filtered.is_empty() {
+                    // Try emit first (app already running); if fails, store for frontend pull
+                    if app.emit("open-files", filtered.clone()).is_err() {
+                        app.state::<OpenedFiles>().0.lock().unwrap().extend(filtered);
+                    }
+                }
+            }
+        });
 }
