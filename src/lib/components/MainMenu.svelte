@@ -5,7 +5,6 @@
   import { env } from '$/util/env';
   import { isTauri } from '$/util/fileSystem';
   import { urls } from '$/util/state.svelte';
-  import { logMermaidChartClick } from '$/util/stats';
   import { cn } from '$/utils';
   import { mode, setMode } from 'mode-watcher';
   import type { Component, Snippet } from 'svelte';
@@ -49,7 +48,6 @@
       icon: PlaygroundIcon,
       isSectionEnd: true,
       label: 'Edit in Playground',
-      onclick: () => logMermaidChartClick('editInPlayground'),
       renderer: mcMenuItem
     },
     {
@@ -75,7 +73,6 @@
       href: urls.current.mermaidChart({ medium: 'main_menu' }).plugins,
       icon: PluginIcon,
       label: 'Plugins',
-      onclick: () => logMermaidChartClick('plugins'),
       renderer: mcMenuItem,
       sharesData: false
     },
@@ -92,7 +89,6 @@
       href: urls.current.mermaidChart({ medium: 'main_menu' }).home,
       icon: MermaidChartIcon,
       label: 'Mermaid',
-      onclick: () => logMermaidChartClick('mermaidHome'),
       renderer: mcMenuItem,
       sharesData: false
     }

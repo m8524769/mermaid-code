@@ -5,7 +5,6 @@
   import { getSampleDiagrams, type SampleExample } from '$/util/mermaid';
   import { updateCode } from '$lib/util/state.svelte';
   import { fileState } from '$lib/util/fileState.svelte';
-  import { logEvent } from '$lib/util/stats';
   import { cn } from '$lib/utils';
   import ShapesIcon from '~icons/material-symbols/account-tree-outline-rounded';
   import ChevronDownIcon from '~icons/material-symbols/keyboard-arrow-down-rounded';
@@ -20,7 +19,6 @@
     if (fileState.activeTabId) {
       fileState.updateTabCode(fileState.activeTabId, example.code);
     }
-    logEvent('loadSampleDiagram', { diagramType, exampleTitle: example.title });
   };
 
   const mainDiagrams = [

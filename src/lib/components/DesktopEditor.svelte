@@ -2,7 +2,6 @@
   import type { EditorProps } from '$/types';
   import { env } from '$/util/env';
   import { urls, validatedState } from '$/util/state.svelte';
-  import { logMermaidChartClick } from '$/util/stats';
   import { fileState } from '$/util/fileState.svelte';
   import { saveFileAs, isTauri } from '$/util/fileSystem';
   import { AIPromptViewZoneManager } from '$lib/util/AIPromptViewZoneManager';
@@ -429,7 +428,6 @@
         onHeightChange={(height) => aiPromptManager.updateHeight(height)}
         onClose={closePopup}
         onTryFree={() => {
-          logMermaidChartClick('vibeDiagramming');
           window.open(
             urls.current.mermaidChart({ medium: 'vibe_diagramming' }).save,
             '_blank',

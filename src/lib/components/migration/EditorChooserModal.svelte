@@ -53,7 +53,6 @@
   bind:open
   onOpenChange={(v) => {
     if (v) return;
-    if (!handled) actions.log('dismissed');
     handled = false;
     dismissEditorChooser();
   }}>

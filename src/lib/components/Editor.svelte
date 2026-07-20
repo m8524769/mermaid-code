@@ -13,7 +13,6 @@
     urls,
     validatedState
   } from '$lib/util/state.svelte';
-  import { logMermaidChartClick } from '$lib/util/stats';
   import { debounce } from 'lodash-es';
   import ExclamationCircleIcon from '~icons/material-symbols/error-outline-rounded';
 
@@ -259,8 +258,7 @@
               size="sm"
               data-testid={TID.aiRepairButton}
               href={urls.current.mermaidChart({ medium: 'ai_repair' }).save}
-              target="_blank"
-              onclick={() => logMermaidChartClick('aiRepair')}>
+              target="_blank">
               <MermaidChartIcon />
               AI Repair
             </Button>

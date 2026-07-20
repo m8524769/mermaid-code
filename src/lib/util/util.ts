@@ -5,7 +5,6 @@ import { initLoading } from './loading.svelte';
 import { isOnMermaidAI } from './migration/domainMigration';
 import { applyMigrations } from './migrations.svelte';
 import { initURLSubscription, loadState, updateCodeStore, verifyState } from './state.svelte';
-import { getAnalyticsSafeUrl, initAnalytics, plausible } from './stats';
 
 export const getDomain = (url?: string): string => {
   if (!url) return '';
@@ -29,10 +28,6 @@ export const initHandler = async (): Promise<void> => {
   await initLoading('Loading Gist...', loadDataFromUrl().catch(console.error));
   syncDiagram();
   initURLSubscription();
-  await initAnalytics();
-  plausible?.trackPageview({
-    url: getAnalyticsSafeUrl()
-  });
   verifyState();
 };
 

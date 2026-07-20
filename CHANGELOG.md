@@ -2,6 +2,43 @@
 
 All notable changes to Mermaid Code are documented here.
 
+## [v0.3.7] - 2026-07-20
+
+### Added
+
+- **Draft tab**: always-visible "Draft" tab for unsaved work; prompts to save before quitting if draft has content
+- **Editor expand button**: when the editor pane is collapsed, a button appears on the left edge of the preview to expand it
+
+### Changed
+
+- **TabBar**: always visible; shows a "＋" button when no files are open; standalone style (rounded, bordered) when sidebar is collapsed
+
+## [v0.3.6] - 2026-07-17
+
+### Added
+
+- **Sub-directory file watching**: clicking a file from a sub-directory in grid view now registers a file watcher for that directory
+
+### Fixed
+
+- **Sub-directory watching**: fixed file change detection for files outside the root directory
+
+## [v0.3.5] - 2026-07-14
+
+### Changed
+
+- **Presentation mode**: full-screen now hides the editor pane; ESC or macOS green button exits correctly
+
+## [v0.3.4] - 2026-07-13
+
+### Added
+
+- **Config reset button**: added a Reset button in the Config tab to restore default Mermaid config
+
+### Changed
+
+- **Homebrew tap auto-update**: GitHub Actions workflow now automatically updates the Homebrew tap on release
+
 ## [v0.3.3] - 2026-07-13
 
 ### Added

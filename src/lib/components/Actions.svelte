@@ -14,7 +14,6 @@
   import { browser } from '$app/environment';
   import { waitForRender } from '$lib/util/autoSync';
   import { inputState, updateCodeStore, urls, validatedState } from '$lib/util/state.svelte';
-  import { logEvent } from '$lib/util/stats';
   import { isTauri } from '$/util/fileSystem';
   import { version as FAVersion } from '@fortawesome/fontawesome-free/package.json';
   import dayjs from 'dayjs';
@@ -215,7 +214,6 @@ ${svgString}`);
       return;
     }
     await exportImage(event, clipboardCopy);
-    logEvent('copyClipboard');
   };
 
   const notifyDownload = async (filename: string) => {
@@ -231,17 +229,11 @@ ${svgString}`);
   const onDownloadPNG = async (event: Event) => {
     await exportImage(event, downloadImage);
     void notifyDownload(getFileName('png'));
-    logEvent('download', {
-      type: 'png'
-    });
   };
 
   const onDownloadSVG = () => {
     simulateDownload(getFileName('svg'), `data:image/svg+xml;base64,${getBase64SVG()}`);
     void notifyDownload(getFileName('svg'));
-    logEvent('download', {
-      type: 'svg'
-    });
   };
 
   let gistURL = $state('');
@@ -257,7 +249,6 @@ ${svgString}`);
       return alert('Please enter a Gist URL first');
     }
     window.location.href = `${window.location.pathname}?gist=${gistURL}`;
-    logEvent('loadGist');
   };
 
   let imageSizeMode: 'auto' | 'width' | 'height' = $state('auto');

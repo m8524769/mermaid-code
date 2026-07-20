@@ -1,7 +1,6 @@
 import type { HistoryEntry, HistoryType, Optional, State } from '$lib/types';
 import { persisted, readJSON, type Persisted } from '$lib/util/persist.svelte';
 import { inputState } from '$lib/util/state.svelte';
-import { logEvent } from '$lib/util/stats';
 import { generateSlug } from 'random-word-slugs';
 import { v4 as uuidV4 } from 'uuid';
 
@@ -76,7 +75,6 @@ const addEntry = (
   const trimmed =
     maxLength && entries.length >= maxLength ? entries.slice(0, maxLength - 1) : entries;
   slot.value = [createEntry(state, type), ...trimmed];
-  logEvent('history', { action: 'save', type });
   return true;
 };
 
@@ -98,7 +96,6 @@ export const removeEntry = (id: string): void => {
     return;
   }
   slot.value = slot.value.filter((entry) => entry.id !== id);
-  logEvent('history', { action: 'clear', type: 'single' });
 };
 
 export const clearActive = (): void => {
@@ -107,7 +104,6 @@ export const clearActive = (): void => {
     return;
   }
   slot.value = [];
-  logEvent('history', { action: 'clear', type: 'all' });
 };
 
 const validateEntry = (entry: HistoryEntry): boolean =>
@@ -142,7 +138,6 @@ export const restoreEntries = (data: HistoryEntry[]): RestoreResult => {
   }
 
   const duplicates = valid.length - restored;
-  logEvent('history', { action: 'restore', duplicates, invalid, success: restored });
   return { restored, invalid, duplicates };
 };
 

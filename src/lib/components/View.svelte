@@ -4,7 +4,6 @@
   import { render as renderDiagram } from '$/util/mermaid';
   import { PanZoomState } from '$/util/panZoom';
   import { updateCodeStore, validatedState } from '$/util/state.svelte';
-  import { saveStatistics } from '$/util/stats';
   import FontAwesome, { mayContainFontAwesome } from '$lib/components/FontAwesome.svelte';
   import uniqueID from 'lodash-es/uniqueId';
   import type { MermaidConfig } from 'mermaid';
@@ -137,7 +136,6 @@
       error = true;
     }
     const renderTime = Date.now() - startTime;
-    saveStatistics({ code, diagramType, isRough: state.rough, renderTime });
     recordRenderTime(renderTime, () => {
       updateCodeStore({ updateDiagram: true });
     });

@@ -4,7 +4,6 @@
   import { Button } from '$/components/ui/button';
   import { standardizeDiagramType } from '$/util/mermaid';
   import { validatedState, urls } from '$/util/state.svelte';
-  import { logMermaidChartClick } from '$/util/stats';
   import { quintInOut } from 'svelte/easing';
   import { slide } from 'svelte/transition';
 
@@ -102,8 +101,7 @@
         medium: currentAction.medium,
         campaign: currentAction.campaign
       }).save}
-      target="_blank"
-      onclick={() => logMermaidChartClick(currentAction.source)}>
+      target="_blank">
       <MermaidChartIcon />
       Edit
       {#key currentAction.label}

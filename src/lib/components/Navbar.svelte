@@ -1,12 +1,3 @@
-<script lang="ts" module>
-  import { logEvent, logMermaidChartClick } from '$lib/util/stats';
-  import { version } from 'mermaid/package.json';
-
-  void logEvent('version', {
-    mermaidVersion: version
-  });
-</script>
-
 <script lang="ts">
   import MainMenu from '$/components/MainMenu.svelte';
   import { Button } from '$/components/ui/button';
@@ -38,26 +29,11 @@
   ];
 
   let activePromotion = $state(untrack(() => (hidePromotion ? undefined : getActivePromotion())));
-
-  const trackBannerClick = () => {
-    if (!activePromotion) {
-      return;
-    }
-    logEvent('bannerClick', {
-      promotion: activePromotion.id
-    });
-    logMermaidChartClick('banner');
-  };
 </script>
 
 {#if activePromotion}
   <div class="top-bar z-10 flex h-fit w-full bg-primary">
-    <div
-      class="flex grow"
-      role="button"
-      tabindex="0"
-      onclick={trackBannerClick}
-      onkeypress={trackBannerClick}>
+    <div class="flex grow" role="button" tabindex="0">
       <activePromotion.component {closeBanner} />
     </div>
     {#snippet closeBanner()}

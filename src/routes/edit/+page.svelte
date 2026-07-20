@@ -27,7 +27,6 @@
   import { shouldShowEditorChooser } from '$/util/migration/domainMigration';
   import { PanZoomState } from '$/util/panZoom';
   import { updateCodeStore, urls, validatedState } from '$/util/state.svelte';
-  import { logMermaidChartClick } from '$/util/stats';
   import { initHandler } from '$/util/util';
   import { onMount } from 'svelte';
   import { fade } from 'svelte/transition';
@@ -274,8 +273,7 @@
         variant="accent"
         size="sm"
         href={urls.current.mermaidChart({ medium: 'save_diagram' }).save}
-        target="_blank"
-        onclick={() => logMermaidChartClick('saveDiagram')}>
+        target="_blank">
         <MermaidChartIcon />
         Save diagram
       </Button>

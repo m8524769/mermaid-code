@@ -1,6 +1,5 @@
 import { injectHistoryIDs } from '$lib/components/History/historyState.svelte';
 import { persisted } from '$lib/util/persist.svelte';
-import { logEvent } from './stats';
 
 interface MigrationState {
   version: number;
@@ -23,8 +22,6 @@ export const applyMigrations = (): void => {
     const [key, fn] = allMigrations[i];
     console.log(`Applying migration ${i}: ${key}.`);
     fn();
-    logEvent('migration', { key });
     migrationState.value = { version: i };
   }
-  logEvent('migration', { status: 'complete', from: version, to: allMigrations.length - 1 });
 };
