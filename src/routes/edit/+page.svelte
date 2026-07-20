@@ -18,7 +18,6 @@
   import TabBar from '$/components/TabBar.svelte';
   import { Button } from '$/components/ui/button';
   import * as Resizable from '$/components/ui/resizable';
-  import { Switch } from '$/components/ui/switch';
   import { Toggle } from '$/components/ui/toggle';
   import VersionSecurityToolbar from '$/components/VersionSecurityToolbar.svelte';
   import View from '$/components/View.svelte';
@@ -28,7 +27,7 @@
   import { shouldShowEditorChooser } from '$/util/migration/domainMigration';
   import { PanZoomState } from '$/util/panZoom';
   import { updateCodeStore, urls, validatedState } from '$/util/state.svelte';
-  import { logEvent, logMermaidChartClick } from '$/util/stats';
+  import { logMermaidChartClick } from '$/util/stats';
   import { initHandler } from '$/util/util';
   import { onMount } from 'svelte';
   import { fade } from 'svelte/transition';
@@ -72,7 +71,6 @@
       await fileState.openFile(handle.path);
     }
   };
-  let isMobile = $derived(width < 640);
   let isViewMode = $state(true);
   let showEditorChooser = $state(false);
 
@@ -81,9 +79,6 @@
   onMount(async () => {
     showEditorChooser = shouldShowEditorChooser();
     await initHandler();
-    window.addEventListener('appinstalled', () => {
-      logEvent('pwaInstalled', { isMobile });
-    });
 
     if (isTauri()) {
       const { getCurrentWebview } = await import('@tauri-apps/api/webview');
@@ -211,12 +206,6 @@
   });
 
   $effect(() => {
-    if (isMobile) {
-      editorPane?.resize(50);
-    }
-  });
-
-  $effect(() => {
     const editorSize = editorPane?.getSize() ?? 30;
     if (isSidebarOpen) {
       sidebarPane?.expand();
@@ -238,19 +227,8 @@
       </div>
     </div>
   {/if}
-  {#snippet mobileToggle()}
-    <div class="flex items-center gap-2">
-      Edit <Switch
-        id="editorMode"
-        class="data-[state=checked]:bg-accent"
-        bind:checked={isViewMode}
-        onclick={() => {
-          logEvent('mobileViewToggle');
-        }} /> View
-    </div>
-  {/snippet}
 
-  <Navbar mobileToggle={isMobile ? mobileToggle : undefined}>
+  <Navbar>
     <div class="relative inline-flex items-center" bind:this={sidebarToggleEl}>
       <Toggle
         bind:pressed={isSidebarOpen}
@@ -305,11 +283,7 @@
   </Navbar>
 
   <div class="flex flex-1 flex-col overflow-hidden" bind:clientWidth={width}>
-    <div
-      class={[
-        'size-full',
-        isMobile && ['w-[200%] duration-300', isViewMode && '-translate-x-1/2']
-      ]}>
+    <div class="size-full">
       <Resizable.PaneGroup
         direction="horizontal"
         autoSaveId="liveEditor-v2"
@@ -344,7 +318,7 @@
                 {#snippet actions()}
                   <DiagramDocButton />
                 {/snippet}
-                <Editor {isMobile} />
+                <Editor />
               </Card>
 
               <div class="group mt-4 flex flex-wrap justify-between gap-4 sm:mt-6 sm:gap-6">

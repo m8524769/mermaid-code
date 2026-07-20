@@ -2,15 +2,14 @@
   import DesktopEditor from '$/components/DesktopEditor.svelte';
   import McWrapper from '$/components/McWrapper.svelte';
   import MermaidChartIcon from '$/components/MermaidChartIcon.svelte';
-  import MobileEditor from '$/components/MobileEditor.svelte';
   import { Button } from '$/components/ui/button';
   import { TID } from '$/constants';
   import { env } from '$/util/env';
   import { fileState } from '$lib/util/fileState.svelte';
   import {
     updateCode,
-    updateConfig,
     updateCodeStore,
+    updateConfig,
     urls,
     validatedState
   } from '$lib/util/state.svelte';
@@ -18,7 +17,6 @@
   import { debounce } from 'lodash-es';
   import ExclamationCircleIcon from '~icons/material-symbols/error-outline-rounded';
 
-  const { isMobile } = $props<{ isMobile: boolean }>();
   const onUpdate = (text: string) => {
     if (validatedState.current.editorMode === 'code') {
       if (fileState.activeTabId) {
@@ -239,11 +237,7 @@
       </div>
     </div>
   {/if}
-  {#if isMobile}
-    <MobileEditor {onUpdate} />
-  {:else}
-    <DesktopEditor {onUpdate} />
-  {/if}
+  <DesktopEditor {onUpdate} />
   {#if showError && validatedState.current.error instanceof Error}
     <div class="flex flex-col text-sm" data-testid={TID.errorContainer}>
       <div class="flex items-center justify-between gap-2 bg-slate-900 p-2 text-white">

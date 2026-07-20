@@ -11,23 +11,21 @@
   import MainMenu from '$/components/MainMenu.svelte';
   import { Button } from '$/components/ui/button';
   import { Separator } from '$/components/ui/separator';
+  import { updateState } from '$/util/updateState.svelte';
   import { dismissPromotion, getActivePromotion } from '$lib/util/promos/promo.svelte';
   import { untrack, type ComponentProps, type Snippet } from 'svelte';
   import MermaidIcon from '~icons/custom/mermaid';
   import CloseIcon from '~icons/material-symbols/close-rounded';
   import GithubIcon from '~icons/mdi/github';
-  import DropdownNavMenu from './DropdownNavMenu.svelte';
   import { version as appVersion } from '../../../package.json';
-  import { updateState } from '$/util/updateState.svelte';
-  import { notify } from '$/util/notify';
+  import DropdownNavMenu from './DropdownNavMenu.svelte';
 
   interface Props {
-    mobileToggle?: Snippet;
     children: Snippet;
     hidePromotion?: boolean;
   }
 
-  let { children, mobileToggle, hidePromotion = false }: Props = $props();
+  let { children, hidePromotion = false }: Props = $props();
 
   type Links = ComponentProps<typeof DropdownNavMenu>['links'];
 
@@ -83,12 +81,7 @@
     <MainMenu />
     <MermaidIcon class="size-6" />
     <div class="flex items-baseline gap-1.5">
-      <span class="whitespace-nowrap text-accent">
-        {#if !mobileToggle}
-          Mermaid
-        {/if}
-        Code
-      </span>
+      <span class="whitespace-nowrap text-accent"> Mermaid Code </span>
       <span class="text-xs text-muted-foreground">v{appVersion}</span>
       {#if updateState.pendingVersion}
         {#if updateState.downloadProgress === null}
@@ -122,5 +115,4 @@
     <Separator orientation="vertical" />
     {@render children()}
   </div>
-  {@render mobileToggle?.()}
 </nav>
