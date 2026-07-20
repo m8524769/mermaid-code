@@ -12,10 +12,3 @@
 
 # Tauri
 /src-tauri/target/
-
-# Playwright
-/test-results/
-/playwright-report/
-/blob-report/
-/playwright/.cache/
-.playwright-mcp/

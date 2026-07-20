@@ -9,7 +9,6 @@
   import { startAutoSave } from '$/components/History/historyState.svelte';
   import McWrapper from '$/components/McWrapper.svelte';
   import MermaidChartIcon from '$/components/MermaidChartIcon.svelte';
-  import EditorChooserModal from '$/components/migration/EditorChooserModal.svelte';
   import Navbar from '$/components/Navbar.svelte';
   import PanZoomToolbar from '$/components/PanZoomToolbar.svelte';
   import Preset from '$/components/Preset.svelte';
@@ -23,8 +22,7 @@
   import View from '$/components/View.svelte';
   import type { EditorMode, Tab } from '$/types';
   import { fileState } from '$/util/fileState.svelte';
-  import { isTauri, saveFileAs } from '$/util/fileSystem';
-  import { shouldShowEditorChooser } from '$/util/migration/domainMigration';
+  import { saveFileAs } from '$/util/fileSystem';
   import { PanZoomState } from '$/util/panZoom';
   import { updateCodeStore, urls, validatedState } from '$/util/state.svelte';
   import { initHandler } from '$/util/util';
@@ -32,7 +30,6 @@
   import { fade } from 'svelte/transition';
   import CodeIcon from '~icons/custom/code';
   import FolderIcon from '~icons/material-symbols/folder-outline-rounded';
-  import HistoryIcon from '~icons/material-symbols/history';
   import GearIcon from '~icons/material-symbols/settings-outline-rounded';
 
   const panZoomState = new PanZoomState();
@@ -70,49 +67,44 @@
       await fileState.openFile(handle.path);
     }
   };
-  let isViewMode = $state(true);
-  let showEditorChooser = $state(false);
 
   let isDraggingOver = $state(false);
 
   onMount(async () => {
-    showEditorChooser = shouldShowEditorChooser();
     await initHandler();
 
-    if (isTauri()) {
-      const { getCurrentWebview } = await import('@tauri-apps/api/webview');
-      const { stat } = await import('@tauri-apps/plugin-fs');
+    const { getCurrentWebview } = await import('@tauri-apps/api/webview');
+    const { stat } = await import('@tauri-apps/plugin-fs');
 
-      // Listen for files opened via "Open with" or second instance (single-instance plugin)
-      const { listen } = await import('@tauri-apps/api/event');
-      listen<string[]>('open-files', async (event) => {
-        for (const path of event.payload) {
-          await fileState.openFile(path);
-        }
-      });
+    // Listen for files opened via "Open with" or second instance (single-instance plugin)
+    const { listen } = await import('@tauri-apps/api/event');
+    listen<string[]>('open-files', async (event) => {
+      for (const path of event.payload) {
+        await fileState.openFile(path);
+      }
+    });
 
-      getCurrentWebview().onDragDropEvent(async (event) => {
-        if (event.payload.type === 'over') {
-          isDraggingOver = true;
-        } else if (event.payload.type === 'drop') {
-          isDraggingOver = false;
-          for (const path of event.payload.paths) {
-            try {
-              const info = await stat(path);
-              if (info.isDirectory) {
-                await fileState.openFolderByPath(path);
-              } else {
-                await fileState.openFile(path);
-              }
-            } catch {
-              // ignore unreadable paths
+    getCurrentWebview().onDragDropEvent(async (event) => {
+      if (event.payload.type === 'over') {
+        isDraggingOver = true;
+      } else if (event.payload.type === 'drop') {
+        isDraggingOver = false;
+        for (const path of event.payload.paths) {
+          try {
+            const info = await stat(path);
+            if (info.isDirectory) {
+              await fileState.openFolderByPath(path);
+            } else {
+              await fileState.openFile(path);
             }
+          } catch {
+            // ignore unreadable paths
           }
-        } else {
-          isDraggingOver = false;
         }
-      });
-    }
+      } else {
+        isDraggingOver = false;
+      }
+    });
   });
 
   // Record the Timeline for the whole session, not just while the panel is open.
@@ -134,7 +126,7 @@
     hintTop = r.bottom + 8;
   };
 
-  if (isTauri() && localStorage.getItem(ONBOARDED_KEY) === null) {
+  if (localStorage.getItem(ONBOARDED_KEY) === null) {
     setTimeout(() => {
       showSidebarHint = true;
     }, 3000);
@@ -164,7 +156,6 @@
   let isEditorCollapsed = $state(false);
 
   const togglePresentationMode = async () => {
-    if (!isTauri()) return;
     const { getCurrentWindow } = await import('@tauri-apps/api/window');
     const win = getCurrentWindow();
     if (isPresentationMode) {
@@ -247,26 +238,19 @@
         </div>
       {/if}
     </div>
-    {#if !isTauri()}
-      <Toggle bind:pressed={isHistoryOpen} size="sm" title="History" aria-label="History">
-        <HistoryIcon />
-      </Toggle>
-    {/if}
     <Share />
-    {#if isTauri()}
-      {#if fileState.tabs.find((t) => t.id === fileState.activeTabId && !t.isDraft)}
-        <Button
-          size="sm"
-          variant="accent"
-          onclick={() => fileState.saveTab(fileState.activeTabId!)}
-          title="Save (⌘S)">
-          Save
-        </Button>
-      {:else}
-        <Button size="sm" variant="accent" onclick={saveDraftAsFile} title="Save draft as file">
-          Save As
-        </Button>
-      {/if}
+    {#if fileState.tabs.find((t) => t.id === fileState.activeTabId && !t.isDraft)}
+      <Button
+        size="sm"
+        variant="accent"
+        onclick={() => fileState.saveTab(fileState.activeTabId!)}
+        title="Save (⌘S)">
+        Save
+      </Button>
+    {:else}
+      <Button size="sm" variant="accent" onclick={saveDraftAsFile} title="Save draft as file">
+        Save As
+      </Button>
     {/if}
     <McWrapper>
       <Button
@@ -357,5 +341,3 @@
     </div>
   </div>
 </div>
-
-<EditorChooserModal bind:open={showEditorChooser} />

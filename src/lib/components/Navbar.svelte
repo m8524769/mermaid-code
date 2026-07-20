@@ -1,12 +1,9 @@
 <script lang="ts">
   import MainMenu from '$/components/MainMenu.svelte';
-  import { Button } from '$/components/ui/button';
   import { Separator } from '$/components/ui/separator';
   import { updateState } from '$/util/updateState.svelte';
-  import { dismissPromotion, getActivePromotion } from '$lib/util/promos/promo.svelte';
-  import { untrack, type ComponentProps, type Snippet } from 'svelte';
+  import { type ComponentProps, type Snippet } from 'svelte';
   import MermaidIcon from '~icons/custom/mermaid';
-  import CloseIcon from '~icons/material-symbols/close-rounded';
   import GithubIcon from '~icons/mdi/github';
   import { version as appVersion } from '../../../package.json';
   import DropdownNavMenu from './DropdownNavMenu.svelte';
@@ -27,30 +24,7 @@
     },
     { title: 'Mermaid JS', href: 'https://github.com/mermaid-js/mermaid' }
   ];
-
-  let activePromotion = $state(untrack(() => (hidePromotion ? undefined : getActivePromotion())));
 </script>
-
-{#if activePromotion}
-  <div class="top-bar z-10 flex h-fit w-full bg-primary">
-    <div class="flex grow" role="button" tabindex="0">
-      <activePromotion.component {closeBanner} />
-    </div>
-    {#snippet closeBanner()}
-      <Button
-        title="Dismiss banner"
-        variant="ghost"
-        class="hover:bg-transparent hover:text-[#261A56]"
-        size="sm"
-        onclick={() => {
-          dismissPromotion(activePromotion?.id);
-          activePromotion = undefined;
-        }}>
-        <CloseIcon />
-      </Button>
-    {/snippet}
-  </div>
-{/if}
 
 <nav class="z-50 flex p-4 sm:p-6">
   <div class="flex flex-1 items-center gap-2">

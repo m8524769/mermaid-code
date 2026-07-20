@@ -23,10 +23,7 @@
     "test:unit": "vitest",
     "test:unit:ui": "vitest --ui",
     "test:unit:coverage": "vitest run --coverage",
-    "test": "pnpm test:unit && pnpm test:e2e",
-    "test:e2e": "playwright test",
-    "test:e2e:ui": "playwright test --ui",
-    "test:e2e:debug": "playwright test --debug"
+    "test": "pnpm test:unit"
   },
   "devDependencies": {
     "@eslint/compat": "^2.1.0",
@@ -37,7 +34,6 @@
     "@iconify-json/logos": "^1.2.11",
     "@iconify-json/material-symbols": "^1.2.79",
     "@iconify-json/mdi": "^1.2.3",
-    "@playwright/test": "^1.60.0",
     "@sveltejs/adapter-static": "^3.0.10",
     "@sveltejs/kit": "^2.63.1",
     "@sveltejs/vite-plugin-svelte": "^7.1.2",

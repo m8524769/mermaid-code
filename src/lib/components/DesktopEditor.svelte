@@ -3,7 +3,7 @@
   import { env } from '$/util/env';
   import { urls, validatedState } from '$/util/state.svelte';
   import { fileState } from '$/util/fileState.svelte';
-  import { saveFileAs, isTauri } from '$/util/fileSystem';
+  import { saveFileAs } from '$/util/fileSystem';
   import { AIPromptViewZoneManager } from '$lib/util/AIPromptViewZoneManager';
   import { initEditor } from '$lib/util/monacoExtra';
   import { errorDebug } from '$lib/util/util';
@@ -124,7 +124,7 @@
       (VimMode as any).Vim?.defineEx('quit', 'q', () => {
         if (fileState.activeTabId) {
           void fileState.closeTab(fileState.activeTabId);
-        } else if (isTauri()) {
+        } else {
           void import('@tauri-apps/api/window').then(({ getCurrentWindow }) =>
             getCurrentWindow().close()
           );

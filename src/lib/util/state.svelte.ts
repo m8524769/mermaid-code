@@ -212,8 +212,7 @@ const urlsCurrent = $derived.by(() => {
     new: `${resolve('/edit', {})}#${serializeState(defaultState)}`,
     edit: `${origin}${resolve('/edit', {})}#${serialized}`,
     png,
-    svg: rendererUrl ? `${rendererUrl}/svg/${serialized}` : '',
-    view: `${resolve('/view', {})}#${serialized}`
+    svg: rendererUrl ? `${rendererUrl}/svg/${serialized}` : ''
   };
 });
 

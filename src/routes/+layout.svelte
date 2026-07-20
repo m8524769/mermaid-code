@@ -2,12 +2,10 @@
   import { Toaster } from '$/components/ui/sonner/index.js';
   import { loadingState } from '$/util/loading.svelte';
   import { fileState } from '$/util/fileState.svelte';
-  import { isTauri, saveFileAs } from '$/util/fileSystem';
-  import { notify } from '$/util/notify';
+  import { saveFileAs } from '$/util/fileSystem';
   import { updateState } from '$/util/updateState.svelte';
   import { toggleDarkTheme } from '$/util/state.svelte';
   import { initHandler } from '$/util/util';
-  import { base } from '$app/paths';
   import { mode, ModeWatcher } from 'mode-watcher';
   import { onMount, type Snippet } from 'svelte';
   import '../app.css';
@@ -28,82 +26,76 @@
     // Disable native browser/webview context menu so bits-ui ContextMenu can work.
     // bits-ui sets data-context-menu-trigger on ContextMenu.Trigger elements —
     // only suppress the native menu outside those elements.
-    if (isTauri()) {
-      document.addEventListener('contextmenu', (e) => {
-        const target = e.target as Element | null;
-        if (!target?.closest('[data-context-menu-trigger]')) {
-          e.preventDefault();
-        }
-      });
-    }
+    document.addEventListener('contextmenu', (e) => {
+      const target = e.target as Element | null;
+      if (!target?.closest('[data-context-menu-trigger]')) {
+        e.preventDefault();
+      }
+    });
 
-    if (isTauri()) {
-      void (async () => {
-        const { getCurrentWindow } = await import('@tauri-apps/api/window');
-        const appWindow = getCurrentWindow();
-        await appWindow.onCloseRequested(async (event) => {
-          const draft = fileState.tabs.find((t) => t.isDraft && t.code.trim() !== '');
-          const dirtyTabs = fileState.tabs.filter((t) => t.isDirty && !t.isDraft);
-          const { confirm } = await import('@tauri-apps/plugin-dialog');
+    void (async () => {
+      const { getCurrentWindow } = await import('@tauri-apps/api/window');
+      const appWindow = getCurrentWindow();
+      await appWindow.onCloseRequested(async (event) => {
+        const draft = fileState.tabs.find((t) => t.isDraft && t.code.trim() !== '');
+        const dirtyTabs = fileState.tabs.filter((t) => t.isDirty && !t.isDraft);
+        const { confirm } = await import('@tauri-apps/plugin-dialog');
 
-          // Check unsaved real files first
-          if (dirtyTabs.length > 0) {
-            const names = dirtyTabs.map((t) => t.name).join(', ');
-            const ok = await confirm(
-              `You have unsaved changes in: ${names}\n\nQuit without saving?`
-            );
-            if (!ok) {
-              event.preventDefault();
-              return;
-            }
-          }
-
-          // Then check draft
-          if (draft) {
+        // Check unsaved real files first
+        if (dirtyTabs.length > 0) {
+          const names = dirtyTabs.map((t) => t.name).join(', ');
+          const ok = await confirm(`You have unsaved changes in: ${names}\n\nQuit without saving?`);
+          if (!ok) {
             event.preventDefault();
-            const save = await confirm('You have an unsaved draft. Save before closing?', {
-              title: 'Unsaved Draft',
-              okLabel: 'Save',
-              cancelLabel: 'Discard'
-            });
-            if (save) {
-              const now = new Date();
-              const pad = (n: number) => String(n).padStart(2, '0');
-              const date = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
-              const time = `${pad(now.getHours())}.${pad(now.getMinutes())}.${pad(now.getSeconds())}`;
-              await saveFileAs(draft.code, `Diagram ${date} at ${time}.mmd`);
-              fileState.clearDraft();
-            }
+            return;
           }
-
-          fileState.stopWatching();
-          await appWindow.destroy();
-        });
-      })();
-
-      // Check for updates in background
-      void (async () => {
-        try {
-          const { check } = await import('@tauri-apps/plugin-updater');
-          const update = await check();
-          if (update) {
-            updateState.set(update.version, update);
-            const { confirm } = await import('@tauri-apps/plugin-dialog');
-            const ok = await confirm(
-              `Mermaid Code ${update.version} is available.\n\nDownload now?`,
-              { title: 'Update Available' }
-            );
-            if (ok) {
-              void updateState.download();
-            }
-          } else {
-            updateState.setLatest();
-          }
-        } catch {
-          // ignore update errors silently
         }
-      })();
-    }
+
+        // Then check draft
+        if (draft) {
+          event.preventDefault();
+          const save = await confirm('You have an unsaved draft. Save before closing?', {
+            title: 'Unsaved Draft',
+            okLabel: 'Save',
+            cancelLabel: 'Discard'
+          });
+          if (save) {
+            const now = new Date();
+            const pad = (n: number) => String(n).padStart(2, '0');
+            const date = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+            const time = `${pad(now.getHours())}.${pad(now.getMinutes())}.${pad(now.getSeconds())}`;
+            await saveFileAs(draft.code, `Diagram ${date} at ${time}.mmd`);
+            fileState.clearDraft();
+          }
+        }
+
+        fileState.stopWatching();
+        await appWindow.destroy();
+      });
+    })();
+
+    // Check for updates in background
+    void (async () => {
+      try {
+        const { check } = await import('@tauri-apps/plugin-updater');
+        const update = await check();
+        if (update) {
+          updateState.set(update.version, update);
+          const { confirm } = await import('@tauri-apps/plugin-dialog');
+          const ok = await confirm(
+            `Mermaid Code ${update.version} is available.\n\nDownload now?`,
+            { title: 'Update Available' }
+          );
+          if (ok) {
+            void updateState.download();
+          }
+        } else {
+          updateState.setLatest();
+        }
+      } catch {
+        // ignore update errors silently
+      }
+    })();
   });
 
   $effect(() => {

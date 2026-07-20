@@ -1,6 +1,5 @@
 <script lang="ts">
   import { fileState, autoSaveTick } from '$/util/fileState.svelte';
-  import { isTauri } from '$/util/fileSystem';
   import { persisted } from '$/util/persist.svelte';
   import FileTree from '$/components/FileTree.svelte';
   import ThumbnailGrid from '$/components/ThumbnailGrid.svelte';
@@ -29,10 +28,8 @@
   );
 
   onMount(() => {
-    if (isTauri()) {
-      // Delay restore to after full component tree mount
-      setTimeout(() => void fileState.restoreLastFolder(), 0);
-    }
+    // Delay restore to after full component tree mount
+    setTimeout(() => void fileState.restoreLastFolder(), 0);
   });
 
   // Auto-save: re-runs whenever activeTabId or isDirty changes
@@ -48,7 +45,7 @@
       title={fileState.rootPath ?? undefined}>
       {pathLabel ?? 'Explorer'}
     </span>
-    {#if isTauri() && fileState.rootPath}
+    {#if fileState.rootPath}
       <button
         class={[
           'rounded p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground',
@@ -89,14 +86,12 @@
         <FolderAddIcon class="size-4" />
       </button>
     {/if}
-    {#if isTauri()}
-      <button
-        class="rounded p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground"
-        title="Open Folder"
-        onclick={() => fileState.openFolder()}>
-        <FolderOpenIcon class="size-4" />
-      </button>
-    {/if}
+    <button
+      class="rounded p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+      title="Open Folder"
+      onclick={() => fileState.openFolder()}>
+      <FolderOpenIcon class="size-4" />
+    </button>
   </div>
 
   {#if fileState.rootPath}
@@ -110,23 +105,17 @@
 
   <div class="flex-1 overflow-y-auto py-1">
     {#if !fileState.rootPath}
-      {#if isTauri()}
-        <div class="flex flex-col items-center gap-3 px-4 py-8">
-          <p class="text-center text-xs text-muted-foreground">
-            Open a folder to start editing your diagrams.
-          </p>
-          <button
-            class="flex items-center gap-2 rounded-md bg-primary px-3 py-1.5 text-xs text-primary-foreground transition-colors hover:bg-primary/70"
-            onclick={() => fileState.openFolder()}>
-            <FolderOpenIcon class="size-4" />
-            Open Folder
-          </button>
-        </div>
-      {:else}
-        <p class="px-3 py-4 text-xs text-muted-foreground">
-          File manager requires the desktop app.
+      <div class="flex flex-col items-center gap-3 px-4 py-8">
+        <p class="text-center text-xs text-muted-foreground">
+          Open a folder to start editing your diagrams.
         </p>
-      {/if}
+        <button
+          class="flex items-center gap-2 rounded-md bg-primary px-3 py-1.5 text-xs text-primary-foreground transition-colors hover:bg-primary/70"
+          onclick={() => fileState.openFolder()}>
+          <FolderOpenIcon class="size-4" />
+          Open Folder
+        </button>
+      </div>
     {:else if fileState.tree.length === 0}
       <p class="px-3 py-4 text-center text-xs text-muted-foreground">This folder is empty.</p>
     {:else if viewMode.value === 'grid' && renderContainer}

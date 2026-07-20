@@ -14,7 +14,6 @@
   import { browser } from '$app/environment';
   import { waitForRender } from '$lib/util/autoSync';
   import { inputState, updateCodeStore, urls, validatedState } from '$lib/util/state.svelte';
-  import { isTauri } from '$/util/fileSystem';
   import { version as FAVersion } from '@fortawesome/fontawesome-free/package.json';
   import dayjs from 'dayjs';
   import { toBase64 } from 'js-base64';
@@ -190,22 +189,11 @@ ${svgString}`);
     return () => {
       const { canvas } = context;
       context.drawImage(image, 0, 0, canvas.width, canvas.height);
-      if (isTauri()) {
-        // Use custom Tauri command: canvas → base64 PNG (~100KB) → Rust decodes → arboard
-        const base64 = canvas.toDataURL('image/png').split(',')[1];
-        void import('@tauri-apps/api/core').then(({ invoke }) =>
-          invoke('copy_image_to_clipboard', { pngBase64: base64 })
-        );
-      } else {
-        canvas.toBlob((blob) => {
-          try {
-            if (!blob) throw new Error('blob is empty');
-            void navigator.clipboard.write([new ClipboardItem({ [blob.type]: blob })]);
-          } catch (error) {
-            console.error(error);
-          }
-        });
-      }
+      // Use custom Tauri command: canvas → base64 PNG (~100KB) → Rust decodes → arboard
+      const base64 = canvas.toDataURL('image/png').split(',')[1];
+      void import('@tauri-apps/api/core').then(({ invoke }) =>
+        invoke('copy_image_to_clipboard', { pngBase64: base64 })
+      );
     };
   };
 
@@ -217,13 +205,9 @@ ${svgString}`);
   };
 
   const notifyDownload = async (filename: string) => {
-    if (isTauri()) {
-      const { downloadDir } = await import('@tauri-apps/api/path');
-      const dir = await downloadDir();
-      notify(`Downloaded to ${dir}`);
-    } else {
-      notify(`Downloaded: ${filename}`);
-    }
+    const { downloadDir } = await import('@tauri-apps/api/path');
+    const dir = await downloadDir();
+    notify(`Downloaded to ${dir}`);
   };
 
   const onDownloadPNG = async (event: Event) => {
