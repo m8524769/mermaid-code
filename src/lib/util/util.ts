@@ -1,5 +1,4 @@
 import { C } from '$/constants';
-import { env } from './env';
 import { loadDataFromUrl } from './fileLoaders/loader';
 import { initLoading } from './loading.svelte';
 import { applyMigrations } from './migrations.svelte';
@@ -32,9 +31,7 @@ export const initHandler = async (): Promise<void> => {
 
 export const isMac = navigator.platform.toUpperCase().includes('MAC');
 export const cmdKey = isMac ? 'Cmd' : 'Ctrl';
-export const MCBaseURL = env.isEnabledMermaidChartLinks
-  ? 'https://mermaid.ai' // 'http://localhost:5174'
-  : 'https://example.com';
+export const MCBaseURL = 'https://mermaid.ai';
 
 let count = 0;
 export const errorDebug = (limit = 1000) => {

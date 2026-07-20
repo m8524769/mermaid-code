@@ -66,13 +66,6 @@ brew install --cask mermaid-code
 - [pnpm](https://pnpm.io/) — install with `corepack enable pnpm`
 - [Rust](https://rustup.rs/) — required for Tauri desktop build
 
-## Web Development
-
-```sh
-pnpm install
-pnpm dev -- --open
-```
-
 ## Desktop Development (Tauri)
 
 ```sh

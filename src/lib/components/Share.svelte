@@ -28,7 +28,7 @@
         </h2>
         <CopyInput value={urls.current.edit} />
         <Dialog.Description>
-          The content of the diagrams you create never leaves your browser.
+          The content of your diagrams never leaves your device.
         </Dialog.Description>
       </div>
       {#if env.isEnabledMermaidChartLinks}
