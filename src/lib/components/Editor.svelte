@@ -1,20 +1,12 @@
 <script lang="ts">
   import DesktopEditor from '$/components/DesktopEditor.svelte';
-  import McWrapper from '$/components/McWrapper.svelte';
-  import MermaidChartIcon from '$/components/MermaidChartIcon.svelte';
-  import { Button } from '$/components/ui/button';
-  import { TID } from '$/constants';
-  import { env } from '$/util/env';
   import { fileState } from '$lib/util/fileState.svelte';
   import {
     updateCode,
     updateCodeStore,
     updateConfig,
-    urls,
     validatedState
   } from '$lib/util/state.svelte';
-  import { debounce } from 'lodash-es';
-  import ExclamationCircleIcon from '~icons/material-symbols/error-outline-rounded';
 
   const onUpdate = (text: string) => {
     if (validatedState.current.editorMode === 'code') {
@@ -26,25 +18,6 @@
       updateConfig(text);
     }
   };
-
-  let showError = $state(false);
-
-  const showErrorDebounced = debounce(() => {
-    showError = true;
-  }, 3000);
-
-  $effect(() => {
-    if (validatedState.current.error) {
-      showErrorDebounced();
-    } else {
-      showErrorDebounced.cancel();
-      showError = false;
-    }
-
-    return () => {
-      showErrorDebounced.cancel();
-    };
-  });
 
   const THEMES = [
     'default',
@@ -237,19 +210,4 @@
     </div>
   {/if}
   <DesktopEditor {onUpdate} />
-  {#if showError && validatedState.current.error instanceof Error}
-    <div class="flex flex-col text-sm" data-testid={TID.errorContainer}>
-      <div class="flex items-center justify-between gap-2 bg-slate-900 p-2 text-white">
-        <div class="flex w-fit items-center gap-2">
-          <ExclamationCircleIcon class="size-6 text-destructive" aria-hidden="true" />
-          <div class="flex flex-col">
-            <p>Syntax error</p>
-          </div>
-        </div>
-      </div>
-      <output class="max-h-32 overflow-auto bg-muted p-2" name="mermaid-error" for="editor">
-        <pre>{validatedState.current.error?.toString()}</pre>
-      </output>
-    </div>
-  {/if}
 </div>

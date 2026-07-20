@@ -15,6 +15,8 @@
   import { initVimMode, VimMode } from 'monaco-vim';
   import { onMount } from 'svelte';
   import AIPromptPopup from './AIPromptPopup.svelte';
+  import ExclamationCircleIcon from '~icons/material-symbols/error-outline-rounded';
+  import { TID } from '$/constants';
 
   const { onUpdate }: EditorProps = $props();
   const debouncedOnUpdate = debounce((text: string) => onUpdate(text), 100);
@@ -34,6 +36,23 @@
   let isUpdatingFromState = false;
   let isTyping = false;
   let typingTimer: ReturnType<typeof setTimeout> | null = null;
+  let showError = $state(false);
+
+  const showErrorDebounced = debounce(() => {
+    showError = true;
+  }, 3000);
+
+  $effect(() => {
+    if (validatedState.current.error) {
+      showErrorDebounced();
+    } else {
+      showErrorDebounced.cancel();
+      showError = false;
+    }
+    return () => {
+      showErrorDebounced.cancel();
+    };
+  });
   let showPopup = $state(false);
   let popupPosition = $state({ top: 0, lineNumber: 0 });
   let decorationsCollection: monaco.editor.IEditorDecorationsCollection | undefined;
@@ -444,6 +463,18 @@
         }} />
     </div>
   </div>
+  {#if showError && validatedState.current.error instanceof Error}
+    <div class="flex flex-col text-sm shrink-0" data-testid={TID.errorContainer}>
+      <div class="flex items-center gap-2 bg-slate-900 p-2 text-white">
+        <ExclamationCircleIcon class="size-5 shrink-0 text-destructive" aria-hidden="true" />
+        <p>Syntax error</p>
+      </div>
+      <output class="overflow-auto bg-muted p-2 text-xs" name="mermaid-error" for="editor">
+        <pre
+          class="whitespace-pre-wrap break-words">{validatedState.current.error?.toString()}</pre>
+      </output>
+    </div>
+  {/if}
   <div class="flex w-full shrink-0 items-center bg-muted/80 px-2 text-xs text-muted-foreground">
     <div bind:this={vimStatusBarElement} class="flex-1 font-mono"></div>
     <button
