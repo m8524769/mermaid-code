@@ -2,6 +2,23 @@
 
 All notable changes to Mermaid Code are documented here.
 
+## [v0.3.8] - 2026-07-20
+
+### Added
+
+- **Syntax error display**: syntax error message now appears above the VIM status bar, integrated into the editor
+
+### Fixed
+
+- **Editor undo loop**: fixed undo/redo cycling between the last two states when typing
+- **Auto-save false alarm**: auto-saving a file no longer triggers "modified externally but has unsaved changes" notification
+
+### Changed
+
+- **Build output directory**: changed from `docs/` to `dist/`
+- **Removed web support**: app is now desktop-only; CodeMirror removed
+- **Removed analytics**: Plausible Analytics and all usage statistics removed
+
 ## [v0.3.7] - 2026-07-20
 
 ### Added
