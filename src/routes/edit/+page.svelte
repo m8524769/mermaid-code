@@ -84,16 +84,8 @@
       }
     });
 
-    // Handle files opened via deep-link / file association (first launch or single-instance)
-    const { onOpenUrl } = await import('@tauri-apps/plugin-deep-link');
-    onOpenUrl(async (urls) => {
-      for (const url of urls) {
-        const path = url.startsWith('file://') ? decodeURIComponent(new URL(url).pathname) : url;
-        await fileState.openFile(path);
-      }
-    });
-
-    // Pull files stored during startup (macOS "Open with" before webview was ready)
+    // Pull files stored during startup (macOS "Open with" before webview was ready,
+    // or Windows "Open with" on first launch via CLI args)
     const { invoke } = await import('@tauri-apps/api/core');
     const startupFiles = await invoke<string[]>('get_opened_files');
     for (const path of startupFiles) {

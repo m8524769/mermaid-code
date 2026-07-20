@@ -30,7 +30,6 @@
     "fs:scope-home-recursive",
     "fs:allow-stat",
     "shell:allow-open",
-    "deep-link:default",
     "updater:default",
     "os:default",
     "process:allow-restart"
