@@ -543,6 +543,14 @@ const handleWatchEvent = async (event: import('$/util/fileSystem').WatchEvent): 
       const tab = tabs.find((t) => t.path === p);
       if (!tab) continue;
       if (tab.isDirty) {
+        // Read the new file content to check if it's our own save
+        try {
+          const newCode = await readTextFile(p);
+          // If the file now matches savedCode, it was written by autoSave — ignore
+          if (newCode === tab.savedCode) continue;
+        } catch {
+          continue;
+        }
         notify(`"${tab.name}" was modified externally but has unsaved changes`);
       } else {
         try {

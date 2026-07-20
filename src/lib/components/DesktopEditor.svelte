@@ -32,6 +32,8 @@
   } satisfies monaco.editor.IStandaloneEditorConstructionOptions;
   let currentText = '';
   let isUpdatingFromState = false;
+  let isTyping = false;
+  let typingTimer: ReturnType<typeof setTimeout> | null = null;
   let showPopup = $state(false);
   let popupPosition = $state({ top: 0, lineNumber: 0 });
   let decorationsCollection: monaco.editor.IEditorDecorationsCollection | undefined;
@@ -321,6 +323,11 @@
         return;
       }
       currentText = newText;
+      isTyping = true;
+      if (typingTimer) clearTimeout(typingTimer);
+      typingTimer = setTimeout(() => {
+        isTyping = false;
+      }, 300);
       debouncedOnUpdate(currentText);
     });
 
@@ -394,7 +401,7 @@
         model.setValue(newText);
       }
       currentText = model.getValue();
-    } else if (newText !== currentText) {
+    } else if (!isTyping && newText !== currentText && newText !== model.getValue()) {
       isUpdatingFromState = true;
       try {
         editor.setScrollTop(0);
