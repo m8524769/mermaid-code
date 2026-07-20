@@ -244,26 +244,8 @@
           <ExclamationCircleIcon class="size-6 text-destructive" aria-hidden="true" />
           <div class="flex flex-col">
             <p>Syntax error</p>
-            {#if env.isEnabledMermaidChartLinks && validatedState.current.editorMode === 'code'}
-              <p class="text-xs text-white/60" data-testid={TID.aiHelpText}>
-                Create a free account to repair with AI
-              </p>
-            {/if}
           </div>
         </div>
-        {#if validatedState.current.editorMode === 'code'}
-          <McWrapper>
-            <Button
-              variant="accent"
-              size="sm"
-              data-testid={TID.aiRepairButton}
-              href={urls.current.mermaidChart({ medium: 'ai_repair' }).save}
-              target="_blank">
-              <MermaidChartIcon />
-              AI Repair
-            </Button>
-          </McWrapper>
-        {/if}
       </div>
       <output class="max-h-32 overflow-auto bg-muted p-2" name="mermaid-error" for="editor">
         <pre>{validatedState.current.error?.toString()}</pre>

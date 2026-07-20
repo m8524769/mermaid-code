@@ -10,10 +10,9 @@
 
   interface Props {
     children: Snippet;
-    hidePromotion?: boolean;
   }
 
-  let { children, hidePromotion = false }: Props = $props();
+  let { children }: Props = $props();
 
   type Links = ComponentProps<typeof DropdownNavMenu>['links'];
 
