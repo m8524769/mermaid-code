@@ -215,33 +215,10 @@
     return defaultMermaidModel;
   };
 
-  const renderAIPromptGutterGlyphIcon = () => {
-    decorationsCollection?.clear();
-    if (!editor || showPopup) {
-      return;
-    }
-    const model = editor.getModel();
-    if (!model) {
-      return;
-    }
-
-    if (lastMouseLine > 0 && model.id === getMermaidModel().id) {
-      decorationsCollection?.set([
-        {
-          range: new monaco.Range(lastMouseLine, 1, lastMouseLine, 1),
-          options: {
-            glyphMarginClassName: 'suggestion-icon'
-          }
-        }
-      ]);
-    }
-  };
-
   const closePopup = () => {
     showPopup = false;
     input = '';
     aiPromptManager.hide();
-    renderAIPromptGutterGlyphIcon();
   };
 
   const toggleAIPopup = (lineNumber: number) => {
@@ -257,7 +234,6 @@
     } else {
       aiPromptManager.hide();
     }
-    renderAIPromptGutterGlyphIcon();
   };
 
   onMount(() => {
@@ -356,12 +332,10 @@
       if (editor.getModel()?.id !== getMermaidModel().id) return;
 
       lastMouseLine = e.target.position?.lineNumber ?? 0;
-      renderAIPromptGutterGlyphIcon();
     });
 
     editor.onMouseLeave(() => {
       lastMouseLine = 0;
-      renderAIPromptGutterGlyphIcon();
     });
 
     applyEditorTheme(mode.current);
@@ -376,8 +350,6 @@
     if (divElement.parentElement) {
       resizeObserver.observe(divElement);
     }
-
-    renderAIPromptGutterGlyphIcon();
 
     applyVimMode(vimEnabled);
 
@@ -404,7 +376,6 @@
     const modelSwitched = editor.getModel()?.id !== model.id;
     if (modelSwitched) {
       editor.setModel(model);
-      renderAIPromptGutterGlyphIcon();
     }
 
     // Clear decorations if not in 'code' mode, or if the model changes
@@ -436,7 +407,6 @@
       } finally {
         isUpdatingFromState = false;
       }
-      renderAIPromptGutterGlyphIcon();
     }
 
     // Display/clear errors
