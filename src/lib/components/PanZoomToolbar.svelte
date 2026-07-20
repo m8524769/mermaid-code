@@ -3,8 +3,6 @@
   import { Button } from '$/components/ui/button';
   import { Separator } from '$/components/ui/separator';
   import type { PanZoomState } from '$/util/panZoom';
-  import { isTauri } from '$/util/fileSystem';
-  import { urls } from '$/util/state.svelte';
   import ExpandIcon from '~icons/material-symbols/open-in-full-rounded';
   import CloseFullscreenIcon from '~icons/material-symbols/close-fullscreen-rounded';
   import ArrowsToCircleIcon from '~icons/material-symbols/screenshot-frame-2';
@@ -17,25 +15,9 @@
     isPresentationMode = false
   }: {
     panZoomState: PanZoomState;
-    onPresentationToggle?: () => void;
+    onPresentationToggle: () => void;
     isPresentationMode?: boolean;
   } = $props();
-
-  const openFullScreen = async () => {
-    const viewUrl = urls.current.view;
-    if (isTauri()) {
-      const { WebviewWindow } = await import('@tauri-apps/api/webviewWindow');
-      new WebviewWindow('view', {
-        url: viewUrl,
-        title: 'Mermaid Code — View',
-        fullscreen: true,
-        resizable: true,
-        center: true
-      });
-    } else {
-      window.open(viewUrl, '_blank');
-    }
-  };
 </script>
 
 <FloatingToolbar>
@@ -58,7 +40,7 @@
     variant="ghost"
     size="icon"
     title={isPresentationMode ? 'Exit Full Screen' : 'Full Screen'}
-    onclick={() => (onPresentationToggle ? onPresentationToggle() : openFullScreen())}>
+    onclick={() => onPresentationToggle()}>
     {#if isPresentationMode}
       <CloseFullscreenIcon />
     {:else}

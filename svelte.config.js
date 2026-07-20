@@ -15,7 +15,7 @@ const config = {
       base: process.env.MERMAID_BASE_PATH ?? ''
     },
     adapter: adapter({
-      pages: 'docs',
+      pages: 'dist',
       fallback: '404.html'
     })
   }
