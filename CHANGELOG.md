@@ -2,6 +2,13 @@
 
 All notable changes to Mermaid Code are documented here.
 
+## [v0.3.10] - 2026-07-21
+
+### Fixed
+
+- **"Open with" on macOS**: fixed file association so that double-clicking or using "Open with Mermaid Code" in Finder correctly opens the file on first launch
+- **"Open with" on Windows**: fixed file association for first launch when the app is not already running
+
 ## [v0.3.8] - 2026-07-20
 
 ### Added

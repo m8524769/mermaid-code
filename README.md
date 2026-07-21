@@ -37,6 +37,7 @@ brew install --cask mermaid-code
 
 - Native macOS/Windows application
 - Local file system access — open, edit, and save `.mmd` files directly
+- "Open with" support — double-click any `.mmd` or `.mermaid` file in Finder or Explorer to open it directly in Mermaid Code
 - App quit guard: prompts when unsaved changes exist on close
 
 ### File Manager Sidebar
