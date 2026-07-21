@@ -4,7 +4,7 @@
 
 A local-first Mermaid diagram editor built on [Mermaid Live Editor](https://github.com/mermaid-js/mermaid-live-editor), enhanced with desktop-native features via [Tauri](https://tauri.app).
 
-![Mermaid Code showcase](showcase.gif)
+![Mermaid Code showcase](showcase.png)
 
 ## Built for AI-First Workflows
 
