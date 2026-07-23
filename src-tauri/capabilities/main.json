@@ -30,6 +30,7 @@
     "fs:scope-home-recursive",
     "fs:allow-stat",
     "shell:allow-open",
+    "window-state:default",
     "updater:default",
     "os:default",
     "process:allow-restart"

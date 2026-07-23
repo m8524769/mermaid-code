@@ -80,6 +80,7 @@ pub fn run() {
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_os::init())
         .plugin(tauri_plugin_process::init())
+        .plugin(tauri_plugin_window_state::Builder::default().build())
         .invoke_handler(tauri::generate_handler![copy_image_to_clipboard, get_opened_files])
         .setup(|_app| {
             #[cfg(debug_assertions)]
