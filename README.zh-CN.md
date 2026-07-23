@@ -1,5 +1,7 @@
 [![GitHub Release](https://img.shields.io/github/v/release/m8524769/mermaid-code?style=flat-square)](https://github.com/m8524769/mermaid-code/releases)
 
+[English](README.md) | 简体中文
+
 # Mermaid Code
 
 一款基于 [Mermaid Live Editor](https://github.com/mermaid-js/mermaid-live-editor) 的本地 Mermaid 图表编辑器，并借助 [Tauri](https://tauri.app) 赋予跨平台原生桌面应用体验。
@@ -63,6 +65,7 @@ brew install --cask mermaid-code
 
 - 可视化配置 —— 通过表单设置主题、布局和字体，无需编辑 JSON
 - Pin to code —— 将当前配置以 YAML 的形式插入到图表代码中以固定样式
+
 ---
 
 ## 开发环境要求
