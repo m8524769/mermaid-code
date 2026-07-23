@@ -30,6 +30,11 @@ brew install --cask mermaid-code
 
 > Since the app is not signed with an Apple Developer certificate, macOS may block it on first launch.
 > Go to **System Settings → Privacy & Security** and click **Open Anyway** next to the Mermaid Code entry.
+> If that doesn't work (e.g. on macOS 27 Beta), run the following command in Terminal:
+>
+> ```sh
+> xattr -dr com.apple.quarantine "/Applications/Mermaid Code.app"
+> ```
 
 ## Enhancements over Mermaid Live Editor
 
