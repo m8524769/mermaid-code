@@ -84,14 +84,6 @@
       }
     });
 
-    // Pull files stored during startup (macOS "Open with" before webview was ready,
-    // or Windows "Open with" on first launch via CLI args)
-    const { invoke } = await import('@tauri-apps/api/core');
-    const startupFiles = await invoke<string[]>('get_opened_files');
-    for (const path of startupFiles) {
-      await fileState.openFile(path);
-    }
-
     getCurrentWebview().onDragDropEvent(async (event) => {
       if (event.payload.type === 'over') {
         isDraggingOver = true;

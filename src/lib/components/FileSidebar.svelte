@@ -29,7 +29,15 @@
 
   onMount(() => {
     // Delay restore to after full component tree mount
-    setTimeout(() => void fileState.restoreLastFolder(), 0);
+    setTimeout(async () => {
+      await fileState.restoreLastFolder();
+      // After restoring last folder, open any files passed via "Open with" on startup
+      const { invoke } = await import('@tauri-apps/api/core');
+      const startupFiles = await invoke<string[]>('get_opened_files').catch(() => [] as string[]);
+      for (const path of startupFiles) {
+        await fileState.openFile(path);
+      }
+    }, 0);
   });
 
   // Auto-save: re-runs whenever activeTabId or isDirty changes

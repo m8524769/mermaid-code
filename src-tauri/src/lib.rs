@@ -114,10 +114,10 @@ pub fn run() {
                     .collect();
                 let filtered = filter_mmd_paths(paths);
                 if !filtered.is_empty() {
-                    // Always store in state — frontend pulls on mount via get_opened_files().
-                    // Also emit for the case where the app is already running.
-                    let _ = app.emit("open-files", filtered.clone());
-                    app.state::<OpenedFiles>().0.lock().unwrap().extend(filtered);
+                    // Store in state — frontend pulls via get_opened_files() on mount.
+                    // Also emit for the case where the app is already running and fully loaded.
+                    app.state::<OpenedFiles>().0.lock().unwrap().extend(filtered.clone());
+                    let _ = app.emit("open-files", filtered);
                 }
             }
         });
