@@ -81,6 +81,23 @@ pub fn run() {
         .plugin(tauri_plugin_os::init())
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_window_state::Builder::default().build())
+        .plugin(
+            // Intercept external navigation and open in system browser
+            tauri::plugin::Builder::<tauri::Wry>::new("navigation-guard")
+                .on_navigation(|_webview, url| {
+                    let s = url.as_str();
+                    if s.starts_with("tauri://localhost") {
+                        return true;
+                    }
+                    #[cfg(debug_assertions)]
+                    if s.starts_with("http://localhost:3000") {
+                        return true;
+                    }
+                    let _ = open::that(s);
+                    false
+                })
+                .build(),
+        )
         .invoke_handler(tauri::generate_handler![copy_image_to_clipboard, get_opened_files])
         .setup(|_app| {
             #[cfg(debug_assertions)]

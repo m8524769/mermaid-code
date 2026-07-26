@@ -2192,6 +2192,7 @@ dependencies = [
  "arboard",
  "base64 0.22.1",
  "image",
+ "open",
  "serde",
  "serde_json",
  "tauri",
