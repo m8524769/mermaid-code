@@ -84,7 +84,7 @@ pub fn run() {
         .plugin(
             // Intercept external navigation and open in system browser
             tauri::plugin::Builder::<tauri::Wry>::new("navigation-guard")
-                .on_navigation(|_webview, url| {
+                .on_navigation(|webview, url| {
                     let s = url.as_str();
                     if s.starts_with("tauri://localhost") {
                         return true;
@@ -93,7 +93,23 @@ pub fn run() {
                     if s.starts_with("http://localhost:3000") {
                         return true;
                     }
-                    let _ = open::that(s);
+                    let url_owned = s.to_string();
+                    let app = webview.app_handle().clone();
+                    tauri::async_runtime::spawn(async move {
+                        use tauri_plugin_dialog::{DialogExt, MessageDialogButtons};
+                        let confirmed = app
+                            .dialog()
+                            .message(format!("Do you trust this link?\n\n{url_owned}"))
+                            .title("External Link")
+                            .buttons(MessageDialogButtons::OkCancelCustom(
+                                "Open in Browser".into(),
+                                "Cancel".into(),
+                            ))
+                            .blocking_show();
+                        if confirmed {
+                            let _ = open::that(&url_owned);
+                        }
+                    });
                     false
                 })
                 .build(),
