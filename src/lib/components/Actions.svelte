@@ -16,7 +16,7 @@
   import { inputState, updateCodeStore, urls, validatedState } from '$lib/util/state.svelte';
   import { version as FAVersion } from '@fortawesome/fontawesome-free/package.json';
   import dayjs from 'dayjs';
-  import { toBase64, fromBase64 } from 'js-base64';
+  import { toBase64 } from 'js-base64';
   import DownloadIcon from '~icons/material-symbols/download';
   import ExternalLinkIcon from '~icons/material-symbols/open-in-new-rounded';
   import WidthIcon from '~icons/material-symbols/width-rounded';
@@ -32,25 +32,6 @@
       return `${stem}.${extension}`;
     }
     return `mermaid-diagram-${dayjs().format('YYYY-MM-DD-HHmmss')}.${extension}`;
-  };
-
-  /**
-   * Replace foreignObject elements with SVG text nodes for canvas rendering.
-   * WKWebView taints the canvas when SVG contains foreignObject with HTML content.
-   */
-  const replaceForeignObjects = (svg: HTMLElement) => {
-    const svgNS = 'http://www.w3.org/2000/svg';
-    svg.querySelectorAll('foreignObject').forEach((fo) => {
-      const x = parseFloat(fo.getAttribute('x') || '0');
-      const y = parseFloat(fo.getAttribute('y') || '0');
-      const height = parseFloat(fo.getAttribute('height') || '0');
-      const text = document.createElementNS(svgNS, 'text');
-      text.setAttribute('x', String(x));
-      text.setAttribute('y', String(y + height / 2));
-      text.setAttribute('dominant-baseline', 'middle');
-      text.textContent = fo.textContent?.trim() ?? '';
-      fo.parentNode?.replaceChild(text, fo);
-    });
   };
 
   /**
@@ -116,7 +97,6 @@
     }
 
     if (forCanvas) {
-      replaceForeignObjects(svg);
       // Remove external hrefs from <a> tags to prevent canvas taint
       svg.querySelectorAll('a').forEach((a) => {
         a.removeAttribute('href');
@@ -193,14 +173,8 @@
     image.addEventListener('load', () => {
       exporter(context, image)();
       updateCodeStore({ panZoom: true });
-      URL.revokeObjectURL(image.src);
     });
-
-    // Use Blob URL — WKWebView blocks data: URIs for SVGs containing foreignObject or external hrefs
-    const svgString = fromBase64(getBase64SVG(svg, canvas.width, canvas.height, true));
-    const blob = new Blob([svgString], { type: 'image/svg+xml' });
-    const blobUrl = URL.createObjectURL(blob);
-    image.src = blobUrl;
+    image.src = `data:image/svg+xml;base64,${getBase64SVG(svg, canvas.width, canvas.height, true)}`;
     // Fallback to set panZoom to true after 2 seconds
     // This is a workaround for the case when the image is not loaded
     setTimeout(() => {
