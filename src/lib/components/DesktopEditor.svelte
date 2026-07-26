@@ -124,38 +124,58 @@
         }
         Vim.map('jk', '<Esc>', 'insert');
       }
-      // Register :w and :write to trigger save (VimMode.Vim not in type defs)
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (VimMode as any).Vim?.defineEx('write', 'w', () => {
-        if (fileState.activeTabId) {
-          void fileState.saveTab(fileState.activeTabId);
+        const activeTab = fileState.tabs.find((t) => t.id === fileState.activeTabId);
+        if (activeTab && !activeTab.isDraft) {
+          void fileState.saveTab(activeTab.id);
         } else {
-          // No active tab — save as file (same as Save As button in draft mode)
+          // Draft tab or no tab — trigger Save As
           const now = new Date();
           const pad = (n: number) => String(n).padStart(2, '0');
           const date = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
           const time = `${pad(now.getHours())}.${pad(now.getMinutes())}.${pad(now.getSeconds())}`;
           const defaultName = `Diagram ${date} at ${time}.mmd`;
           void saveFileAs(validatedState.current.code, defaultName).then((handle) => {
-            if (handle) void fileState.openFile(handle.path);
+            if (handle) {
+              fileState.clearDraft();
+              void fileState.openFile(handle.path);
+            }
           });
         }
       });
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (VimMode as any).Vim?.defineEx('quit', 'q', () => {
-        if (fileState.activeTabId) {
-          void fileState.closeTab(fileState.activeTabId);
-        } else {
-          void import('@tauri-apps/api/window').then(({ getCurrentWindow }) =>
-            getCurrentWindow().close()
-          );
+        const activeTab = fileState.tabs.find((t) => t.id === fileState.activeTabId);
+        if (activeTab && !activeTab.isDraft) {
+          void fileState.closeTab(activeTab.id);
+        } else if (!activeTab || activeTab.isDraft) {
+          // On draft: close the window if no real tabs, otherwise do nothing
+          const hasRealTabs = fileState.tabs.some((t) => !t.isDraft);
+          if (!hasRealTabs) {
+            void import('@tauri-apps/api/window').then(({ getCurrentWindow }) =>
+              getCurrentWindow().close()
+            );
+          }
         }
       });
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (VimMode as any).Vim?.defineEx('wq', 'wq', async () => {
-        if (fileState.activeTabId) {
-          await fileState.saveTab(fileState.activeTabId);
-          void fileState.closeTab(fileState.activeTabId);
+        const activeTab = fileState.tabs.find((t) => t.id === fileState.activeTabId);
+        if (activeTab && !activeTab.isDraft) {
+          await fileState.saveTab(activeTab.id);
+          void fileState.closeTab(activeTab.id);
+        } else {
+          // Draft tab — Save As then clear draft
+          const now = new Date();
+          const pad = (n: number) => String(n).padStart(2, '0');
+          const date = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+          const time = `${pad(now.getHours())}.${pad(now.getMinutes())}.${pad(now.getSeconds())}`;
+          const defaultName = `Diagram ${date} at ${time}.mmd`;
+          const handle = await saveFileAs(validatedState.current.code, defaultName);
+          if (handle) {
+            fileState.clearDraft();
+            void fileState.openFile(handle.path);
+          }
         }
       });
     } else if (!enabled && vimAdapter) {

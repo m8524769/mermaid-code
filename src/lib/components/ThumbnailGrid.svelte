@@ -16,9 +16,9 @@
   const getThumbnailConfig = (): MermaidConfig => {
     try {
       const config = JSON.parse(validatedState.current.mermaid || '{}') as MermaidConfig;
-      return { ...config, securityLevel: 'loose' };
+      return { ...config, securityLevel: 'strict' };
     } catch {
-      return { securityLevel: 'loose' };
+      return { securityLevel: 'strict' };
     }
   };
 

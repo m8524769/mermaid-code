@@ -270,12 +270,32 @@ export const fileState = {
   },
 
   async openFolder(): Promise<void> {
+    const dirtyTabs = tabs.filter((t) => !t.isDraft && t.isDirty);
+    if (dirtyTabs.length > 0) {
+      const names = dirtyTabs.map((t) => t.name).join(', ');
+      const save = await confirmDialog(
+        `Unsaved changes in: ${names}\n\nSave all before switching?`
+      );
+      if (save) {
+        await Promise.all(dirtyTabs.map((t) => fileState.saveTab(t.id, { silent: true })));
+      }
+    }
     const path = await openFolderDialog();
     if (!path) return;
     await openFolderPath(path);
   },
 
   async openFolderByPath(path: string): Promise<void> {
+    const dirtyTabs = tabs.filter((t) => !t.isDraft && t.isDirty);
+    if (dirtyTabs.length > 0) {
+      const names = dirtyTabs.map((t) => t.name).join(', ');
+      const save = await confirmDialog(
+        `Unsaved changes in: ${names}\n\nSave all before switching?`
+      );
+      if (save) {
+        await Promise.all(dirtyTabs.map((t) => fileState.saveTab(t.id, { silent: true })));
+      }
+    }
     await openFolderPath(path);
   },
 
@@ -445,10 +465,30 @@ export const fileState = {
   async renameNode(oldPath: string, newName: string): Promise<void> {
     const dir = pathDirname(oldPath);
     const newPath = joinPath(dir, newName);
+    const sep = oldPath.includes('\\') ? '\\' : '/';
+    const oldPrefix = oldPath + sep;
+    const newPrefix = newPath + sep;
     try {
       await fsRename(oldPath, newPath);
-      // Update any open tabs with this path
-      tabs = tabs.map((t) => (t.path === oldPath ? { ...t, path: newPath, name: newName } : t));
+      // Update exact match (file rename) and prefix match (folder rename — update child tabs)
+      tabs = tabs.map((t) => {
+        if (t.path === oldPath) return { ...t, path: newPath, name: newName };
+        if (t.path.startsWith(oldPrefix)) {
+          const newTabPath = newPrefix + t.path.slice(oldPrefix.length);
+          return { ...t, path: newTabPath };
+        }
+        return t;
+      });
+      // Re-register watchers for renamed paths
+      for (const [watchedPath, unwatch] of watchMap.entries()) {
+        if (watchedPath === oldPath || watchedPath.startsWith(oldPrefix)) {
+          unwatch();
+          watchMap.delete(watchedPath);
+          const updatedPath =
+            watchedPath === oldPath ? newPath : newPrefix + watchedPath.slice(oldPrefix.length);
+          await watchDir(updatedPath);
+        }
+      }
       // Clear lastCreated so no file gets pinned to top after a rename
       thumbnailCache.setLastCreated('');
       await refreshTree();
@@ -465,9 +505,10 @@ export const fileState = {
     if (!confirmed) return;
     try {
       await fsDeleteNode(path, isDir);
+      const sep = path.includes('\\') ? '\\' : '/';
       // Close all tabs whose path starts with this path
       const toClose = isDir
-        ? tabs.filter((t) => t.path.startsWith(path + '/') || t.path === path)
+        ? tabs.filter((t) => t.path.startsWith(path + sep) || t.path === path)
         : tabs.filter((t) => t.path === path);
       for (const tab of toClose) {
         tabs = tabs.filter((t) => t.id !== tab.id);
