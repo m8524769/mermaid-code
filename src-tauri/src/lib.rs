@@ -86,7 +86,9 @@ pub fn run() {
             tauri::plugin::Builder::<tauri::Wry>::new("navigation-guard")
                 .on_navigation(|webview, url| {
                     let s = url.as_str();
-                    if s.starts_with("tauri://localhost") {
+                    if s.starts_with("tauri://localhost")
+                        || s.starts_with("blob:")
+                    {
                         return true;
                     }
                     #[cfg(debug_assertions)]

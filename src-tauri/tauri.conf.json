@@ -22,7 +22,23 @@
       }
     ],
     "security": {
-      "csp": null
+      "csp": {
+        "default-src": ["'self'", "tauri:"],
+        "script-src": ["'self'", "'unsafe-inline'", "'unsafe-eval'", "tauri:", "blob:"],
+        "style-src": ["'self'", "'unsafe-inline'", "tauri:", "https://cdnjs.cloudflare.com"],
+        "img-src": ["'self'", "data:", "blob:", "tauri:"],
+        "font-src": ["'self'", "data:", "tauri:", "https://cdnjs.cloudflare.com"],
+        "connect-src": [
+          "'self'",
+          "tauri:",
+          "ipc:",
+          "http://localhost:*",
+          "https://api.github.com",
+          "https://gist.githubusercontent.com",
+          "https://raw.githubusercontent.com"
+        ],
+        "worker-src": ["'self'", "blob:"]
+      }
     }
   },
   "bundle": {
