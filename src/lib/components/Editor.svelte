@@ -43,7 +43,7 @@
 
   // Parse YAML frontmatter config from the diagram code
   const frontmatterConfig = $derived.by(() => {
-    const match = validatedState.current.code.match(/^---\n([\s\S]*?)\n---/);
+    const match = validatedState.current.code.match(/^---\r?\n([\s\S]*?)\r?\n---/);
     if (!match) return {} as Record<string, string>;
     const result: Record<string, string> = {};
     for (const line of match[1].split('\n')) {
@@ -95,11 +95,11 @@
       return lines.join('\n');
     };
 
-    const frontmatterMatch = code.match(/^---\n([\s\S]*?)\n---/);
+    const frontmatterMatch = code.match(/^---\r?\n([\s\S]*?)\r?\n---/);
     let updated: string;
     if (frontmatterMatch) {
       const newBody = applyToFrontmatter(frontmatterMatch[1]);
-      updated = code.replace(/^---\n[\s\S]*?\n---\n?/, `---\n${newBody}\n---\n`);
+      updated = code.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n?/, `---\n${newBody}\n---\n`);
     } else {
       const newLines = ['---', 'config:'];
       for (const key of formFields) {

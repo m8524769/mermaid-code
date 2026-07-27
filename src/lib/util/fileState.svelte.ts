@@ -347,9 +347,8 @@ export const fileState = {
 
   async closeTab(id: string): Promise<void> {
     const tab = tabs.find((t) => t.id === id);
-    if (!tab) return;
-    // Draft tab: only confirm if it has content
-    if (!tab.isDraft && tab.isDirty) {
+    if (!tab || tab.isDraft) return;
+    if (tab.isDirty) {
       const confirmed = await confirmDialog(
         `"${tab.name}" has unsaved changes. Close without saving?`
       );

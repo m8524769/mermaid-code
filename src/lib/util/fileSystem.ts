@@ -20,7 +20,7 @@ export const openFile = async (): Promise<FileResult | null> => {
   if (!path) return null;
 
   const code = await readTextFile(path as string);
-  const name = (path as string).split('/').pop() ?? (path as string).split('\\').pop() ?? 'file';
+  const name = (path as string).split(/[/\\]/).pop() ?? 'file';
   return { handle: { path: path as string, name }, code };
 };
 
@@ -47,7 +47,7 @@ export const saveFileAs = async (
   if (!path) return null;
 
   await writeTextFile(path, content);
-  const name = path.split('/').pop() ?? path.split('\\').pop() ?? defaultName;
+  const name = path.split(/[/\\]/).pop() ?? defaultName;
   return { path, name };
 };
 

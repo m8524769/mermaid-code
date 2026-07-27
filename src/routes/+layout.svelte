@@ -64,7 +64,8 @@
             const pad = (n: number) => String(n).padStart(2, '0');
             const date = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
             const time = `${pad(now.getHours())}.${pad(now.getMinutes())}.${pad(now.getSeconds())}`;
-            await saveFileAs(draft.code, `Diagram ${date} at ${time}.mmd`);
+            const handle = await saveFileAs(draft.code, `Diagram ${date} at ${time}.mmd`);
+            if (!handle) return;
             fileState.clearDraft();
           }
         }

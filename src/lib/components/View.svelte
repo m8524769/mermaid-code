@@ -79,6 +79,7 @@
 
         if (!code.trim()) {
           container.innerHTML = '';
+          recordRenderTime(0, () => {});
           return;
         }
 
