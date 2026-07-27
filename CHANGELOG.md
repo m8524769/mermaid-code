@@ -2,6 +2,33 @@
 
 All notable changes to Mermaid Code are documented here.
 
+## [v0.3.12] - 2026-07-27
+
+### Added
+
+- **Content Security Policy (CSP)**: configured CSP for the WebView to restrict resource loading
+- **External link confirmation**: clicking a diagram link now shows a "Do you trust this link?" dialog before opening in the system browser
+
+### Fixed
+
+- **PNG export with external links**: diagrams containing `click href` links can now be exported as PNG; external hrefs are stripped from the canvas SVG to prevent canvas taint
+- **External link navigation**: links in diagrams no longer navigate inside the app; they open in the system browser instead
+- **Vim `:w`/`:q`/`:wq` on Draft tab**: correctly triggers Save As when the Draft tab is active instead of doing nothing
+- **Thumbnail security level**: thumbnail rendering now uses `strict` security level instead of `loose`
+- **Unsaved changes on folder switch**: switching to a different folder with unsaved changes now prompts to save instead of silently discarding them
+- **Delete directory on Windows**: deleting a directory now correctly closes all tabs whose files are inside it (fixed path separator mismatch on Windows)
+- **Rename directory**: renaming a directory now correctly updates paths of all open tabs inside it and re-registers file watchers
+
+## [v0.3.11] - 2026-07-25
+
+### Added
+
+- **Window state persistence**: window size and position are now saved and restored on next launch
+
+### Fixed
+
+- **"Open with" tab activation**: opening a file via "Open with Mermaid Code" now correctly activates the corresponding tab instead of staying on the previously active tab
+
 ## [v0.3.10] - 2026-07-21
 
 ### Fixed
