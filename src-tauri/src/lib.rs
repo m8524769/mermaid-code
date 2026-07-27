@@ -86,8 +86,12 @@ pub fn run() {
             tauri::plugin::Builder::<tauri::Wry>::new("navigation-guard")
                 .on_navigation(|webview, url| {
                     let s = url.as_str();
-                    if s.starts_with("tauri://localhost")
+                    // Allow all Tauri internal URLs and blob URLs
+                    if s.starts_with("tauri://")
+                        || s.starts_with("http://tauri.localhost")
+                        || s.starts_with("https://tauri.localhost")
                         || s.starts_with("blob:")
+                        || s.starts_with("data:")
                     {
                         return true;
                     }
@@ -95,6 +99,7 @@ pub fn run() {
                     if s.starts_with("http://localhost:3000") {
                         return true;
                     }
+                    // External URL — prompt user
                     let url_owned = s.to_string();
                     let app = webview.app_handle().clone();
                     tauri::async_runtime::spawn(async move {
