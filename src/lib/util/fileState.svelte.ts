@@ -403,10 +403,11 @@ export const fileState = {
   async saveTab(id: string, { silent = false }: { silent?: boolean } = {}): Promise<void> {
     const tab = tabs.find((t) => t.id === id);
     if (!tab || tab.isDraft) return;
+    const snapshot = tab.code;
     try {
-      await writeTextFile(tab.path, tab.code);
-      tab.savedCode = tab.code;
-      tab.isDirty = false;
+      await writeTextFile(tab.path, snapshot);
+      tab.savedCode = snapshot;
+      tab.isDirty = tab.code !== snapshot;
       if (!silent) notify(`Saved: ${tab.name}`);
     } catch {
       notify(`Failed to save: ${tab.name}`);
