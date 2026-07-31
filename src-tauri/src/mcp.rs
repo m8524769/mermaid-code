@@ -110,7 +110,13 @@ impl McpServer {
         });
 
         let mcp_process = find_sidecar(&app).and_then(|path| {
-            std::process::Command::new(&path).spawn().ok()
+            let mut cmd = std::process::Command::new(&path);
+            #[cfg(windows)]
+            {
+                use std::os::windows::process::CommandExt;
+                cmd.creation_flags(0x08000000); // CREATE_NO_WINDOW
+            }
+            cmd.spawn().ok()
         });
 
         // Verify sidecar is listening, retrying up to 3 seconds
