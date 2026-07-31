@@ -74,6 +74,25 @@ jobs:
 
       - run: pnpm install
 
+      - name: Build MCP server binary
+        shell: bash
+        run: |
+          curl -fsSL https://bun.sh/install | bash
+          export BUN_INSTALL="$HOME/.bun"
+          export PATH="$BUN_INSTALL/bin:$PATH"
+          cd mcp-server && bun install
+          TARGET="${{ matrix.target }}"
+          mkdir -p ../src-tauri/binaries
+          if [[ "$TARGET" == "x86_64-apple-darwin" ]]; then
+            bun build --compile --target=bun-darwin-x64 src/index.ts --outfile ../src-tauri/binaries/mermaid-code-mcp-x86_64-apple-darwin
+          elif [[ "$TARGET" == "aarch64-apple-darwin" ]]; then
+            bun build --compile --target=bun-darwin-arm64 src/index.ts --outfile ../src-tauri/binaries/mermaid-code-mcp-aarch64-apple-darwin
+          elif [[ "$TARGET" == "x86_64-pc-windows-msvc" ]]; then
+            bun build --compile --target=bun-windows-x64 src/index.ts --outfile ../src-tauri/binaries/mermaid-code-mcp-x86_64-pc-windows-msvc.exe
+          elif [[ "$TARGET" == "x86_64-unknown-linux-gnu" ]]; then
+            bun build --compile --target=bun-linux-x64 src/index.ts --outfile ../src-tauri/binaries/mermaid-code-mcp-x86_64-unknown-linux-gnu
+          fi
+
       - name: Set version from tag
         if: startsWith(github.ref, 'refs/tags/v')
         shell: bash

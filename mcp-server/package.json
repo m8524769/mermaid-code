@@ -1,0 +1,22 @@
+{
+  "name": "@mermaid-code/mcp-server",
+  "version": "0.1.0",
+  "description": "MCP server for Mermaid Code desktop app",
+  "type": "module",
+  "main": "src/index.ts",
+  "scripts": {
+    "dev": "bun run src/index.ts",
+    "build:mac-arm": "bun build --compile --target=bun-darwin-arm64 src/index.ts --outfile dist/mermaid-code-mcp-darwin-arm64",
+    "build:mac-x64": "bun build --compile --target=bun-darwin-x64 src/index.ts --outfile dist/mermaid-code-mcp-darwin-x64",
+    "build:win-x64": "bun build --compile --target=bun-windows-x64 src/index.ts --outfile dist/mermaid-code-mcp-windows-x64.exe",
+    "build:linux-x64": "bun build --compile --target=bun-linux-x64 src/index.ts --outfile dist/mermaid-code-mcp-linux-x64",
+    "build:all": "bun run build:mac-arm && bun run build:mac-x64 && bun run build:win-x64 && bun run build:linux-x64"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.16.0",
+    "zod": "^3.25.0"
+  },
+  "devDependencies": {
+    "bun-types": "^1.3.14"
+  }
+}

@@ -1,7 +1,19 @@
 use std::sync::Mutex;
 use tauri::{Emitter, Manager};
 
+mod mcp;
+
 struct OpenedFiles(Mutex<Vec<String>>);
+struct McpServerState(tokio::sync::Mutex<Option<mcp::McpServer>>);
+
+#[tauri::command]
+async fn update_mcp_context(app: tauri::AppHandle, context: mcp::ContextData) {
+    let state = app.state::<McpServerState>();
+    let guard = state.0.lock().await;
+    if let Some(server) = guard.as_ref() {
+        *server.context.lock().unwrap() = context;
+    }
+}
 
 #[tauri::command]
 fn get_opened_files(app: tauri::AppHandle) -> Vec<String> {
@@ -10,6 +22,35 @@ fn get_opened_files(app: tauri::AppHandle) -> Vec<String> {
     let result = files.clone();
     files.clear();
     result
+}
+
+#[tauri::command]
+async fn start_mcp_server(app: tauri::AppHandle) -> Result<u16, String> {
+    // Hold the lock across the entire start sequence to prevent TOCTOU race
+    let state = app.state::<McpServerState>();
+    let mut guard = state.0.lock().await;
+    if guard.is_some() {
+        return Ok(mcp::MCP_SERVER_PORT);
+    }
+    let server = mcp::McpServer::start(app.clone()).await?;
+    *guard = Some(server);
+    Ok(mcp::MCP_SERVER_PORT)
+}
+
+#[tauri::command]
+async fn stop_mcp_server(app: tauri::AppHandle) {
+    let state = app.state::<McpServerState>();
+    let mut guard = state.0.lock().await;
+    if let Some(mut server) = guard.take() {
+        server.stop();
+    }
+}
+
+#[tauri::command]
+async fn get_mcp_port(app: tauri::AppHandle) -> Option<u16> {
+    let state = app.state::<McpServerState>();
+    let guard = state.0.lock().await;
+    guard.as_ref().map(|_| mcp::MCP_SERVER_PORT)
 }
 
 #[tauri::command]
@@ -60,6 +101,7 @@ fn emit_open_files(app: &tauri::AppHandle, paths: Vec<std::path::PathBuf>) {
 pub fn run() {
     tauri::Builder::default()
         .manage(OpenedFiles(Mutex::new(vec![])))
+        .manage(McpServerState(tokio::sync::Mutex::new(None)))
         .plugin(tauri_plugin_single_instance::init(|app, args, _cwd| {
             // Focus the main window when a second instance is launched
             if let Some(window) = app.get_webview_window("main") {
@@ -121,7 +163,14 @@ pub fn run() {
                 })
                 .build(),
         )
-        .invoke_handler(tauri::generate_handler![copy_image_to_clipboard, get_opened_files])
+        .invoke_handler(tauri::generate_handler![
+            copy_image_to_clipboard,
+            get_opened_files,
+            start_mcp_server,
+            stop_mcp_server,
+            get_mcp_port,
+            update_mcp_context
+        ])
         .setup(|_app| {
             #[cfg(debug_assertions)]
             {
@@ -145,6 +194,13 @@ pub fn run() {
         .build(tauri::generate_context!())
         .expect("error while building tauri application")
         .run(|app, event| {
+            // Stop MCP server when app exits (covers Dock quit, Command+Q, etc.)
+            if matches!(event, tauri::RunEvent::Exit) {
+                let server = app.state::<McpServerState>().0.blocking_lock().take();
+                if let Some(mut s) = server {
+                    s.stop();
+                }
+            }
             // macOS: handle files opened via Finder / "Open with"
             #[cfg(target_os = "macos")]
             if let tauri::RunEvent::Opened { urls } = event {

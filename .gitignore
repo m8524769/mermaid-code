@@ -12,3 +12,9 @@
 
 # Tauri
 /src-tauri/target/
+/src-tauri/binaries/
+
+# MCP server
+/mcp-server/node_modules/
+/mcp-server/dist/
+*.bun-build

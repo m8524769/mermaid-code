@@ -46,6 +46,7 @@ brew install --cask mermaid-code
 - Local file system access — open, edit, and save `.mmd` files directly
 - "Open with" support — double-click any `.mmd` or `.mermaid` file in Finder or Explorer to open it directly in Mermaid Code
 - App quit guard: prompts when unsaved changes exist on close
+- **Built-in MCP server** — lets AI agents interact with the app directly (see [MCP Server Integration](#mcp-server-integration-experimental))
 
 ### File Manager Sidebar
 
@@ -65,6 +66,59 @@ brew install --cask mermaid-code
 
 - **Visual form** — set theme, layout, and font family without editing JSON directly
 - **Pin to code** — inserts the current config as a YAML frontmatter block at the top of the diagram code; re-clicking replaces the existing block
+
+---
+
+## MCP Server Integration <sup>experimental</sup>
+
+Mermaid Code includes a built-in [MCP](https://modelcontextprotocol.io) server that lets AI agents interact with the app directly.
+
+**Enable the MCP server:**
+Open Mermaid Code → click the menu icon → toggle **MCP Server** on. The server starts on `http://localhost:37079/mcp`.
+
+**Configure your MCP client** (e.g. Claude Code, Cursor, Windsurf):
+
+```json
+{
+  "mcpServers": {
+    "mermaid-code-mcp": {
+      "type": "http",
+      "url": "http://localhost:37079/mcp"
+    }
+  }
+}
+```
+
+For Claude Code:
+
+```sh
+claude mcp add --transport http mermaid-code-mcp http://localhost:37079/mcp
+```
+
+**Available tools:**
+
+| Tool              | Description                                                                                                         |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------- |
+| `list_diagrams`   | Get the opened folder, list of `.mmd` files, and the active tab. Call this first to understand the current context. |
+| `preview_diagram` | Preview Mermaid diagram in the Draft tab (replaces existing Draft content).                                         |
+
+**Example — modifying an existing diagram:**
+
+```
+"Add an error handling branch to the current diagram"
+→ Agent calls list_diagrams to get the active file path
+→ Agent reads the file content directly from the filesystem
+→ Agent writes the modified diagram back to the file
+→ Mermaid Code detects the change and refreshes the preview automatically
+```
+
+**Example — previewing without saving:**
+
+```
+"Preview a flowchart showing the user registration flow"
+→ Agent generates Mermaid code and calls preview_diagram
+→ The diagram appears instantly in Mermaid Code's Draft tab
+```
 
 ---
 

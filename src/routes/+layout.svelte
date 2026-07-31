@@ -71,6 +71,8 @@
         }
 
         fileState.stopWatching();
+        const { invoke } = await import('@tauri-apps/api/core');
+        invoke('stop_mcp_server').catch(() => {});
         await appWindow.destroy();
       });
     })();

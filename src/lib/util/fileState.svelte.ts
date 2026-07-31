@@ -558,6 +558,18 @@ export const fileState = {
     draft.code = '';
     draft.savedCode = '';
     draft.isDirty = false;
+  },
+
+  /** Set draft tab content (used by MCP preview). */
+  setDraftCode(code: string): void {
+    let draft = tabs.find((t) => t.isDraft);
+    if (!draft) {
+      draft = makeDraftTab();
+      tabs = [draft, ...tabs];
+    }
+    draft.code = code;
+    draft.isDirty = code.trim() !== '';
+    fileState.switchTab(draft.id);
   }
 };
 

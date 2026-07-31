@@ -7,14 +7,39 @@
   import { cn } from '$/utils';
   import { mode, setMode } from 'mode-watcher';
   import type { Component, Snippet } from 'svelte';
+  import { onMount } from 'svelte';
   import MermaidTailIcon from '~icons/custom/mermaid-tail';
   import BookIcon from '~icons/material-symbols/book-2-outline-rounded';
   import ContrastIcon from '~icons/material-symbols/contrast';
-  import PluginIcon from '~icons/material-symbols/electrical-services-rounded';
   import MenuIcon from '~icons/material-symbols/menu-rounded';
   import CommunityIcon from '~icons/material-symbols/person-play-outline-rounded';
   import PlaygroundIcon from '~icons/material-symbols/shape-line-outline';
-  import MermaidChartIcon from './MermaidChartIcon.svelte';
+  import ServerIcon from '~icons/material-symbols/lan-outline-rounded';
+
+  import { mcpState } from '$/util/mcpState.svelte';
+
+  const MCP_PORT = 37079;
+
+  const toggleMcp = async () => {
+    const { invoke } = await import('@tauri-apps/api/core');
+    if (mcpState.enabled) {
+      invoke('stop_mcp_server');
+      mcpState.set(false);
+    } else {
+      await invoke<number>('start_mcp_server');
+      mcpState.set(true);
+    }
+  };
+
+  // Restore MCP server on mount if previously enabled (only once, not on every toggle)
+  onMount(() => {
+    if (mcpState.enabled) {
+      void (async () => {
+        const { invoke } = await import('@tauri-apps/api/core');
+        await invoke<number>('start_mcp_server');
+      })();
+    }
+  });
 
   interface MenuItem {
     label: string;
@@ -32,7 +57,7 @@
     {
       href: urls.current.mermaidChart({ medium: 'main_menu' }).playground,
       icon: PlaygroundIcon,
-      isSectionEnd: true,
+      isSectionEnd: false,
       label: 'Edit in Playground',
       renderer: mcMenuItem
     },
@@ -55,28 +80,18 @@
       renderer: menuItem
     },
     {
-      checkDiagramType: false,
-      href: urls.current.mermaidChart({ medium: 'main_menu' }).plugins,
-      icon: PluginIcon,
-      label: 'Plugins',
-      renderer: mcMenuItem,
-      sharesData: false
-    },
-    {
       href: '#',
       icon: ContrastIcon,
-      isSectionEnd: true,
+      isSectionEnd: false,
       label: 'Dark Mode',
       renderer: darkModeMenuItem
     },
     {
-      checkDiagramType: false,
-      class: 'text-accent border-b-0',
-      href: urls.current.mermaidChart({ medium: 'main_menu' }).home,
-      icon: MermaidChartIcon,
-      label: 'Mermaid',
-      renderer: mcMenuItem,
-      sharesData: false
+      href: '#',
+      icon: ServerIcon,
+      isSectionEnd: false,
+      label: 'MCP Server',
+      renderer: mcpMenuItem
     }
   ]);
 </script>
@@ -120,6 +135,30 @@
     <Switch
       checked={mode.current === 'dark'}
       onCheckedChange={(dark) => setMode(dark ? 'dark' : 'light')} />
+  </div>
+{/snippet}
+
+{#snippet mcpMenuItem(options: Omit<MenuItem, 'renderer'>)}
+  <div
+    class={cn(
+      'flex cursor-pointer items-center justify-between border-b-2 px-3 py-2 hover:bg-muted',
+      options.isSectionEnd && 'border-border-dark',
+      options.class
+    )}
+    onclick={toggleMcp}
+    onkeydown={(e) => e.key === 'Enter' && toggleMcp()}
+    role="button"
+    tabindex="0">
+    <span class="flex items-center gap-2">
+      <ServerIcon />
+      <span>
+        MCP Server
+        {#if mcpState.enabled}
+          <span class="ml-1 text-xs text-muted-foreground">:{MCP_PORT}</span>
+        {/if}
+      </span>
+    </span>
+    <Switch checked={mcpState.enabled} />
   </div>
 {/snippet}
 

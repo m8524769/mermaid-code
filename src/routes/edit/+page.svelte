@@ -69,6 +69,14 @@
   };
 
   let isDraggingOver = $state(false);
+  let _unlistens: (() => void)[] = [];
+
+  onMount(() => {
+    return () => {
+      _unlistens.forEach((u) => u());
+      _unlistens = [];
+    };
+  });
 
   onMount(async () => {
     await initHandler();
@@ -78,11 +86,28 @@
 
     // Listen for files opened via "Open with" or second instance (single-instance plugin)
     const { listen } = await import('@tauri-apps/api/event');
-    listen<string[]>('open-files', async (event) => {
-      for (const path of event.payload) {
-        await fileState.openFile(path);
-      }
-    });
+
+    _unlistens.push(
+      await listen<string[]>('open-files', async (event) => {
+        for (const path of event.payload) {
+          await fileState.openFile(path);
+        }
+      })
+    );
+
+    // MCP: preview diagram in Draft tab
+    _unlistens.push(
+      await listen<string>('mcp-preview', (event) => {
+        fileState.setDraftCode(event.payload);
+      })
+    );
+
+    // MCP: open existing file
+    _unlistens.push(
+      await listen<string>('mcp-open', async (event) => {
+        await fileState.openFile(event.payload);
+      })
+    );
 
     getCurrentWebview().onDragDropEvent(async (event) => {
       if (event.payload.type === 'over') {

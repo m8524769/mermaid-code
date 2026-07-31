@@ -1,6 +1,7 @@
 <script lang="ts">
   import { fileState, autoSaveTick } from '$/util/fileState.svelte';
   import { persisted } from '$/util/persist.svelte';
+  import { mcpState } from '$/util/mcpState.svelte';
   import FileTree from '$/components/FileTree.svelte';
   import ThumbnailGrid from '$/components/ThumbnailGrid.svelte';
   import FolderOpenIcon from '~icons/material-symbols/folder-open-rounded';
@@ -38,6 +39,38 @@
         await fileState.openFile(path);
       }
     }, 0);
+  });
+
+  function collectMmdFiles(nodes: typeof fileState.tree): { path: string; name: string }[] {
+    return nodes.flatMap((n) => {
+      if (n.isDir) return n.loaded ? collectMmdFiles(n.children) : [];
+      return n.name.endsWith('.mmd') || n.name.endsWith('.mermaid')
+        ? [{ path: n.path, name: n.name }]
+        : [];
+    });
+  }
+  $effect(() => {
+    if (!mcpState.enabled) return;
+    const activeTabId = fileState.activeTabId;
+    const rootPath = fileState.rootPath;
+    void fileState.tree; // track tree changes
+
+    const activeTab = fileState.tabs.find((t) => t.id === activeTabId);
+
+    const context = {
+      folder: rootPath ?? null,
+      files: collectMmdFiles(fileState.tree),
+      active_tab: activeTab
+        ? {
+            path: activeTab.isDraft ? null : activeTab.path,
+            name: activeTab.name,
+            is_draft: activeTab.isDraft ?? false
+          }
+        : null
+    };
+    void import('@tauri-apps/api/core').then(({ invoke }) =>
+      invoke('update_mcp_context', { context }).catch(() => {})
+    );
   });
 
   // Auto-save: re-runs whenever activeTabId or isDirty changes
