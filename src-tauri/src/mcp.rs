@@ -148,10 +148,15 @@ impl McpServer {
         }
         let port = MCP_SERVER_PORT;
         tauri::async_runtime::spawn(async move {
-            let _ = reqwest::Client::new()
-                .post(format!("http://127.0.0.1:{port}/shutdown"))
-                .send()
-                .await;
+            use tokio::io::AsyncWriteExt;
+            if let Ok(mut stream) = tokio::net::TcpStream::connect(
+                format!("127.0.0.1:{port}")
+            ).await {
+                let req = format!(
+                    "POST /shutdown HTTP/1.1\r\nHost: 127.0.0.1:{port}\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
+                );
+                let _ = stream.write_all(req.as_bytes()).await;
+            }
         });
     }
 }
