@@ -2,18 +2,6 @@ name: Build Test
 
 on:
   workflow_dispatch:
-    inputs:
-      platform:
-        description: Platform to build
-        required: true
-        default: all
-        type: choice
-        options:
-          - all
-          - macos-arm64
-          - macos-x64
-          - windows
-          - linux
 
 jobs:
   build:
@@ -35,7 +23,6 @@ jobs:
             name: linux
 
     runs-on: ${{ matrix.os }}
-    if: inputs.platform == 'all' || inputs.platform == matrix.name
 
     steps:
       - uses: actions/checkout@v7
