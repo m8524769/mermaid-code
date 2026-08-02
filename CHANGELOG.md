@@ -2,6 +2,26 @@
 
 All notable changes to Mermaid Code are documented here.
 
+## [v0.4.0] - 2026-08-02
+
+### Added
+
+- **MCP Server Integration**: built-in MCP server (port 37079) exposes `preview_diagram` and `list_diagrams` tools; AI agents can preview diagrams in the Draft tab and list all open `.mmd` files; enable via the main menu toggle
+- **MCP HTTP bridge**: internal axum server (port 37078) bridges MCP requests to the Tauri frontend
+
+### Changed
+
+- **Linux packages**: `.AppImage` is no longer provided due to a compatibility issue between Bun's statically-linked sidecar binary and `linuxdeploy`; `.deb` and `.rpm` packages are still available
+
+## [v0.3.13] - 2026-07-27
+
+### Fixed
+
+- **Navigation guard on Windows**: allow `tauri://`, `http://tauri.localhost`, `https://tauri.localhost`, and `data:` URLs in addition to blob URLs so the app loads correctly on Windows
+- **Save race condition**: take a snapshot of the code before writing to disk so that rapid edits no longer cause `isDirty` to be incorrectly cleared
+- **YAML frontmatter parsing on Windows**: regex now handles `\r\n` line endings in frontmatter blocks
+- **Path parsing**: file name extraction now uses a cross-platform regex (`/[/\\]/`) instead of splitting on `/` then `\`
+
 ## [v0.3.12] - 2026-07-27
 
 ### Added
