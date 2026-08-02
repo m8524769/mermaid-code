@@ -12,15 +12,19 @@ jobs:
           - os: macos-latest
             target: aarch64-apple-darwin
             name: macos-arm64
+            args: --target aarch64-apple-darwin --verbose
           - os: macos-latest
             target: x86_64-apple-darwin
             name: macos-x64
+            args: --target x86_64-apple-darwin --verbose
           - os: windows-latest
             target: x86_64-pc-windows-msvc
             name: windows
+            args: --target x86_64-pc-windows-msvc --verbose
           - os: ubuntu-22.04
             target: x86_64-unknown-linux-gnu
             name: linux
+            args: --target x86_64-unknown-linux-gnu --bundles deb,rpm --verbose
 
     runs-on: ${{ matrix.os }}
 
@@ -72,9 +76,8 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD || '' }}
           APPIMAGE_EXTRACT_AND_RUN: 1
-          NO_STRIP: "true"
         with:
-          args: --target ${{ matrix.target }} --verbose
+          args: ${{ matrix.args }}
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
