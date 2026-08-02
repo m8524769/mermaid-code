@@ -46,6 +46,7 @@ brew install --cask mermaid-code
 - 本地文件系统访问 —— 可直接打开、编辑和保存 `.mmd` 文件
 - 支持“打开方式” —— 在访达或资源管理器中双击任意 `.mmd` 或 `.mermaid` 文件，即可在 Mermaid Code 中打开
 - 退出保护 —— 关闭应用时若有未保存的更改，会弹出相应提示
+- 内置 MCP 服务器 —— 使你的 AI Agent 直接与 Mermaid Code 进行交互（详见 [MCP 服务器集成](#mcp-服务器集成)）
 
 ### 文件管理器
 
@@ -65,6 +66,51 @@ brew install --cask mermaid-code
 
 - 可视化配置 —— 通过表单设置主题、布局和字体，无需编辑 JSON
 - Pin to code —— 将当前配置以 YAML 的形式插入到图表代码中以固定样式
+
+---
+
+## MCP 服务器集成
+
+Mermaid Code 内置了一个完整的 [MCP](https://modelcontextprotocol.io) 服务器，这意味着 AI Agent 可直接与 Mermaid Code 进行交互。
+
+**如何启用 MCP 服务器：**
+打开 Mermaid Code → 点击左上角的菜单按钮 → 切换 **MCP Server** 状态为打开，随后 MCP 服务器将启动并监听 `http://localhost:37079/mcp`。
+
+**配置 MCP 客户端**（例如 Claude Code，Cursor，Windsurf）：
+
+```json
+{
+  "mcpServers": {
+    "mermaid-code-mcp": {
+      "type": "http",
+      "url": "http://localhost:37079/mcp"
+    }
+  }
+}
+```
+
+Claude Code 也可通过命令行配置：
+
+```sh
+claude mcp add --transport http mermaid-code-mcp http://localhost:37079/mcp
+```
+
+**可用工具：**
+
+| 工具              | 描述                                                                                                  |
+| ----------------- | ----------------------------------------------------------------------------------------------------- |
+| `list_diagrams`   | 获取当前 Mermaid Code 中的上下文信息，包括打开的文件夹位置、`.mmd` 文件列表以及当前展示的标签页信息。 |
+| `preview_diagram` | 在 Draft 标签页中预览生成的图表                                                                       |
+
+**使用样例 —— 编辑现有图表：**
+
+```
+"为当前图表添加一条错误处理的分支"
+→ Agent 调用 list_diagrams 获取当前展示图表的文件路径
+→ Agent 通过该路径读取文件内容
+→ Agent 将修改后的图表代码写入文件
+→ Mermaid Code 检测到文件内容变更，自动刷新当前图表
+```
 
 ---
 
