@@ -1,5 +1,6 @@
 use std::sync::Mutex;
 use tauri::{Emitter, Manager};
+use tauri::menu::{Menu, MenuItem, PredefinedMenuItem, Submenu};
 
 mod mcp;
 
@@ -171,10 +172,81 @@ pub fn run() {
             get_mcp_port,
             update_mcp_context
         ])
-        .setup(|_app| {
+        .setup(|app| {
+            // macOS App menu (always first on macOS)
+            #[cfg(target_os = "macos")]
+            let app_menu = Submenu::with_items(
+                app,
+                "Mermaid Code",
+                true,
+                &[
+                    &PredefinedMenuItem::about(app, None, None)?,
+                    &PredefinedMenuItem::separator(app)?,
+                    &PredefinedMenuItem::services(app, None)?,
+                    &PredefinedMenuItem::separator(app)?,
+                    &PredefinedMenuItem::hide(app, None)?,
+                    &PredefinedMenuItem::hide_others(app, None)?,
+                    &PredefinedMenuItem::show_all(app, None)?,
+                    &PredefinedMenuItem::separator(app)?,
+                    &PredefinedMenuItem::quit(app, None)?,
+                ],
+            )?;
+
+            let file_menu = Submenu::with_items(
+                app,
+                "File",
+                true,
+                &[
+                    &MenuItem::with_id(app, "open-file", "Open File...", true, Some("CmdOrCtrl+O"))?,
+                    &MenuItem::with_id(app, "open-folder", "Open Folder...", true, Some("CmdOrCtrl+Shift+O"))?,
+                    &PredefinedMenuItem::separator(app)?,
+                    &MenuItem::with_id(app, "save", "Save", true, None::<&str>)?,
+                    &MenuItem::with_id(app, "save-as", "Save As...", true, None::<&str>)?,
+                    &PredefinedMenuItem::separator(app)?,
+                    &MenuItem::with_id(app, "close-tab", "Close Tab", true, None::<&str>)?,
+                    &PredefinedMenuItem::close_window(app, None)?,
+                ],
+            )?;
+
+            let view_menu = Submenu::with_items(
+                app,
+                "View",
+                true,
+                &[
+                    &MenuItem::with_id(app, "toggle-explorer", "Toggle File Explorer", true, Some("CmdOrCtrl+B"))?,
+                    &MenuItem::with_id(app, "toggle-editor", "Toggle Editor", true, None::<&str>)?,
+                    &PredefinedMenuItem::separator(app)?,
+                    &MenuItem::with_id(app, "toggle-presentation", "Toggle Presentation Mode", true, Some("CmdOrCtrl+Shift+F"))?,
+                ],
+            )?;
+
+            let window_menu = Submenu::with_items(
+                app,
+                "Window",
+                true,
+                &[
+                    &PredefinedMenuItem::minimize(app, None)?,
+                    &PredefinedMenuItem::maximize(app, None)?,
+                    #[cfg(target_os = "macos")]
+                    &PredefinedMenuItem::fullscreen(app, None)?,
+                    &PredefinedMenuItem::separator(app)?,
+                    &PredefinedMenuItem::bring_all_to_front(app, None)?,
+                ],
+            )?;
+
+            #[cfg(target_os = "macos")]
+            let menu = Menu::with_items(app, &[&app_menu, &file_menu, &view_menu, &window_menu])?;
+            #[cfg(not(target_os = "macos"))]
+            let menu = Menu::with_items(app, &[&file_menu, &view_menu, &window_menu])?;
+
+            app.set_menu(menu)?;
+            app.on_menu_event(|app, event| {
+                let _ = app.emit("menu", event.id().as_ref());
+            });
+
             #[cfg(debug_assertions)]
             {
-                _app.get_webview_window("main").unwrap().open_devtools();
+                app.get_webview_window("main").unwrap().open_devtools();
             }
             // Windows: handle files passed as CLI args on first launch ("Open with")
             #[cfg(windows)]
@@ -186,7 +258,7 @@ pub fn run() {
                     .collect();
                 let filtered = filter_mmd_paths(paths);
                 if !filtered.is_empty() {
-                    _app.state::<OpenedFiles>().0.lock().unwrap().extend(filtered);
+                    app.state::<OpenedFiles>().0.lock().unwrap().extend(filtered);
                 }
             }
             Ok(())

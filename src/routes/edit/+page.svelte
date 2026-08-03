@@ -102,6 +102,52 @@
       })
     );
 
+    // Native File menu events
+    _unlistens.push(
+      await listen<string>('menu', async (event) => {
+        switch (event.payload) {
+          case 'open-file': {
+            const { openFile } = await import('$/util/fileSystem');
+            const result = await openFile();
+            if (result) await fileState.openFile(result.handle.path);
+            break;
+          }
+          case 'open-folder':
+            await fileState.openFolder();
+            break;
+          case 'save':
+            if (fileState.activeTabId) await fileState.saveTab(fileState.activeTabId);
+            break;
+          case 'save-as': {
+            const activeTab = fileState.tabs.find((t) => t.id === fileState.activeTabId);
+            if (activeTab?.isDraft) {
+              await saveDraftAsFile();
+            } else if (activeTab) {
+              const handle = await saveFileAs(activeTab.code, activeTab.name);
+              if (handle) await fileState.openFile(handle.path);
+            }
+            break;
+          }
+          case 'close-tab':
+            if (fileState.activeTabId) await fileState.closeTab(fileState.activeTabId);
+            break;
+          case 'toggle-explorer':
+            isSidebarOpen = !isSidebarOpen;
+            break;
+          case 'toggle-editor':
+            if (isEditorCollapsed) {
+              editorPane?.expand();
+            } else {
+              editorPane?.collapse();
+            }
+            break;
+          case 'toggle-presentation':
+            await togglePresentationMode();
+            break;
+        }
+      })
+    );
+
     getCurrentWebview().onDragDropEvent(async (event) => {
       if (event.payload.type === 'over') {
         isDraggingOver = true;
