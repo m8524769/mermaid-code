@@ -102,13 +102,6 @@
       })
     );
 
-    // MCP: open existing file
-    _unlistens.push(
-      await listen<string>('mcp-open', async (event) => {
-        await fileState.openFile(event.payload);
-      })
-    );
-
     getCurrentWebview().onDragDropEvent(async (event) => {
       if (event.payload.type === 'over') {
         isDraggingOver = true;

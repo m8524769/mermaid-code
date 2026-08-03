@@ -39,11 +39,6 @@ pub struct PreviewRequest {
     pub code: String,
 }
 
-#[derive(Deserialize)]
-pub struct OpenRequest {
-    pub path: String,
-}
-
 struct McpState {
     app: AppHandle,
     context: Arc<std::sync::Mutex<ContextData>>,
@@ -59,14 +54,6 @@ async fn preview_handler(
     Json(req): Json<PreviewRequest>,
 ) -> StatusCode {
     let _ = state.app.emit("mcp-preview", req.code);
-    StatusCode::OK
-}
-
-async fn open_handler(
-    State(state): State<Arc<McpState>>,
-    Json(req): Json<OpenRequest>,
-) -> StatusCode {
-    let _ = state.app.emit("mcp-open", req.path);
     StatusCode::OK
 }
 
@@ -95,7 +82,6 @@ impl McpServer {
         let state = Arc::new(McpState { app: app.clone(), context: context.clone() });
         let router = Router::new()
             .route("/preview", post(preview_handler))
-            .route("/open", post(open_handler))
             .route("/context", get(context_handler))
             .with_state(state);
 

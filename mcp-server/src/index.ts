@@ -32,7 +32,7 @@ async function callMermaidCode(endpoint: string, body?: unknown): Promise<unknow
 
 function createMcpServer(): McpServer {
   const server = new McpServer(
-    { name: 'mermaid-code', version },
+    { name: 'mermaid-code-mcp', version },
     {
       instructions:
         'This server lets you interact with the Mermaid Code desktop app. ' +
@@ -43,21 +43,28 @@ function createMcpServer(): McpServer {
     }
   );
 
-  server.tool(
+  server.registerTool(
     'preview_diagram',
-    'Preview Mermaid diagram code in the local Mermaid Code desktop app. Opens in the Draft tab and replaces any existing Draft content. To modify an existing diagram, first call list_diagrams to get the current file path, then read and modify the file directly.',
-    { code: z.string().describe('Mermaid diagram code to preview') },
+    {
+      description:
+        'Preview Mermaid diagram code in the local Mermaid Code desktop app. Opens in the Draft tab and replaces any existing Draft content. To modify an existing diagram, first call list_diagrams to get the current file path, then read and modify the file directly.',
+      inputSchema: z.object({ code: z.string().describe('Mermaid diagram code to preview') }),
+      annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true }
+    },
     async ({ code }) => {
       await callMermaidCode('/preview', { code });
       return { content: [{ type: 'text', text: 'Diagram preview updated in Mermaid Code.' }] };
     }
   );
 
-  server.tool(
+  server.registerTool(
     'list_diagrams',
-    'Get the current context of the Mermaid Code app: the opened folder, list of .mmd files, and the active tab (path and name). Call this first to understand what diagrams exist and which file is currently active before creating or modifying diagrams.',
-    {},
-    { readOnlyHint: true },
+    {
+      description:
+        'Get the current context of the Mermaid Code app: the opened folder, list of .mmd files, and the active tab (path and name). Call this first to understand what diagrams exist and which file is currently active before creating or modifying diagrams.',
+      inputSchema: z.object({}),
+      annotations: { readOnlyHint: true }
+    },
     async () => {
       const ctx = await callMermaidCode('/context');
       return { content: [{ type: 'text', text: JSON.stringify(ctx, null, 2) }] };
