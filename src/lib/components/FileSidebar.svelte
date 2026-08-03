@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { fileState, autoSaveTick } from '$/util/fileState.svelte';
+  import { fileState, autoSaveTick, IGNORED_DIRS } from '$/util/fileState.svelte';
   import { persisted } from '$/util/persist.svelte';
   import { mcpState } from '$/util/mcpState.svelte';
   import FileTree from '$/components/FileTree.svelte';
@@ -43,7 +43,7 @@
 
   function collectMmdFiles(nodes: typeof fileState.tree): { path: string; name: string }[] {
     return nodes.flatMap((n) => {
-      if (n.isDir) return n.loaded ? collectMmdFiles(n.children) : [];
+      if (n.isDir) return n.loaded && !IGNORED_DIRS.has(n.name) ? collectMmdFiles(n.children) : [];
       return n.name.endsWith('.mmd') || n.name.endsWith('.mermaid')
         ? [{ path: n.path, name: n.name }]
         : [];

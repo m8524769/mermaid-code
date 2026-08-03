@@ -1,6 +1,6 @@
 use axum::{
     extract::State,
-    http::StatusCode,
+    http::{HeaderMap, StatusCode},
     routing::{get, post},
     Json, Router,
 };
@@ -10,6 +10,7 @@ use tauri::AppHandle;
 use tauri::Emitter;
 use tokio::net::TcpListener;
 use tokio::sync::oneshot;
+use uuid::Uuid;
 
 pub const TAURI_AXUM_PORT: u16 = 37078;
 pub const MCP_SERVER_PORT: u16 = 37079;
@@ -42,17 +43,37 @@ pub struct PreviewRequest {
 struct McpState {
     app: AppHandle,
     context: Arc<std::sync::Mutex<ContextData>>,
+    token: String,
 }
 
-async fn context_handler(State(state): State<Arc<McpState>>) -> Json<ContextData> {
+fn check_token(headers: &HeaderMap, token: &str) -> bool {
+    headers
+        .get("authorization")
+        .and_then(|v| v.to_str().ok())
+        .and_then(|v| v.strip_prefix("Bearer "))
+        .map(|t| t == token)
+        .unwrap_or(false)
+}
+
+async fn context_handler(
+    State(state): State<Arc<McpState>>,
+    headers: HeaderMap,
+) -> Result<Json<ContextData>, StatusCode> {
+    if !check_token(&headers, &state.token) {
+        return Err(StatusCode::UNAUTHORIZED);
+    }
     let ctx = state.context.lock().unwrap().clone();
-    Json(ctx)
+    Ok(Json(ctx))
 }
 
 async fn preview_handler(
     State(state): State<Arc<McpState>>,
+    headers: HeaderMap,
     Json(req): Json<PreviewRequest>,
 ) -> StatusCode {
+    if !check_token(&headers, &state.token) {
+        return StatusCode::UNAUTHORIZED;
+    }
     let _ = state.app.emit("mcp-preview", req.code);
     StatusCode::OK
 }
@@ -78,8 +99,13 @@ impl McpServer {
             .await
             .map_err(|e| format!("Port {TAURI_AXUM_PORT} unavailable: {e}"))?;
 
+        let token = Uuid::new_v4().to_string();
         let context = Arc::new(std::sync::Mutex::new(ContextData::default()));
-        let state = Arc::new(McpState { app: app.clone(), context: context.clone() });
+        let state = Arc::new(McpState {
+            app: app.clone(),
+            context: context.clone(),
+            token: token.clone(),
+        });
         let router = Router::new()
             .route("/preview", post(preview_handler))
             .route("/context", get(context_handler))
@@ -97,6 +123,7 @@ impl McpServer {
 
         let mcp_process = find_sidecar(&app).and_then(|path| {
             let mut cmd = std::process::Command::new(&path);
+            cmd.env("MCP_TOKEN", &token);
             #[cfg(windows)]
             {
                 use std::os::windows::process::CommandExt;

@@ -17,7 +17,7 @@ path = "src/main.rs"
 tauri-build = { version = "2", features = [] }
 
 [dependencies]
-tauri = { version = "2", features = ["devtools"] }
+tauri = { version = "2", features = [] }
 tauri-plugin-dialog = "2"
 tauri-plugin-fs = { version = "2", features = ["watch"] }
 tauri-plugin-shell = "2"
@@ -34,3 +34,4 @@ tauri-plugin-window-state = "2"
 axum = "0.8"
 tokio = { version = "1", features = ["rt-multi-thread", "net", "sync"] }
 open = "5"
+uuid = { version = "1", features = ["v4"] }

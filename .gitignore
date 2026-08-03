@@ -2,6 +2,7 @@
 .cache/
 .env.local
 .npmrc
+/.pnpm-store
 /.svelte-kit
 /build
 /coverage

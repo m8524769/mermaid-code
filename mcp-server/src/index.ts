@@ -5,13 +5,17 @@ import { version } from '../package.json';
 
 const MCP_HTTP_PORT = 37079;
 const TAURI_PORT = 37078;
+const TOKEN = process.env.MCP_TOKEN ?? '';
 
 async function callMermaidCode(endpoint: string, body?: unknown): Promise<unknown> {
   let res: Response;
   try {
     res = await fetch(`http://127.0.0.1:${TAURI_PORT}${endpoint}`, {
       method: body !== undefined ? 'POST' : 'GET',
-      headers: body !== undefined ? { 'Content-Type': 'application/json' } : {},
+      headers: {
+        Authorization: `Bearer ${TOKEN}`,
+        ...(body !== undefined ? { 'Content-Type': 'application/json' } : {})
+      },
       body: body !== undefined ? JSON.stringify(body) : undefined
     });
   } catch {
