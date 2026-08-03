@@ -122,23 +122,29 @@ claude mcp add --transport http mermaid-code-mcp http://localhost:37079/mcp
 
 ---
 
-## Requirements
+## Development Requirements
 
 - [Node.js](https://nodejs.org/en/) ≥ 24
 - [pnpm](https://pnpm.io/) — install with `corepack enable pnpm`
 - [Rust](https://rustup.rs/) — required for Tauri desktop build
 
-## Desktop Development (Tauri)
+### Desktop Development
 
 ```sh
 source ~/.cargo/env   # load Rust toolchain if needed
 pnpm tauri:dev
 ```
 
-## Desktop Build
+### Desktop Build
 
 ```sh
 pnpm tauri:build
+```
+
+Build with MCP server binary included:
+
+```sh
+pnpm tauri:build:full
 ```
 
 ---
