@@ -278,7 +278,7 @@
 </script>
 
 <div class="relative flex h-full flex-col overflow-hidden">
-  {#if isWindows}
+  {#if isWindows && !isPresentationMode}
     <TitleBar
       sidebarOpen={isSidebarOpen}
       onToggleSidebar={() => (isSidebarOpen = !isSidebarOpen)} />
