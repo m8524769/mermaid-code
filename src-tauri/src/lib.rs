@@ -10,6 +10,7 @@ struct MenuHandles {
     file: Submenu<tauri::Wry>,
     view: Submenu<tauri::Wry>,
     window: Submenu<tauri::Wry>,
+    help: Submenu<tauri::Wry>,
 }
 
 #[tauri::command]
@@ -21,6 +22,7 @@ fn popup_submenu(app: tauri::AppHandle, menu_id: String, x: f64, y: f64) {
         "file" => win.popup_menu_at(&state.file, pos),
         "view" => win.popup_menu_at(&state.view, pos),
         "window" => win.popup_menu_at(&state.window, pos),
+        "help" => win.popup_menu_at(&state.help, pos),
         _ => Ok(()),
     };
 }
@@ -253,10 +255,22 @@ pub fn run() {
                 ],
             )?;
 
+            let help_menu = Submenu::with_items(
+                app,
+                "Help",
+                true,
+                &[
+                    &MenuItem::with_id(app, "help-github", "GitHub Repository", true, None::<&str>)?,
+                    &MenuItem::with_id(app, "help-issue", "Report an Issue", true, None::<&str>)?,
+                    &PredefinedMenuItem::separator(app)?,
+                    &MenuItem::with_id(app, "help-changelog", "What's New", true, None::<&str>)?,
+                ],
+            )?;
+
             #[cfg(target_os = "macos")]
-            let menu = Menu::with_items(app, &[&app_menu, &file_menu, &view_menu, &window_menu])?;
+            let menu = Menu::with_items(app, &[&app_menu, &file_menu, &view_menu, &window_menu, &help_menu])?;
             #[cfg(not(target_os = "macos"))]
-            let menu = Menu::with_items(app, &[&file_menu, &view_menu, &window_menu])?;
+            let menu = Menu::with_items(app, &[&file_menu, &view_menu, &window_menu, &help_menu])?;
 
             app.set_menu(menu)?;
             app.on_menu_event(|app, event| {
@@ -268,6 +282,7 @@ pub fn run() {
                 file: file_menu,
                 view: view_menu,
                 window: window_menu,
+                help: help_menu,
             });
 
             #[cfg(debug_assertions)]

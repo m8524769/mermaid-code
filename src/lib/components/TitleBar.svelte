@@ -36,6 +36,7 @@
   <button class="px-3 hover:bg-muted" onclick={(e) => popupMenu(e, 'file')}> File </button>
   <button class="px-3 hover:bg-muted" onclick={(e) => popupMenu(e, 'view')}> View </button>
   <button class="px-3 hover:bg-muted" onclick={(e) => popupMenu(e, 'window')}> Window </button>
+  <button class="px-3 hover:bg-muted" onclick={(e) => popupMenu(e, 'help')}> Help </button>
 
   <div class="flex-1" data-tauri-drag-region></div>
 

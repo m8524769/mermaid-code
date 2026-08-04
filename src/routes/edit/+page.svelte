@@ -151,6 +151,18 @@
           case 'toggle-presentation':
             await togglePresentationMode();
             break;
+          case 'help-github':
+          case 'help-issue':
+          case 'help-changelog': {
+            const urls: Record<string, string> = {
+              'help-github': 'https://github.com/m8524769/mermaid-code',
+              'help-issue': 'https://github.com/m8524769/mermaid-code/issues/new',
+              'help-changelog': 'https://github.com/m8524769/mermaid-code/blob/develop/CHANGELOG.md'
+            };
+            const { open } = await import('@tauri-apps/plugin-shell');
+            await open(urls[event.payload]);
+            break;
+          }
         }
       })
     );
