@@ -6,6 +6,24 @@ mod mcp;
 
 struct OpenedFiles(Mutex<Vec<String>>);
 struct McpServerState(tokio::sync::Mutex<Option<mcp::McpServer>>);
+struct MenuHandles {
+    file: Submenu<tauri::Wry>,
+    view: Submenu<tauri::Wry>,
+    window: Submenu<tauri::Wry>,
+}
+
+#[tauri::command]
+fn popup_submenu(app: tauri::AppHandle, menu_id: String, x: f64, y: f64) {
+    let Some(state) = app.try_state::<MenuHandles>() else { return };
+    let Some(win) = app.get_webview_window("main") else { return };
+    let pos = tauri::Position::Logical(tauri::LogicalPosition { x, y });
+    let _ = match menu_id.as_str() {
+        "file" => win.popup_menu_at(&state.file, pos),
+        "view" => win.popup_menu_at(&state.view, pos),
+        "window" => win.popup_menu_at(&state.window, pos),
+        _ => Ok(()),
+    };
+}
 
 #[tauri::command]
 async fn update_mcp_context(app: tauri::AppHandle, context: mcp::ContextData) {
@@ -170,7 +188,8 @@ pub fn run() {
             start_mcp_server,
             stop_mcp_server,
             get_mcp_port,
-            update_mcp_context
+            update_mcp_context,
+            popup_submenu
         ])
         .setup(|app| {
             // macOS App menu (always first on macOS)
@@ -244,6 +263,13 @@ pub fn run() {
                 let _ = app.emit("menu", event.id().as_ref());
             });
 
+            // Store submenu handles for popup_submenu command
+            app.manage(MenuHandles {
+                file: file_menu,
+                view: view_menu,
+                window: window_menu,
+            });
+
             #[cfg(debug_assertions)]
             {
                 app.get_webview_window("main").unwrap().open_devtools();
@@ -259,6 +285,13 @@ pub fn run() {
                 let filtered = filter_mmd_paths(paths);
                 if !filtered.is_empty() {
                     app.state::<OpenedFiles>().0.lock().unwrap().extend(filtered);
+                }
+            }
+            // Windows: remove native title bar
+            #[cfg(windows)]
+            {
+                if let Some(win) = app.get_webview_window("main") {
+                    let _ = win.set_decorations(false);
                 }
             }
             Ok(())

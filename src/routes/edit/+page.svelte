@@ -10,6 +10,7 @@
   import McWrapper from '$/components/McWrapper.svelte';
   import MermaidChartIcon from '$/components/MermaidChartIcon.svelte';
   import Navbar from '$/components/Navbar.svelte';
+  import TitleBar from '$/components/TitleBar.svelte';
   import PanZoomToolbar from '$/components/PanZoomToolbar.svelte';
   import Preset from '$/components/Preset.svelte';
   import Share from '$/components/Share.svelte';
@@ -69,7 +70,13 @@
   };
 
   let isDraggingOver = $state(false);
+  let isWindows = $state(false);
   let _unlistens: (() => void)[] = [];
+
+  onMount(async () => {
+    const { platform } = await import('@tauri-apps/plugin-os');
+    isWindows = (await platform()) === 'windows';
+  });
 
   onMount(() => {
     return () => {
@@ -271,6 +278,11 @@
 </script>
 
 <div class="relative flex h-full flex-col overflow-hidden">
+  {#if isWindows}
+    <TitleBar
+      sidebarOpen={isSidebarOpen}
+      onToggleSidebar={() => (isSidebarOpen = !isSidebarOpen)} />
+  {/if}
   {#if isDraggingOver}
     <div
       class="absolute inset-0 z-50 flex items-center justify-center bg-primary/10 backdrop-blur-[1px]"
