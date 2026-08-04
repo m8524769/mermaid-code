@@ -40,21 +40,21 @@
   <div class="flex-1" data-tauri-drag-region></div>
 
   <button class="px-4 hover:bg-muted" onclick={() => win.minimize()} title="Minimize">
-    <span style="font-family: 'Segoe MDL2 Assets'">&#xE921;</span>
+    <span style="font-family: 'Segoe MDL2 Assets'; font-size: 10px">&#xE921;</span>
   </button>
   {#if isMaximized}
     <button class="px-4 hover:bg-muted" onclick={() => win.toggleMaximize()} title="Restore">
-      <span style="font-family: 'Segoe MDL2 Assets'">&#xE923;</span>
+      <span style="font-family: 'Segoe MDL2 Assets'; font-size: 10px">&#xE923;</span>
     </button>
   {:else}
     <button class="px-4 hover:bg-muted" onclick={() => win.toggleMaximize()} title="Maximize">
-      <span style="font-family: 'Segoe MDL2 Assets'">&#xE922;</span>
+      <span style="font-family: 'Segoe MDL2 Assets'; font-size: 10px">&#xE922;</span>
     </button>
   {/if}
   <button
     class="px-4 hover:bg-destructive hover:text-destructive-foreground"
     onclick={() => win.close()}
     title="Close">
-    <span style="font-family: 'Segoe MDL2 Assets'">&#xE8BB;</span>
+    <span style="font-family: 'Segoe MDL2 Assets'; font-size: 10px">&#xE8BB;</span>
   </button>
 </div>
