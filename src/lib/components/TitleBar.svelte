@@ -38,15 +38,15 @@
   <div class="flex-1" data-tauri-drag-region></div>
 
   <button class="px-4 hover:bg-muted" onclick={() => win.minimize()} title="Minimize">
-    &#x2212;
+    <span style="font-family: 'Segoe MDL2 Assets'">&#xE921;</span>
   </button>
   <button class="px-4 hover:bg-muted" onclick={() => win.toggleMaximize()} title="Maximize">
-    &#x25A1;
+    <span style="font-family: 'Segoe MDL2 Assets'">&#xE922;</span>
   </button>
   <button
     class="px-4 hover:bg-destructive hover:text-destructive-foreground"
     onclick={() => win.close()}
     title="Close">
-    &#x2715;
+    <span style="font-family: 'Segoe MDL2 Assets'">&#xE8BB;</span>
   </button>
 </div>
