@@ -2,6 +2,29 @@
 
 All notable changes to Mermaid Code are documented here.
 
+## [v0.4.3] - 2026-08-04
+
+### Added
+
+- **Custom title bar on Windows**: native title bar replaced with a custom one; includes File/View/Window/Help menu buttons, sidebar toggle, drag region, and window controls (minimize/maximize/close) using Segoe MDL2 Assets icons
+- **Help menu**: GitHub Repository, Report an Issue, and What's New links accessible from the menu bar
+
+## [v0.4.2] - 2026-08-03
+
+### Added
+
+- **Native menu bar**: custom File, View, and Window menus with keyboard shortcuts; menu actions wired to frontend (Open File, Open Folder, Save, Save As, Close Tab, Toggle File Explorer, Toggle Editor, Toggle Presentation Mode)
+
+## [v0.4.1] - 2026-08-03
+
+### Added
+
+- **MCP token authentication**: MCP bridge server now generates a random per-session token passed to the sidecar via environment variable; all bridge requests require `Authorization: Bearer <token>`
+
+### Removed
+
+- **Unused tests**: removed DOM-dependent test files that were no longer maintained
+
 ## [v0.4.0] - 2026-08-02
 
 ### Added
