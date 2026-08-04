@@ -309,6 +309,13 @@ pub fn run() {
                     let _ = win.set_decorations(false);
                 }
             }
+            // macOS: hide title from native title bar (shown in Navbar instead)
+            #[cfg(target_os = "macos")]
+            {
+                if let Some(win) = app.get_webview_window("main") {
+                    let _ = win.set_title("");
+                }
+            }
             Ok(())
         })
         .build(tauri::generate_context!())
