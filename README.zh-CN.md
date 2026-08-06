@@ -19,6 +19,8 @@ Mermaid Code 可与本地 AI Agent（如 Claude Code、Codex 等）无缝协作�
 
 Mermaid Code 启动后会实时检测文件内容变更并自动刷新图表，从而打通 AI 生成与视觉反馈之间的闭环，而这是纯网页编辑器中无法实现的。
 
+![AI workflow](ai-workflow.zh-CN.png)
+
 所有数据均存于本地 —— 架构图、数据库 schemas、业务流程图等，无需担心任何服务条款或数据保留政策。
 
 请从 [Releases](https://github.com/m8524769/mermaid-code/releases) 页面下载适用于 macOS 或 Windows 的最新安装包。
