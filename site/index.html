@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mermaid Code — Local-first Mermaid diagram editor</title>
+  <meta name="description" content="A desktop Mermaid diagram editor built for AI-first workflows. Open .mmd files locally, preview instantly, and let AI agents write diagrams directly to your filesystem." />
+  <meta property="og:title" content="Mermaid Code" />
+  <meta property="og:description" content="Local-first Mermaid diagram editor with AI agent integration." />
+  <meta property="og:image" content="showcase.png" />
+  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0f1117;
+      --bg2: #161b27;
+      --bg3: #1e2535;
+      --border: #2a3347;
+      --text: #e8edf5;
+      --muted: #8b96aa;
+      --accent: #4f8ef7;
+      --accent2: #7c5cbf;
+      --green: #3ecf8e;
+      --radius: 10px;
+      --max: 980px;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      font-size: 16px;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    /* NAV */
+    nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(15, 17, 23, 0.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+    }
+    .nav-inner {
+      max-width: var(--max);
+      margin: 0 auto;
+      padding: 0 24px;
+      height: 56px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .nav-logo {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 600;
+      font-size: 15px;
+      color: var(--text);
+    }
+    .nav-logo img { width: 22px; height: 22px; }
+    .nav-spacer { flex: 1; }
+    .nav-links { display: flex; gap: 4px; align-items: center; }
+    .nav-links a {
+      font-size: 14px;
+      color: var(--muted);
+      padding: 6px 10px;
+      border-radius: 6px;
+      transition: color 0.15s, background 0.15s;
+    }
+    .nav-links a:hover { color: var(--text); background: var(--bg3); text-decoration: none; }
+
+    /* HERO */
+    .hero {
+      max-width: var(--max);
+      margin: 0 auto;
+      padding: 80px 24px 60px;
+      text-align: center;
+    }
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(79, 142, 247, 0.12);
+      border: 1px solid rgba(79, 142, 247, 0.3);
+      color: var(--accent);
+      font-size: 12px;
+      font-weight: 500;
+      padding: 4px 12px;
+      border-radius: 999px;
+      margin-bottom: 24px;
+      letter-spacing: 0.02em;
+    }
+    h1 {
+      font-size: clamp(36px, 6vw, 60px);
+      font-weight: 700;
+      line-height: 1.1;
+      letter-spacing: -0.02em;
+      margin-bottom: 20px;
+    }
+    h1 span {
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .hero-sub {
+      font-size: clamp(16px, 2.5vw, 20px);
+      color: var(--muted);
+      max-width: 600px;
+      margin: 0 auto 36px;
+    }
+    .hero-actions {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 11px 22px;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: opacity 0.15s, transform 0.1s;
+      border: none;
+    }
+    .btn:hover { opacity: 0.88; transform: translateY(-1px); text-decoration: none; }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-secondary {
+      background: var(--bg3);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+
+    /* SCREENSHOT */
+    .screenshot-wrap {
+      max-width: var(--max);
+      margin: 0 auto;
+      padding: 0 24px 72px;
+    }
+    .screenshot-wrap img {
+      width: 100%;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      box-shadow: 0 24px 80px rgba(0,0,0,0.6);
+    }
+
+    /* SECTION */
+    section {
+      max-width: var(--max);
+      margin: 0 auto;
+      padding: 64px 24px;
+    }
+    .section-label {
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 12px;
+    }
+    h2 {
+      font-size: clamp(26px, 4vw, 38px);
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      line-height: 1.2;
+      margin-bottom: 16px;
+    }
+    .section-sub {
+      font-size: 17px;
+      color: var(--muted);
+      max-width: 560px;
+      margin-bottom: 48px;
+    }
+
+    /* WORKFLOW */
+    .workflow-split {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 48px;
+      align-items: center;
+    }
+    @media (max-width: 700px) { .workflow-split { grid-template-columns: 1fr; } }
+    .workflow-split img {
+      width: 100%;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+    }
+    .workflow-steps { display: flex; flex-direction: column; gap: 20px; }
+    .step {
+      display: flex;
+      gap: 14px;
+      align-items: flex-start;
+    }
+    .step-num {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: rgba(79, 142, 247, 0.15);
+      border: 1px solid rgba(79, 142, 247, 0.4);
+      color: var(--accent);
+      font-size: 13px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+    .step-text strong { display: block; font-weight: 600; margin-bottom: 2px; }
+    .step-text span { color: var(--muted); font-size: 14px; }
+
+    /* CODE BLOCK */
+    .code-block {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px 24px;
+      margin-top: 24px;
+    }
+    .code-block .prompt { color: var(--green); font-weight: 500; }
+    .code-block pre {
+      font-family: 'SF Mono', 'Fira Code', Menlo, monospace;
+      font-size: 13px;
+      color: #c8d3e8;
+      white-space: pre-wrap;
+      line-height: 1.7;
+    }
+
+    /* FEATURES GRID */
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 16px;
+    }
+    .feature-card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+      transition: border-color 0.15s;
+    }
+    .feature-card:hover { border-color: rgba(79, 142, 247, 0.4); }
+    .feature-icon {
+      font-size: 22px;
+      margin-bottom: 12px;
+    }
+    .feature-card h3 {
+      font-size: 15px;
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+    .feature-card p {
+      font-size: 14px;
+      color: var(--muted);
+      line-height: 1.55;
+    }
+
+    /* MCP SECTION */
+    .mcp-wrap {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 40px 48px;
+    }
+    @media (max-width: 600px) { .mcp-wrap { padding: 28px 24px; } }
+    .mcp-badge {
+      display: inline-block;
+      background: rgba(62, 207, 142, 0.12);
+      border: 1px solid rgba(62, 207, 142, 0.3);
+      color: var(--green);
+      font-size: 11px;
+      font-weight: 600;
+      padding: 3px 10px;
+      border-radius: 999px;
+      margin-bottom: 16px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+    .mcp-split {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 40px;
+      margin-top: 28px;
+    }
+    @media (max-width: 700px) { .mcp-split { grid-template-columns: 1fr; } }
+    .mcp-split h4 { font-size: 14px; color: var(--muted); font-weight: 500; margin-bottom: 10px; }
+    .tool-list { display: flex; flex-direction: column; gap: 10px; }
+    .tool-item {
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px 16px;
+    }
+    .tool-item code {
+      font-family: 'SF Mono', Menlo, monospace;
+      font-size: 13px;
+      color: var(--accent);
+    }
+    .tool-item p { font-size: 13px; color: var(--muted); margin-top: 3px; }
+
+    /* INSTALL */
+    .install-tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    .tab-btn {
+      padding: 6px 16px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--muted);
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .tab-btn.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+    .install-note {
+      margin-top: 16px;
+      padding: 14px 16px;
+      background: rgba(79, 142, 247, 0.07);
+      border: 1px solid rgba(79, 142, 247, 0.2);
+      border-radius: 8px;
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    /* DIVIDER */
+    hr {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 0;
+    }
+
+    /* FOOTER */
+    footer {
+      max-width: var(--max);
+      margin: 0 auto;
+      padding: 32px 24px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    footer .footer-left { display: flex; align-items: center; gap: 8px; }
+    footer .footer-left img { width: 18px; height: 18px; opacity: 0.7; }
+    footer .footer-left span { font-size: 13px; color: var(--muted); }
+    footer .footer-right { margin-left: auto; display: flex; gap: 16px; }
+    footer .footer-right a { font-size: 13px; color: var(--muted); }
+    footer .footer-right a:hover { color: var(--text); }
+  </style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-inner">
+    <a class="nav-logo" href="/">
+      <img src="favicon.svg" alt="" />
+      Mermaid Code
+    </a>
+    <div class="nav-spacer"></div>
+    <div class="nav-links">
+      <a href="#features">Features</a>
+      <a href="#mcp">MCP</a>
+      <a href="#install">Install</a>
+      <a href="https://github.com/m8524769/mermaid-code">GitHub</a>
+    </div>
+  </div>
+</nav>
+
+<div class="hero">
+  <div class="hero-badge">Built for AI-first workflows</div>
+  <h1>Diagram editor that works<br>with <span>your AI agent</span></h1>
+  <p class="hero-sub">
+    Mermaid Code is a local-first desktop app. Diagrams live as plain <code style="font-family:monospace;font-size:0.9em;color:var(--accent)">.mmd</code> files — AI agents can read, write, and update them directly. No copy-pasting. No browser automation.
+  </p>
+  <div class="hero-actions">
+    <a class="btn btn-primary" href="#install">Download</a>
+    <a class="btn btn-secondary" href="https://github.com/m8524769/mermaid-code">View on GitHub</a>
+  </div>
+</div>
+
+<div class="screenshot-wrap">
+  <img src="showcase.png" alt="Mermaid Code screenshot" />
+</div>
+
+<hr />
+
+<section id="workflow">
+  <div class="section-label">AI Workflow</div>
+  <div class="workflow-split">
+    <div>
+      <h2>Let your agent write the diagrams</h2>
+      <p class="section-sub" style="margin-bottom:28px">
+        Because diagrams are plain files on your filesystem, any AI coding agent can generate or update them as part of its normal workflow.
+      </p>
+      <div class="workflow-steps">
+        <div class="step">
+          <div class="step-num">1</div>
+          <div class="step-text">
+            <strong>Ask your agent</strong>
+            <span>"Generate an architecture diagram for this module and save it to docs/architecture.mmd"</span>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <div class="step-text">
+            <strong>Agent writes the file</strong>
+            <span>No API calls to a web editor, no clipboard tricks — just a regular file write.</span>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <div class="step-text">
+            <strong>Preview updates instantly</strong>
+            <span>The built-in file watcher detects the change and refreshes the diagram automatically.</span>
+          </div>
+        </div>
+      </div>
+      <div class="code-block">
+        <pre><span class="prompt"># Claude Code example</span>
+$ claude "Generate a sequence diagram for the
+  auth flow and save it to docs/auth.mmd"</pre>
+      </div>
+    </div>
+    <img src="ai-workflow.png" alt="AI workflow diagram" />
+  </div>
+</section>
+
+<hr />
+
+<section id="features">
+  <div class="section-label">Features</div>
+  <h2>Everything you need,<br>nothing you don't</h2>
+  <p class="section-sub">Built on Mermaid Live Editor, enhanced with desktop-native capabilities via Tauri.</p>
+  <div class="features-grid">
+    <div class="feature-card">
+      <div class="feature-icon">📁</div>
+      <h3>File Manager Sidebar</h3>
+      <p>Open any folder. Browse files in a tree or thumbnail grid. Drag and drop <code style="font-size:12px;color:var(--accent)">.mmd</code> files directly onto the window.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🗂</div>
+      <h3>Multi-tab Editing</h3>
+      <p>Open multiple diagrams simultaneously. Tabs and active files are restored per folder on next launch.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">💾</div>
+      <h3>Auto-save</h3>
+      <p>Changes are saved automatically with a 2-second debounce. Toggle it off when you need manual control.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">⌨️</div>
+      <h3>Vim Mode</h3>
+      <p>Full Vim keybindings in the Monaco editor, including yank-to-clipboard and custom <code style="font-size:12px;color:var(--accent)">:w</code> / <code style="font-size:12px;color:var(--accent)">:q</code> commands.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">✨</div>
+      <h3>Keyword Autocomplete</h3>
+      <p>Diagram-type-aware suggestions in the editor. Start typing and get context-sensitive completions.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🎨</div>
+      <h3>Visual Config</h3>
+      <p>Set theme, layout direction, and font family using a visual form — no JSON editing required.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🔒</div>
+      <h3>Fully Local</h3>
+      <p>Architecture diagrams, database schemas, and business flows never leave your machine. No telemetry, no cloud sync.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🖥</div>
+      <h3>macOS &amp; Windows</h3>
+      <p>Native app on both platforms. "Open with" support — double-click any <code style="font-size:12px;color:var(--accent)">.mmd</code> file to open it directly.</p>
+    </div>
+  </div>
+</section>
+
+<hr />
+
+<section id="mcp">
+  <div class="mcp-wrap">
+    <div class="mcp-badge">Experimental</div>
+    <h2 style="margin-bottom:8px">Built-in MCP Server</h2>
+    <p style="color:var(--muted);font-size:16px;max-width:560px">
+      Mermaid Code includes a built-in <a href="https://modelcontextprotocol.io" target="_blank">Model Context Protocol</a> server. AI agents can interact with the running app directly — no filesystem access required.
+    </p>
+    <div class="mcp-split">
+      <div>
+        <h4>Available tools</h4>
+        <div class="tool-list">
+          <div class="tool-item">
+            <code>list_diagrams</code>
+            <p>Get the opened folder, list of .mmd files, and the active tab.</p>
+          </div>
+          <div class="tool-item">
+            <code>preview_diagram</code>
+            <p>Preview Mermaid code in the Draft tab without saving to disk.</p>
+          </div>
+        </div>
+      </div>
+      <div>
+        <h4>Configure Claude Code</h4>
+        <div class="code-block" style="margin-top:0">
+          <pre><span class="prompt">$ </span>claude mcp add --transport http \
+  mermaid-code-mcp \
+  http://localhost:37079/mcp</pre>
+        </div>
+        <p style="margin-top:12px;font-size:13px;color:var(--muted)">Enable the server: open Mermaid Code → menu icon → toggle <strong style="color:var(--text)">MCP Server</strong> on.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr />
+
+<section id="install">
+  <div class="section-label">Install</div>
+  <h2>Get started in seconds</h2>
+  <p class="section-sub">Download the latest release for macOS or Windows, or install via Homebrew.</p>
+
+  <div class="install-tabs">
+    <button class="tab-btn active" onclick="switchTab('brew')">Homebrew</button>
+    <button class="tab-btn" onclick="switchTab('direct')">Direct download</button>
+  </div>
+
+  <div id="tab-brew" class="tab-content active">
+    <div class="code-block">
+      <pre><span class="prompt">$</span> brew tap m8524769/tap
+<span class="prompt">$</span> brew install --cask mermaid-code</pre>
+    </div>
+  </div>
+
+  <div id="tab-direct" class="tab-content">
+    <div class="code-block">
+      <pre>Download the latest installer from the <a href="https://github.com/m8524769/mermaid-code/releases" style="color:var(--accent)">GitHub Releases</a> page.
+Available for macOS (Apple Silicon &amp; Intel) and Windows.</pre>
+    </div>
+  </div>
+
+  <div class="install-note">
+    <strong style="color:var(--text)">macOS note:</strong> The app is not signed with an Apple Developer certificate. On first launch, go to <strong style="color:var(--text)">System Settings → Privacy &amp; Security</strong> and click <em>Open Anyway</em>. If blocked, run:<br>
+    <code style="font-family:monospace;font-size:12px">xattr -dr com.apple.quarantine "/Applications/Mermaid Code.app"</code>
+  </div>
+</section>
+
+<hr />
+
+<footer>
+  <div class="footer-left">
+    <img src="favicon.svg" alt="" />
+    <span>Mermaid Code — Fork of <a href="https://github.com/mermaid-js/mermaid-live-editor" style="color:var(--muted)">mermaid-live-editor</a></span>
+  </div>
+  <div class="footer-right">
+    <a href="https://github.com/m8524769/mermaid-code">GitHub</a>
+    <a href="https://github.com/m8524769/mermaid-code/releases">Releases</a>
+    <a href="https://github.com/m8524769/mermaid-code/blob/main/CHANGELOG.md">Changelog</a>
+  </div>
+</footer>
+
+<script>
+  function switchTab(name) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    document.getElementById('tab-' + name).classList.add('active');
+    event.target.classList.add('active');
+  }
+</script>
+
+</body>
+</html>
