@@ -42,7 +42,7 @@ export const saveFileAs = async (
 
   const path = await save({
     defaultPath: defaultName,
-    filters: [{ name: 'Mermaid', extensions: ['mmd', 'md', 'txt'] }]
+    filters: [{ name: 'Mermaid', extensions: ['mmd', 'mermaid'] }]
   });
   if (!path) return null;
 

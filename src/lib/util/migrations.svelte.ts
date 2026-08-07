@@ -1,13 +1,10 @@
-import { injectHistoryIDs } from '$lib/components/History/historyState.svelte';
 import { persisted } from '$lib/util/persist.svelte';
 
 interface MigrationState {
   version: number;
 }
 
-const migrations: Record<string, () => void> = {
-  injectHistoryIDs
-};
+const migrations: Record<string, () => void> = {};
 
 const migrationState = persisted<MigrationState>('migrations', { version: -1 });
 

@@ -12,7 +12,7 @@ import {
 import { defaultMermaidConfig, parse } from './mermaid';
 import { readJSON, writeJSON } from './persist.svelte';
 import { deserializeState, pakoSerde, serializeState } from './serde';
-import { errorDebug, formatJSON, getUTMSource, MCBaseURL } from './util';
+import { errorDebug, formatJSON } from './util';
 
 export const defaultState: State = {
   code: '',
@@ -181,34 +181,6 @@ const urlsCurrent = $derived.by(() => {
   return {
     kroki: krokiRendererUrl ? `${krokiRendererUrl}/mermaid/svg/${pakoSerde.serialize(code)}` : '',
     mdCode: png ? `[![](${png})](${origin}${resolve('/edit', {})}#${serialized})` : '',
-    mermaidChart: ({
-      medium,
-      campaign
-    }: {
-      medium:
-        | 'ai_edit'
-        | 'ai_repair'
-        | 'main_menu'
-        | 'save_diagram'
-        | 'share'
-        | 'vibe_diagramming'
-        | 'visual_edit'
-        | 'voice_edit';
-      campaign?: string;
-    }) => {
-      const utmSource = getUTMSource();
-      const params = new URLSearchParams({
-        utm_source: utmSource,
-        utm_medium: medium,
-        ...(campaign ? { utm_campaign: campaign } : {})
-      }).toString();
-      return {
-        save: `${MCBaseURL}/app/plugin/save?state=${serialized}&${params}`,
-        playground: `${MCBaseURL}/play?${params}#${serialized}`,
-        plugins: `${MCBaseURL}/plugins?${params}`,
-        home: `${MCBaseURL}/?${params}`
-      };
-    },
     new: `${resolve('/edit', {})}#${serializeState(defaultState)}`,
     edit: `${origin}${resolve('/edit', {})}#${serialized}`,
     png,

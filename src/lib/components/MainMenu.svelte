@@ -1,9 +1,7 @@
 <script lang="ts">
-  import McWrapper from '$/components/McWrapper.svelte';
   import * as Popover from '$/components/ui/popover';
   import { Switch } from '$/components/ui/switch';
   import { env } from '$/util/env';
-  import { urls } from '$/util/state.svelte';
   import { cn } from '$/utils';
   import { mode, setMode } from 'mode-watcher';
   import type { Component, Snippet } from 'svelte';
@@ -13,7 +11,6 @@
   import ContrastIcon from '~icons/material-symbols/contrast';
   import MenuIcon from '~icons/material-symbols/menu-rounded';
   import CommunityIcon from '~icons/material-symbols/person-play-outline-rounded';
-  import PlaygroundIcon from '~icons/material-symbols/shape-line-outline';
   import ServerIcon from '~icons/material-symbols/lan-outline-rounded';
 
   import { mcpState } from '$/util/mcpState.svelte';
@@ -54,13 +51,6 @@
   }
 
   const menuItems: MenuItem[] = $derived([
-    {
-      href: urls.current.mermaidChart({ medium: 'main_menu' }).playground,
-      icon: PlaygroundIcon,
-      isSectionEnd: false,
-      label: 'Edit in Playground',
-      renderer: mcMenuItem
-    },
     {
       label: 'Mermaid.js',
       icon: MermaidTailIcon,
@@ -109,16 +99,6 @@
     <options.icon class="size-5" />
     {options.label}
   </a>
-{/snippet}
-
-{#snippet mcMenuItem(item: Omit<MenuItem, 'renderer'>)}
-  <McWrapper
-    side="right"
-    labelPrefix={item.sharesData === false ? 'Opens a new tab in' : undefined}
-    sharesData={item.sharesData}
-    shouldCheckDiagramType={item.checkDiagramType}>
-    {@render menuItem(item)}
-  </McWrapper>
 {/snippet}
 
 {#snippet darkModeMenuItem(options: Omit<MenuItem, 'renderer'>)}

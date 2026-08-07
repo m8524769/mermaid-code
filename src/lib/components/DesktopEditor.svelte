@@ -1,10 +1,9 @@
 <script lang="ts">
   import type { EditorProps } from '$/types';
   import { env } from '$/util/env';
-  import { urls, validatedState } from '$/util/state.svelte';
+  import { validatedState } from '$/util/state.svelte';
   import { fileState } from '$/util/fileState.svelte';
   import { saveFileAs } from '$/util/fileSystem';
-  import { AIPromptViewZoneManager } from '$lib/util/AIPromptViewZoneManager';
   import { initEditor } from '$lib/util/monacoExtra';
   import { errorDebug } from '$lib/util/util';
   import debounce from 'lodash-es/debounce';
@@ -14,15 +13,12 @@
   import monacoJsonWorker from 'monaco-editor/esm/vs/language/json/json.worker?worker';
   import { initVimMode, VimMode } from 'monaco-vim';
   import { onMount } from 'svelte';
-  import AIPromptPopup from './AIPromptPopup.svelte';
   import ExclamationCircleIcon from '~icons/material-symbols/error-outline-rounded';
-  import { TID } from '$/constants';
 
   const { onUpdate }: EditorProps = $props();
   const debouncedOnUpdate = debounce((text: string) => onUpdate(text), 100);
 
   let divElement: HTMLDivElement | undefined = $state();
-  let aiPromptPopupElement: HTMLDivElement | undefined = $state();
   let editor: monaco.editor.IStandaloneCodeEditor | undefined;
   let editorOptions = {
     minimap: {
@@ -53,12 +49,6 @@
       showErrorDebounced.cancel();
     };
   });
-  let showPopup = $state(false);
-  let popupPosition = $state({ top: 0, lineNumber: 0 });
-  let decorationsCollection: monaco.editor.IEditorDecorationsCollection | undefined;
-  let input = $state('');
-  let lastMouseLine = 0;
-  const aiPromptManager = new AIPromptViewZoneManager();
 
   const VIM_MODE_KEY = 'mermaid-vim-mode';
   let vimEnabled = $state(localStorage.getItem(VIM_MODE_KEY) === 'true');
@@ -235,27 +225,6 @@
     return defaultMermaidModel;
   };
 
-  const closePopup = () => {
-    showPopup = false;
-    input = '';
-    aiPromptManager.hide();
-  };
-
-  const toggleAIPopup = (lineNumber: number) => {
-    if (!divElement || !aiPromptPopupElement) return;
-    popupPosition = {
-      top: 0,
-      lineNumber
-    };
-    showPopup = !showPopup;
-    if (showPopup) {
-      aiPromptManager.show(popupPosition.lineNumber, aiPromptPopupElement, 100);
-      editor?.setSelection(new monaco.Range(0, 0, 0, 0));
-    } else {
-      aiPromptManager.hide();
-    }
-  };
-
   onMount(() => {
     self.MonacoEnvironment = {
       getWorker(_, label) {
@@ -284,8 +253,6 @@
     initEditor(monaco);
     errorDebug();
     editor = monaco.editor.create(divElement, editorOptions);
-    aiPromptManager.setEditor(editor);
-    decorationsCollection = editor.createDecorationsCollection([]);
 
     editor.addAction({
       id: 'file-save',
@@ -323,15 +290,6 @@
       }
     });
 
-    editor.onMouseDown((e) => {
-      const isGutter = e.target.type === monaco.editor.MouseTargetType.GUTTER_GLYPH_MARGIN;
-      if (isGutter && e.target.position?.lineNumber === lastMouseLine && lastMouseLine > 0) {
-        e.event.preventDefault();
-        e.event.stopPropagation();
-        toggleAIPopup(e.target.position.lineNumber);
-      }
-    });
-
     editor.onDidChangeModelContent(({ isFlush }) => {
       const newText = editor?.getValue();
       if (newText == null || currentText === newText || isFlush || isUpdatingFromState) {
@@ -344,18 +302,6 @@
         isTyping = false;
       }, 300);
       debouncedOnUpdate(currentText);
-    });
-
-    editor.onMouseMove((e) => {
-      if (!editor) return;
-      if (showPopup) return;
-      if (editor.getModel()?.id !== getMermaidModel().id) return;
-
-      lastMouseLine = e.target.position?.lineNumber ?? 0;
-    });
-
-    editor.onMouseLeave(() => {
-      lastMouseLine = 0;
     });
 
     applyEditorTheme(mode.current);
@@ -380,7 +326,6 @@
       defaultMermaidModel.dispose();
       for (const model of tabModels.values()) model.dispose();
       tabModels.clear();
-      aiPromptManager.destroy();
       editor?.dispose();
     };
   });
@@ -396,11 +341,6 @@
     const modelSwitched = editor.getModel()?.id !== model.id;
     if (modelSwitched) {
       editor.setModel(model);
-    }
-
-    // Clear decorations if not in 'code' mode, or if the model changes
-    if (editorMode !== 'code' || editor.getModel()?.id !== getMermaidModel().id) {
-      decorationsCollection?.clear();
     }
 
     // Update editor text if it's different
@@ -437,24 +377,9 @@
 <div class="flex h-full grow flex-col overflow-hidden">
   <div class="relative min-h-0 flex-1">
     <div bind:this={divElement} id="editor" class="h-full w-full"></div>
-    <div bind:this={aiPromptPopupElement}>
-      <AIPromptPopup
-        show={showPopup}
-        bind:input
-        onHeightChange={(height) => aiPromptManager.updateHeight(height)}
-        onClose={closePopup}
-        onTryFree={() => {
-          window.open(
-            urls.current.mermaidChart({ medium: 'vibe_diagramming' }).save,
-            '_blank',
-            'noopener'
-          );
-          closePopup();
-        }} />
-    </div>
   </div>
   {#if showError && validatedState.current.error instanceof Error}
-    <div class="flex flex-col text-sm shrink-0" data-testid={TID.errorContainer}>
+    <div class="flex flex-col text-sm shrink-0">
       <div class="flex items-center gap-2 bg-slate-900 p-2 text-white">
         <ExclamationCircleIcon class="size-5 shrink-0 text-destructive" aria-hidden="true" />
         <p>Syntax error</p>

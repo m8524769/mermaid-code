@@ -7,8 +7,6 @@
   import FileSidebar from '$/components/FileSidebar.svelte';
   import History from '$/components/History/History.svelte';
   import { startAutoSave } from '$/components/History/historyState.svelte';
-  import McWrapper from '$/components/McWrapper.svelte';
-  import MermaidChartIcon from '$/components/MermaidChartIcon.svelte';
   import Navbar from '$/components/Navbar.svelte';
   import TitleBar from '$/components/TitleBar.svelte';
   import PanZoomToolbar from '$/components/PanZoomToolbar.svelte';
@@ -25,7 +23,7 @@
   import { fileState } from '$/util/fileState.svelte';
   import { saveFileAs } from '$/util/fileSystem';
   import { PanZoomState } from '$/util/panZoom';
-  import { updateCodeStore, urls, validatedState } from '$/util/state.svelte';
+  import { updateCodeStore, validatedState } from '$/util/state.svelte';
   import { initHandler } from '$/util/util';
   import { onMount } from 'svelte';
   import { fade } from 'svelte/transition';
@@ -340,16 +338,6 @@
         Save As
       </Button>
     {/if}
-    <McWrapper>
-      <Button
-        variant="accent"
-        size="sm"
-        href={urls.current.mermaidChart({ medium: 'save_diagram' }).save}
-        target="_blank">
-        <MermaidChartIcon />
-        Save diagram
-      </Button>
-    </McWrapper>
   </Navbar>
 
   <div class="flex flex-1 flex-col overflow-hidden" bind:clientWidth={width}>
@@ -401,7 +389,7 @@
         <Resizable.Handle class="hidden opacity-0 sm:block" />
         <Resizable.Pane minSize={15} class="relative flex h-full flex-1 flex-col overflow-hidden">
           <View {panZoomState} shouldShowGrid={validatedState.current.grid} />
-          <div class="absolute top-0 left-5 hidden md:block"><EnhancedEditsButton /></div>
+          <!-- <div class="absolute top-0 left-5 hidden md:block"><EnhancedEditsButton /></div> -->
           {#if isEditorCollapsed && !isPresentationMode}
             <button
               class="absolute top-1/2 left-0 -translate-y-1/2 flex h-16 w-7 cursor-pointer items-center justify-center rounded-r-lg bg-muted/60 px-1 py-3 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"

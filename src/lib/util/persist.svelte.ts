@@ -7,12 +7,7 @@
  * editor (which serialized plain objects to the same JSON shape) stay loadable.
  */
 
-const hasStorage = (): boolean => typeof window !== 'undefined' && !!window.localStorage;
-
 export const readJSON = <T>(key: string, fallback: T): T => {
-  if (!hasStorage()) {
-    return fallback;
-  }
   try {
     const raw = window.localStorage.getItem(key);
     if (raw === null) {
@@ -27,9 +22,7 @@ export const readJSON = <T>(key: string, fallback: T): T => {
 };
 
 export const writeJSON = (key: string, value: unknown): void => {
-  if (hasStorage()) {
-    window.localStorage.setItem(key, JSON.stringify(value));
-  }
+  window.localStorage.setItem(key, JSON.stringify(value));
 };
 
 export interface Persisted<T> {

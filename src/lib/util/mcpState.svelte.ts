@@ -1,7 +1,7 @@
 export const MCP_KEY = 'mermaid-mcp-enabled';
 
 const _state = $state({
-  enabled: typeof localStorage !== 'undefined' ? localStorage.getItem(MCP_KEY) === 'true' : false
+  enabled: localStorage.getItem(MCP_KEY) === 'true'
 });
 
 export const mcpState = {
