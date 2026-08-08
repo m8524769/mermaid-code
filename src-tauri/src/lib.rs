@@ -3,9 +3,10 @@ use tauri::{Emitter, Manager};
 use tauri::menu::{Menu, MenuItem, PredefinedMenuItem, Submenu};
 
 mod mcp;
+mod agent;
 
 struct OpenedFiles(Mutex<Vec<String>>);
-struct McpServerState(tokio::sync::Mutex<Option<mcp::McpServer>>);
+pub(crate) struct McpServerState(pub tokio::sync::Mutex<Option<mcp::McpServer>>);
 struct MenuHandles {
     file: Submenu<tauri::Wry>,
     view: Submenu<tauri::Wry>,
@@ -165,6 +166,7 @@ pub fn run() {
     tauri::Builder::default()
         .manage(OpenedFiles(Mutex::new(vec![])))
         .manage(McpServerState(tokio::sync::Mutex::new(None)))
+        .manage(agent::AgentManagerState(tokio::sync::Mutex::new(agent::AgentManager::default())))
         .plugin(tauri_plugin_single_instance::init(|app, args, _cwd| {
             // Focus the main window when a second instance is launched
             if let Some(window) = app.get_webview_window("main") {
@@ -234,7 +236,13 @@ pub fn run() {
             get_mcp_port,
             update_mcp_context,
             popup_submenu,
-            update_recent
+            update_recent,
+            agent::start_agent_session,
+            agent::list_agent_runs,
+            agent::send_agent_message,
+            agent::kill_agent_run,
+            agent::respond_agent_permission,
+            agent::list_folder_sessions,
         ])
         .setup(|app| {
             // macOS App menu (always first on macOS)

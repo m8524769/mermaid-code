@@ -91,6 +91,7 @@ pub struct McpServer {
     shutdown_tx: Option<oneshot::Sender<()>>,
     mcp_process: Option<std::process::Child>,
     pub context: Arc<std::sync::Mutex<ContextData>>,
+    pub token: String,
 }
 
 impl McpServer {
@@ -154,6 +155,7 @@ impl McpServer {
             shutdown_tx: Some(shutdown_tx),
             mcp_process,
             context,
+            token,
         })
     }
 
