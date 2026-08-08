@@ -329,11 +329,12 @@ export const fileState = {
       }
     }
     const path = await openFolderDialog();
-    if (!path) return;
+    if (!path || path === rootPath) return;
     await openFolderPath(path);
   },
 
   async openFolderByPath(path: string): Promise<void> {
+    if (path === rootPath) return;
     const dirtyTabs = tabs.filter((t) => !t.isDraft && t.isDirty);
     if (dirtyTabs.length > 0) {
       const names = dirtyTabs.map((t) => t.name).join(', ');
