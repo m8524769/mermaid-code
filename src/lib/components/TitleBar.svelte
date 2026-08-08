@@ -25,9 +25,20 @@
 
 {#if platform === 'macos'}
   <div
-    class="h-9 shrink-0 border-b select-none"
+    class="flex h-9 shrink-0 items-center border-b select-none"
     style="padding-left: env(titlebar-area-x, 72px)"
     data-tauri-drag-region>
+    <div class="flex-1" data-tauri-drag-region></div>
+    <button
+      class="mr-2.5 rounded-md p-1.5 hover:bg-muted"
+      onclick={onToggleSidebar}
+      title="Toggle File Explorer">
+      {#if sidebarOpen}
+        <SidebarCloseIcon class="size-4" />
+      {:else}
+        <SidebarOpenIcon class="size-4" />
+      {/if}
+    </button>
   </div>
 {/if}
 
