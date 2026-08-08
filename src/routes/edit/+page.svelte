@@ -86,6 +86,13 @@
   onMount(async () => {
     await initHandler();
 
+    const { invoke } = await import('@tauri-apps/api/core');
+    // Populate Open Recent submenu from persisted data on startup
+    void invoke('update_recent', {
+      folders: fileState.recentFolders,
+      files: fileState.recentFiles
+    });
+
     const { getCurrentWebview } = await import('@tauri-apps/api/webview');
     const { stat } = await import('@tauri-apps/plugin-fs');
 
@@ -110,7 +117,20 @@
     // Native File menu events
     _unlistens.push(
       await listen<string>('menu', async (event) => {
-        switch (event.payload) {
+        const id = event.payload;
+        if (id.startsWith('open-recent-folder-')) {
+          const idx = parseInt(id.split('-').at(-1)!, 10);
+          const path = fileState.recentFolders[idx];
+          if (path) await fileState.openFolderByPath(path);
+          return;
+        }
+        if (id.startsWith('open-recent-file-')) {
+          const idx = parseInt(id.split('-').at(-1)!, 10);
+          const path = fileState.recentFiles[idx];
+          if (path) await fileState.openFile(path);
+          return;
+        }
+        switch (id) {
           case 'open-file': {
             const { openFile } = await import('$/util/fileSystem');
             const result = await openFile();
@@ -315,7 +335,7 @@
       </Toggle>
       {#if showSidebarHint}
         <div
-          class="fixed z-50 translate-x-1/2 whitespace-nowrap rounded-md bg-primary px-3 py-1.5 text-xs text-primary-foreground shadow-md transition-opacity duration-500"
+          class="fixed z-50 translate-x-1/2 rounded-md bg-primary px-3 py-1.5 text-xs whitespace-nowrap text-primary-foreground shadow-md transition-opacity duration-500"
           style="top:{hintTop}px;right:{hintRight}px"
           in:fade={{ duration: 500 }}
           out:fade={{ duration: 300 }}>
@@ -392,7 +412,7 @@
           <!-- <div class="absolute top-0 left-5 hidden md:block"><EnhancedEditsButton /></div> -->
           {#if isEditorCollapsed && !isPresentationMode}
             <button
-              class="absolute top-1/2 left-0 -translate-y-1/2 flex h-16 w-7 cursor-pointer items-center justify-center rounded-r-lg bg-muted/60 px-1 py-3 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              class="absolute top-1/2 left-0 flex h-16 w-7 -translate-y-1/2 cursor-pointer items-center justify-center rounded-r-lg bg-muted/60 px-1 py-3 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
               onclick={() => editorPane?.expand()}
               title="Show editor">
               <CodeIcon class="size-4" />

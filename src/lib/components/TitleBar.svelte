@@ -22,7 +22,7 @@
   };
 </script>
 
-<div class="flex h-8 shrink-0 select-none items-stretch border-b text-xs">
+<div class="flex h-8 shrink-0 items-stretch border-b text-xs select-none">
   <button class="px-3 hover:bg-muted" onclick={onToggleSidebar} title="Toggle File Explorer">
     {#if sidebarOpen}
       <SidebarCloseIcon class="size-3.5" />

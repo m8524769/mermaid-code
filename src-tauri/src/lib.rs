@@ -12,6 +12,11 @@ struct MenuHandles {
     window: Submenu<tauri::Wry>,
     help: Submenu<tauri::Wry>,
 }
+// Holds the "Open Recent ▶" submenu so update_recent_folders can mutate it at runtime.
+struct RecentFoldersMenuState(Mutex<Submenu<tauri::Wry>>);
+// Monotonically increasing counter to ensure unique menu item IDs on each update_recent call.
+// muda caches IDs globally; reusing the same ID after remove() can fail on some platforms.
+static RECENT_MENU_GEN: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(0);
 
 #[tauri::command]
 fn popup_submenu(app: tauri::AppHandle, menu_id: String, x: f64, y: f64) {
@@ -25,6 +30,43 @@ fn popup_submenu(app: tauri::AppHandle, menu_id: String, x: f64, y: f64) {
         "help" => win.popup_menu_at(&state.help, pos),
         _ => Ok(()),
     };
+}
+
+#[tauri::command]
+fn update_recent(app: tauri::AppHandle, folders: Vec<String>, files: Vec<String>) {
+    let Some(state) = app.try_state::<RecentFoldersMenuState>() else { return };
+    let guard = state.0.lock().unwrap();
+    let gen = RECENT_MENU_GEN.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+    // Remove all current items from the submenu
+    if let Ok(items) = guard.items() {
+        for item in items {
+            let _ = guard.remove(&item);
+        }
+    }
+    let has_folders = !folders.is_empty();
+    let has_files = !files.is_empty();
+    if !has_folders && !has_files {
+        let _ = MenuItem::with_id(&app, format!("recent-empty-{gen}"), "No Recent Items", false, None::<&str>)
+            .map(|item| guard.append(&item));
+        return;
+    }
+    for (i, path) in folders.iter().enumerate() {
+        let id = format!("open-recent-folder-{gen}-{i}");
+        if let Ok(item) = MenuItem::with_id(&app, id, path, true, None::<&str>) {
+            let _ = guard.append(&item);
+        }
+    }
+    if has_folders && has_files {
+        if let Ok(sep) = PredefinedMenuItem::separator(&app) {
+            let _ = guard.append(&sep);
+        }
+    }
+    for (i, path) in files.iter().enumerate() {
+        let id = format!("open-recent-file-{gen}-{i}");
+        if let Ok(item) = MenuItem::with_id(&app, id, path, true, None::<&str>) {
+            let _ = guard.append(&item);
+        }
+    }
 }
 
 #[tauri::command]
@@ -191,7 +233,8 @@ pub fn run() {
             stop_mcp_server,
             get_mcp_port,
             update_mcp_context,
-            popup_submenu
+            popup_submenu,
+            update_recent
         ])
         .setup(|app| {
             // macOS App menu (always first on macOS)
@@ -213,6 +256,15 @@ pub fn run() {
                 ],
             )?;
 
+            let open_recent_menu = Submenu::with_items(
+                app,
+                "Open Recent",
+                true,
+                &[
+                    &MenuItem::with_id(app, "recent-empty", "No Recent Folders", false, None::<&str>)?,
+                ],
+            )?;
+
             let file_menu = Submenu::with_items(
                 app,
                 "File",
@@ -220,6 +272,7 @@ pub fn run() {
                 &[
                     &MenuItem::with_id(app, "open-file", "Open File...", true, Some("CmdOrCtrl+O"))?,
                     &MenuItem::with_id(app, "open-folder", "Open Folder...", true, Some("CmdOrCtrl+Shift+O"))?,
+                    &open_recent_menu,
                     &PredefinedMenuItem::separator(app)?,
                     &MenuItem::with_id(app, "save", "Save", true, None::<&str>)?,
                     &MenuItem::with_id(app, "save-as", "Save As...", true, None::<&str>)?,
@@ -284,6 +337,7 @@ pub fn run() {
                 window: window_menu,
                 help: help_menu,
             });
+            app.manage(RecentFoldersMenuState(Mutex::new(open_recent_menu)));
 
             #[cfg(debug_assertions)]
             {

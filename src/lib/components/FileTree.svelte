@@ -92,12 +92,12 @@
       title={node.name}
       onclick={() => {
         if (node.isDir) fileState.toggleDir(node.path);
-        else fileState.openFile(node.path);
+        else fileState.openFile(node.path, { recordRecent: false });
       }}
       onkeydown={(e) => {
         if (e.key === 'Enter') {
           if (node.isDir) fileState.toggleDir(node.path);
-          else fileState.openFile(node.path);
+          else fileState.openFile(node.path, { recordRecent: false });
         }
       }}>
       {#if node.isDir}
@@ -115,7 +115,7 @@
 
       {#if renamingPath === node.path}
         <input
-          class="min-w-0 flex-1 rounded bg-background px-1 text-sm outline-none ring-1 ring-primary"
+          class="min-w-0 flex-1 rounded bg-background px-1 text-sm ring-1 ring-primary outline-none"
           bind:value={renameValue}
           onclick={(e) => e.stopPropagation()}
           onblur={() => commitRename(node)}
@@ -160,7 +160,7 @@
           <EditIcon class="size-3.5" />
         </button>
         <button
-          class="cursor-pointer rounded bg-background p-0.5 hover:bg-muted text-destructive"
+          class="cursor-pointer rounded bg-background p-0.5 text-destructive hover:bg-muted"
           title="Delete"
           onclick={() => fileState.deleteNode(node.path, node.isDir)}>
           <DeleteIcon class="size-3.5" />

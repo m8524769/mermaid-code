@@ -82,7 +82,7 @@
 <div class="flex h-full flex-col overflow-hidden border-r">
   <div class="flex h-8 items-center gap-1 border-b px-2">
     <span
-      class="min-w-0 flex-1 truncate text-xs font-semibold uppercase tracking-wide text-muted-foreground"
+      class="min-w-0 flex-1 truncate text-xs font-semibold tracking-wide text-muted-foreground uppercase"
       title={fileState.rootPath ?? undefined}>
       {pathLabel ?? 'Explorer'}
     </span>

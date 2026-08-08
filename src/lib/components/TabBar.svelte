@@ -26,10 +26,10 @@
   {#each fileState.tabs as tab (tab.id)}
     <div
       class={[
-        'group flex min-w-0 max-w-40 cursor-pointer items-center gap-1 border-r px-2 text-xs',
+        'group flex max-w-40 min-w-0 cursor-pointer items-center gap-1 border-r px-2 text-xs',
         tab.id === fileState.activeTabId
           ? 'bg-background font-medium'
-          : 'hover:bg-muted/60 text-muted-foreground'
+          : 'text-muted-foreground hover:bg-muted/60'
       ]}
       role="tab"
       tabindex="0"

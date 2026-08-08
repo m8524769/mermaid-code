@@ -379,21 +379,21 @@
     <div bind:this={divElement} id="editor" class="h-full w-full"></div>
   </div>
   {#if showError && validatedState.current.error instanceof Error}
-    <div class="flex flex-col text-sm shrink-0">
+    <div class="flex shrink-0 flex-col text-sm">
       <div class="flex items-center gap-2 bg-slate-900 p-2 text-white">
         <ExclamationCircleIcon class="size-5 shrink-0 text-destructive" aria-hidden="true" />
         <p>Syntax error</p>
       </div>
       <output class="overflow-auto bg-muted p-2 text-xs" name="mermaid-error" for="editor">
         <pre
-          class="whitespace-pre-wrap break-words">{validatedState.current.error?.toString()}</pre>
+          class="break-words whitespace-pre-wrap">{validatedState.current.error?.toString()}</pre>
       </output>
     </div>
   {/if}
   <div class="flex w-full shrink-0 items-center bg-muted/80 px-2 text-xs text-muted-foreground">
     <div bind:this={vimStatusBarElement} class="flex-1 font-mono"></div>
     <button
-      class="ml-auto cursor-pointer select-none px-1 py-0.5 hover:text-foreground"
+      class="ml-auto cursor-pointer px-1 py-0.5 select-none hover:text-foreground"
       onclick={toggleVimMode}
       title="Toggle Vim mode">
       VIM {vimEnabled ? 'ON' : 'OFF'}

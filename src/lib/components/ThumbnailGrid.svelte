@@ -220,9 +220,9 @@
             void processQueue();
           }
         }
-        fileState.openFile(path);
+        fileState.openFile(path, { recordRecent: false });
       }}
-      onkeydown={(e) => e.key === 'Enter' && fileState.openFile(path)}>
+      onkeydown={(e) => e.key === 'Enter' && fileState.openFile(path, { recordRecent: false })}>
       <div class="aspect-video w-full overflow-hidden rounded bg-muted/30">
         {#if entry?.svg}
           <div class="pointer-events-none h-full w-full [&>svg]:h-full [&>svg]:w-full">
@@ -238,7 +238,7 @@
       <div class="mt-1 px-0.5">
         {#if renamingPath === path}
           <input
-            class="w-full rounded bg-background px-1 text-xs outline-none ring-1 ring-primary"
+            class="w-full rounded bg-background px-1 text-xs ring-1 ring-primary outline-none"
             bind:value={renameValue}
             onclick={(e) => e.stopPropagation()}
             onblur={() => commitRename(path)}

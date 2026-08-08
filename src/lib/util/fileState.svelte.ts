@@ -14,6 +14,7 @@ import {
 } from '$/util/fileSystem';
 import { notify } from '$/util/notify';
 import { inputState, updateCode, updateCodeStore } from '$/util/state.svelte';
+import { readJSON, writeJSON } from '$/util/persist.svelte';
 import debounce from 'lodash-es/debounce';
 
 // Cross-platform path join: works on both Unix (/) and Windows (\)
@@ -123,16 +124,46 @@ const makeDraftTab = (): Tab => ({
   isDraft: true
 });
 
+const LAST_FOLDER_KEY = 'mermaid-last-folder';
+const FOLDER_TABS_PREFIX = 'mermaid-tabs:';
+const RECENT_FOLDERS_KEY = 'mermaid-recent-folders';
+const RECENT_FILES_KEY = 'mermaid-recent-files';
+const RECENT_FOLDERS_MAX = 8;
+const RECENT_FILES_MAX = 8;
+
 let tabs = $state<Tab[]>([makeDraftTab()]);
 let activeTabId = $state<string | null>(DRAFT_TAB_ID);
 let rootPath = $state<string | null>(null);
 let tree = $state<FileTreeNode[]>([]);
+let recentFolders = $state<string[]>(readJSON(RECENT_FOLDERS_KEY, []));
+let recentFiles = $state<string[]>(readJSON(RECENT_FILES_KEY, []));
 let isAutoSave = $state(localStorage.getItem('mermaid-autosave') !== 'false');
 // Map of watched path → unwatch function; only visible directories are watched
 let watchMap = new Map<string, () => void>();
 
-const LAST_FOLDER_KEY = 'mermaid-last-folder';
-const FOLDER_TABS_PREFIX = 'mermaid-tabs:';
+const saveRecentFolder = (path: string): void => {
+  const recent = readJSON<string[]>(RECENT_FOLDERS_KEY, []).filter((p: string) => p !== path);
+  recent.unshift(path);
+  const trimmed = recent.slice(0, RECENT_FOLDERS_MAX);
+  writeJSON(RECENT_FOLDERS_KEY, trimmed);
+  recentFolders = trimmed;
+  syncRecent(trimmed, recentFiles);
+};
+
+const saveRecentFile = (path: string): void => {
+  const recent = readJSON<string[]>(RECENT_FILES_KEY, []).filter((p: string) => p !== path);
+  recent.unshift(path);
+  const trimmed = recent.slice(0, RECENT_FILES_MAX);
+  writeJSON(RECENT_FILES_KEY, trimmed);
+  recentFiles = trimmed;
+  syncRecent(recentFolders, trimmed);
+};
+
+const syncRecent = (folders: string[], files: string[]): void => {
+  void import('@tauri-apps/api/core').then(({ invoke }) =>
+    invoke('update_recent', { folders, files })
+  );
+};
 
 // Watch a single directory (non-recursive) and store the unwatch fn
 const watchDir = async (path: string): Promise<void> => {
@@ -178,6 +209,7 @@ const openFolderPath = async (path: string): Promise<void> => {
 
   rootPath = path;
   localStorage.setItem(LAST_FOLDER_KEY, path);
+  saveRecentFolder(path);
   const entries = await readDir(path);
   tree = sortNodes(filterEntries(entries).map((e) => buildNode(e.name, e.path, e.isDirectory)));
   // Watch only the root directory (non-recursive); expanded subdirs are watched in toggleDir
@@ -189,7 +221,7 @@ const openFolderPath = async (path: string): Promise<void> => {
   try {
     const { paths, activePath } = JSON.parse(raw) as PersistedTabs;
     for (const p of paths) {
-      await fileState.openFile(p);
+      await fileState.openFile(p, { recordRecent: false });
     }
     const activeTab = tabs.find((t) => t.path === activePath);
     if (activeTab) fileState.switchTab(activeTab.id);
@@ -275,6 +307,12 @@ export const fileState = {
   get tree() {
     return tree;
   },
+  get recentFolders() {
+    return recentFolders;
+  },
+  get recentFiles() {
+    return recentFiles;
+  },
   get isAutoSave() {
     return isAutoSave;
   },
@@ -319,7 +357,10 @@ export const fileState = {
     }
   },
 
-  async openFile(path: string): Promise<void> {
+  async openFile(
+    path: string,
+    { recordRecent = true }: { recordRecent?: boolean } = {}
+  ): Promise<void> {
     // Switch to existing tab if already open
     const existing = tabs.find((t) => t.path === path);
     if (existing) {
@@ -350,6 +391,7 @@ export const fileState = {
     tabs = [...tabs, tab];
     fileState.switchTab(tab.id);
     saveTabsToStorage();
+    if (recordRecent) saveRecentFile(path);
     // Watch the file's parent directory if not already watched (covers subdirs in grid view)
     const dir = pathDirname(path);
     if (dir && dir !== rootPath) await watchDir(dir);
@@ -446,7 +488,7 @@ export const fileState = {
       if (node && node.isDir && !node.expanded) {
         await fileState.toggleDir(dirPath);
       }
-      await fileState.openFile(path);
+      await fileState.openFile(path, { recordRecent: false });
     } catch {
       notify(`Failed to create file in ${pathBasename(dirPath)}`);
     }
