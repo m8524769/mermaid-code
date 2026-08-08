@@ -141,16 +141,6 @@ export const restoreEntries = (data: HistoryEntry[]): RestoreResult => {
   return { restored, invalid, duplicates };
 };
 
-const setIDs = (entries: HistoryEntry[]): HistoryEntry[] =>
-  entries.map((entry) => (entry.id ? entry : { ...entry, id: uuidV4() }));
-
-// One-time migration: re-reads localStorage so entries written by an older
-// version get ids, then persists and updates the reactive state.
-export const injectHistoryIDs = (): void => {
-  auto.value = setIDs(readJSON<HistoryEntry[]>('autoHistoryStore', []));
-  manual.value = setIDs(readJSON<HistoryEntry[]>('manualHistoryStore', []));
-};
-
 let autoSaveTimer: ReturnType<typeof setInterval> | undefined;
 
 // Idempotent; returns the stop function for use as a lifecycle cleanup.

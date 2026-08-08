@@ -11,9 +11,6 @@ const config = {
     alias: {
       '$/*': './src/lib/*'
     },
-    paths: {
-      base: process.env.MERMAID_BASE_PATH ?? ''
-    },
     adapter: adapter({
       pages: 'dist',
       fallback: '404.html'

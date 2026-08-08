@@ -86,7 +86,17 @@ export const IGNORED_DIRS = new Set([
   '.next',
   '.nuxt',
   'coverage',
-  '.yarn'
+  '.yarn',
+  '.idea',
+  '.vscode',
+  '.claude',
+  '.github',
+  'out',
+  '.turbo',
+  '.nx',
+  '.gradle',
+  '.maven',
+  '.terraform'
 ]);
 
 const IGNORED_FILES = new Set(['.DS_Store', 'Thumbs.db', 'desktop.ini']);
