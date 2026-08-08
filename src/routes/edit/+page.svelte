@@ -68,12 +68,14 @@
   };
 
   let isDraggingOver = $state(false);
-  let isWindows = $state(false);
+  let platform = $state<'windows' | 'macos' | 'linux' | ''>('');
+  const isWindows = $derived(platform === 'windows');
+  const isMac = $derived(platform === 'macos');
   let _unlistens: (() => void)[] = [];
 
   onMount(async () => {
-    const { platform } = await import('@tauri-apps/plugin-os');
-    isWindows = (await platform()) === 'windows';
+    const { platform: getPlatform } = await import('@tauri-apps/plugin-os');
+    platform = (await getPlatform()) as 'windows' | 'macos' | 'linux';
   });
 
   onMount(() => {
@@ -308,10 +310,11 @@
 </script>
 
 <div class="relative flex h-full flex-col overflow-hidden">
-  {#if isWindows && !isPresentationMode}
+  {#if (isWindows || isMac) && !isPresentationMode}
     <TitleBar
       sidebarOpen={isSidebarOpen}
-      onToggleSidebar={() => (isSidebarOpen = !isSidebarOpen)} />
+      onToggleSidebar={() => (isSidebarOpen = !isSidebarOpen)}
+      {platform} />
   {/if}
   {#if isDraggingOver}
     <div
