@@ -376,12 +376,18 @@ async fn read_loop(
     let _ = tokio::fs::remove_file(&mcp_config_path).await;
 }
 
+#[derive(Serialize)]
+pub struct SessionInfo {
+    pub session_id: String,
+    pub first_prompt: Option<String>,
+}
+
 #[tauri::command]
 pub async fn list_folder_sessions(
     app: AppHandle,
     agent_type: String,
     folder_path: String,
-) -> Result<Vec<String>, String> {
+) -> Result<Vec<SessionInfo>, String> {
     match agent_type.as_str() {
         "claude-code" => {
             let home = app.path().home_dir().map_err(|e| e.to_string())?;
@@ -394,20 +400,62 @@ pub async fn list_folder_sessions(
                 Ok(e) => e,
                 Err(_) => return Ok(vec![]),
             };
-            let mut ids = vec![];
+            let mut sessions = vec![];
             while let Ok(Some(entry)) = entries.next_entry().await {
                 let name = entry.file_name();
                 let name = name.to_string_lossy();
                 if let Some(id) = name.strip_suffix(".jsonl") {
                     if entry.metadata().await.map(|m| m.is_file()).unwrap_or(false) {
-                        ids.push(id.to_string());
+                        let first_prompt = read_first_prompt(&entry.path()).await;
+                        sessions.push(SessionInfo {
+                            session_id: id.to_string(),
+                            first_prompt,
+                        });
                     }
                 }
             }
-            Ok(ids)
+            Ok(sessions)
         }
         _ => Err(format!("Agent type '{agent_type}' does not support session listing")),
     }
+}
+
+async fn read_first_prompt(path: &std::path::Path) -> Option<String> {
+    use tokio::io::{AsyncBufReadExt, BufReader};
+    let file = tokio::fs::File::open(path).await.ok()?;
+    let mut lines = BufReader::new(file).lines();
+    while let Ok(Some(line)) = lines.next_line().await {
+        let Ok(val) = serde_json::from_str::<serde_json::Value>(&line) else {
+            continue;
+        };
+        if val["type"].as_str() != Some("user")
+            || val["message"]["role"].as_str() != Some("user")
+        {
+            continue;
+        }
+        // Skip injected/system messages; allow null origin (older sessions)
+        let origin_kind = val["origin"]["kind"].as_str();
+        if matches!(origin_kind, Some(k) if k != "human") {
+            continue;
+        }
+        let content = &val["message"]["content"];
+        let text = if let Some(s) = content.as_str() {
+            s.trim().to_string()
+        } else if let Some(arr) = content.as_array() {
+            arr.iter()
+                .find(|b| b["type"].as_str() == Some("text"))
+                .and_then(|b| b["text"].as_str())
+                .unwrap_or("")
+                .trim()
+                .to_string()
+        } else {
+            continue;
+        };
+        if !text.is_empty() {
+            return Some(text);
+        }
+    }
+    None
 }
 
 #[tauri::command]
