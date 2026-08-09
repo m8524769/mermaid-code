@@ -26,12 +26,12 @@ pub enum DriverEvent {
 // ── Driver trait ──────────────────────────────────────────────────────────────
 
 pub trait AgentDriver: Send {
-    fn executable(&self) -> &str;
-    fn build_args(&self, config: &SessionConfig) -> Vec<String>;
-    /// Encodes a user turn as a stdin line. Returns None if unsupported.
+    /// Returns a configured Command ready to spawn, or None for HTTP-based drivers.
+    fn spawn_command(&self, config: &SessionConfig) -> Option<Command>;
+    /// Encodes a user turn as a stdin/HTTP payload. Returns None if multi-turn is unsupported.
     fn build_user_message(&self, _content: &str) -> Option<String> { None }
     fn parse_line(&mut self, line: &str) -> Vec<DriverEvent>;
-    /// Returns the stdin line to send for a permission response, or None if unsupported.
+    /// Encodes a permission response payload. Returns None if unsupported.
     fn build_permission_response(&self, request_id: &str, approved: bool, tool_input: Option<&Value>) -> Option<String>;
 }
 
@@ -47,9 +47,7 @@ fn make_driver(agent_type: &str) -> Option<Box<dyn AgentDriver>> {
 pub struct ClaudeCodeDriver;
 
 impl AgentDriver for ClaudeCodeDriver {
-    fn executable(&self) -> &str { "claude" }
-
-    fn build_args(&self, config: &SessionConfig) -> Vec<String> {
+    fn spawn_command(&self, config: &SessionConfig) -> Option<Command> {
         let mut args = vec![
             "--output-format".to_string(),
             "stream-json".to_string(),
@@ -66,7 +64,9 @@ impl AgentDriver for ClaudeCodeDriver {
             args.push("--resume".to_string());
             args.push(id.clone());
         }
-        args
+        let mut cmd = Command::new("claude");
+        cmd.args(args);
+        Some(cmd)
     }
 
     fn build_user_message(&self, content: &str) -> Option<String> {
@@ -265,15 +265,17 @@ pub async fn start_agent_session(
     };
 
     // Spawn process
-    let mut child = Command::new(driver.executable())
-        .args(driver.build_args(&config))
+    let mut cmd = driver
+        .spawn_command(&config)
+        .ok_or_else(|| format!("Agent type '{}' uses HTTP mode, not yet implemented", params.agent_type))?;
+    let mut child = cmd
         .current_dir(&params.folder_path)
         .stdout(std::process::Stdio::piped())
         .stdin(std::process::Stdio::piped())
         .stderr(std::process::Stdio::null())
         .kill_on_drop(true)
         .spawn()
-        .map_err(|e| format!("Failed to spawn {}: {e}", driver.executable()))?;
+        .map_err(|e| format!("Failed to spawn agent: {e}"))?;
 
     let stdout = child.stdout.take().unwrap();
     let stdin = child.stdin.take().unwrap();
