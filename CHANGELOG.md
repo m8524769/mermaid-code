@@ -2,6 +2,40 @@
 
 All notable changes to Mermaid Code are documented here.
 
+## [v0.4.6] - 2026-08-09
+
+### Added
+
+- **View in Finder/Explorer after export**: a toast notification with a **View** button appears after exporting PNG or SVG, opening the file's location in Finder (macOS) or Explorer (Windows) via `tauri-plugin-opener`
+
+### Fixed
+
+- **Save draft via Ctrl+S**: pressing Ctrl+S (or ⌘S on macOS) in the Monaco editor on the Draft tab now correctly triggers Save As instead of doing nothing
+
+### Changed
+
+- **Save / Save As buttons**: now use an animated gradient border (rotating rainbow conic gradient) to draw attention
+
+## [v0.4.5] - 2026-08-08
+
+### Added
+
+- **Sidebar toggle in macOS title bar**: a sidebar toggle button is now embedded in the custom macOS title bar area for quick access without reaching the main toolbar
+
+### Changed
+
+- **macOS title bar style**: adjusted spacing and layout of the custom macOS title bar
+
+## [v0.4.4] - 2026-08-07
+
+### Added
+
+- **Open Recent**: File menu now lists recently opened folders and files; selecting an item reopens it directly
+
+### Changed
+
+- **Skip duplicate folder open**: opening a folder that is already open no longer reloads it
+
 ## [v0.4.3] - 2026-08-04
 
 ### Added
