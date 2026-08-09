@@ -339,22 +339,26 @@
       {/if}
     </div>
     <Share />
-    {#if fileState.tabs.find((t) => t.id === fileState.activeTabId && !t.isDraft)}
-      <Button
-        size="sm"
-        variant="accent"
-        onclick={() => fileState.saveTab(fileState.activeTabId!)}
-        title="Save (⌘S)">
-        Save
-      </Button>
+    {#if import.meta.env.DEV}
+      <Button size="sm" variant="gradient" onclick={null} title="Chat with AI Agent">Ask AI</Button>
     {:else}
-      <Button
-        size="sm"
-        variant="accent"
-        onclick={() => fileState.saveDraft()}
-        title="Save draft as file">
-        Save As
-      </Button>
+      {#if fileState.tabs.find((t) => t.id === fileState.activeTabId && !t.isDraft)}
+        <Button
+          size="sm"
+          variant="accent"
+          onclick={() => fileState.saveTab(fileState.activeTabId!)}
+          title="Save (⌘S)">
+          Save
+        </Button>
+      {:else}
+        <Button
+          size="sm"
+          variant="accent"
+          onclick={() => fileState.saveDraft()}
+          title="Save draft as file">
+          Save As
+        </Button>
+      {/if}
     {/if}
   </Navbar>
 

@@ -14,7 +14,8 @@
         secondary: 'bg-secondary text-secondary-foreground hover:bg-secondary/80 shadow-sm',
         accent: 'bg-accent text-accent-foreground hover:bg-accent/80 shadow-sm',
         ghost: 'hover:bg-primary hover:text-primary-foreground',
-        link: 'text-primary underline-offset-4 hover:underline'
+        link: 'text-primary underline-offset-4 hover:underline',
+        gradient: 'btn-gradient text-foreground'
       },
       size: {
         default: 'h-9 px-4 py-2',

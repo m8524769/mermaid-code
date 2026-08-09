@@ -121,3 +121,37 @@ body {
 .d {
   @apply border border-red-500;
 }
+
+@property --btn-gradient-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+
+@keyframes btn-border-rotate {
+  to {
+    --btn-gradient-angle: 360deg;
+  }
+}
+
+.btn-gradient {
+  border: 2px solid transparent;
+  background:
+    linear-gradient(var(--background), var(--background)) padding-box,
+    conic-gradient(
+        from var(--btn-gradient-angle),
+        #7c3aed,
+        #db2777,
+        #ea580c,
+        #eab308,
+        #22c55e,
+        #3b82f6,
+        #7c3aed
+      )
+      border-box;
+  animation: btn-border-rotate 3s linear infinite;
+}
+
+.btn-gradient:hover {
+  animation-duration: 1.5s;
+}
