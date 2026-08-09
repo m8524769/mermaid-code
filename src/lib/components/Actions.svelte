@@ -9,8 +9,7 @@
   import * as ToggleGroup from '$/components/ui/toggle-group';
   import { getDomain } from '$/util/util';
   import { fileState } from '$/util/fileState.svelte';
-  import { notify } from '$/util/notify';
-  import { browser } from '$app/environment';
+  import { toast } from 'svelte-sonner';
   import { waitForRender } from '$lib/util/autoSync';
   import { inputState, updateCodeStore, urls, validatedState } from '$lib/util/state.svelte';
   import { version as FAVersion } from '@fortawesome/fontawesome-free/package.json';
@@ -220,9 +219,14 @@
   };
 
   const notifyDownload = async (filename: string) => {
-    const { downloadDir } = await import('@tauri-apps/api/path');
+    const { downloadDir, join } = await import('@tauri-apps/api/path');
+    const { revealItemInDir } = await import('@tauri-apps/plugin-opener');
     const dir = await downloadDir();
-    notify(`Downloaded to ${dir}`);
+    const filePath = await join(dir, filename);
+    toast(`Downloaded to ${dir}`, {
+      duration: 6000,
+      action: { label: 'View', onClick: () => void revealItemInDir(filePath) }
+    });
   };
 
   const onDownloadPNG = async (event: Event) => {

@@ -33,6 +33,7 @@
     "fs:scope-home-recursive",
     "fs:allow-stat",
     "shell:allow-open",
+    "opener:allow-reveal-item-in-dir",
     "window-state:default",
     "updater:default",
     "os:default",
