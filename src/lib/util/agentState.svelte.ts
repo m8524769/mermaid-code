@@ -2,7 +2,7 @@
 
 export interface AgentMessage {
   id: string;
-  role: 'assistant' | 'tool_use' | 'tool_result';
+  role: 'user' | 'assistant' | 'tool_use' | 'tool_result';
   text: string;
   toolName?: string;
   toolUseId?: string;
@@ -31,7 +31,7 @@ interface AgentSlice {
 
 // ── State ──────────────────────────────────────────────────────────────────────
 
-const slices = $state<Record<string, AgentSlice>>({});
+export const slices = $state<Record<string, AgentSlice>>({});
 
 // run_id → agentId
 const runOwner = new Map<string, string>();
@@ -178,6 +178,25 @@ async function loadSessions(agentId: string, folderPath: string) {
   }
 }
 
+async function loadSessionHistory(agentId: string, folderPath: string, sessionId: string) {
+  try {
+    const { invoke } = await import('@tauri-apps/api/core');
+    const msgs: Array<{ role: string; text: string }> = await invoke('load_session_history', {
+      agentType: agentId,
+      folderPath,
+      sessionId
+    });
+    const slice = getSlice(agentId);
+    slice.messages = msgs.map((m, i) => ({
+      id: `history-${i}`,
+      role: m.role === 'user' ? ('user' as const) : ('assistant' as const),
+      text: m.text
+    }));
+  } catch {
+    // Session file unreadable — leave messages as-is
+  }
+}
+
 // ── Public API ─────────────────────────────────────────────────────────────────
 
 export const agentState = {
@@ -185,6 +204,7 @@ export const agentState = {
   registerRun,
   unregisterRun,
   loadSessions,
+  loadSessionHistory,
 
   getSlice,
 

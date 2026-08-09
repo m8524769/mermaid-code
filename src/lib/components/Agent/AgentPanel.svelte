@@ -1,11 +1,13 @@
 <script lang="ts">
   import type { Component } from 'svelte';
+  import { tick } from 'svelte';
   import Card from '$lib/components/Card/Card.svelte';
   import { Button } from '$lib/components/ui/button';
   import * as Popover from '$lib/components/ui/popover';
-  import { agentState, type SessionEntry } from '$lib/util/agentState.svelte';
+  import { agentState, slices, type SessionEntry } from '$lib/util/agentState.svelte';
   import { fileState } from '$lib/util/fileState.svelte';
   import { openFolderDialog } from '$lib/util/fileSystem';
+  import { renderMarkdown } from '$lib/util/markdown';
   import ClaudeIcon from '~icons/logos/claude-icon';
   import OpenAIIcon from '~icons/logos/openai-icon';
   import CloseIcon from '~icons/material-symbols/close-rounded';
@@ -99,6 +101,13 @@
     activeSessionId = localStorage.getItem(sessionKey(selectedAgentId));
   });
 
+  // Load history when switching to an existing session
+  $effect(() => {
+    if (activeSessionId && workingFolder) {
+      agentState.loadSessionHistory(selectedAgentId, workingFolder, activeSessionId);
+    }
+  });
+
   const activeSession = $derived(sessions.find((s) => s.sessionId === activeSessionId) ?? null);
 
   const sessionLabel = $derived(
@@ -111,6 +120,16 @@
     const path = await openFolderDialog();
     if (path) workingFolder = path;
   }
+
+  const messages = $derived(slices[selectedAgentId]?.messages ?? []);
+
+  let messagesEl = $state<HTMLDivElement | null>(null);
+  $effect(() => {
+    messages;
+    tick().then(() => {
+      if (messagesEl) messagesEl.scrollTop = messagesEl.scrollHeight;
+    });
+  });
 </script>
 
 <Card title={selectedAgent.label} isOpen isClosable={false} icon={{ component: selectedAgentIcon }}>
@@ -207,8 +226,46 @@
     </div>
 
     <!-- Content -->
-    <div class="flex flex-1 flex-col gap-2 p-2">
-      <p class="text-sm text-muted-foreground">AI Agent panel — coming soon.</p>
+    <div bind:this={messagesEl} class="flex flex-1 flex-col gap-2 overflow-y-auto p-2">
+      {#if messages.length === 0}
+        <p class="text-sm text-muted-foreground">No messages yet.</p>
+      {:else}
+        {#each messages as msg (msg.id)}
+          <div class={['flex flex-col gap-0.5', msg.role === 'user' ? 'items-end' : 'items-start']}>
+            {#if msg.role === 'user'}
+              <div
+                class="max-w-[85%] rounded-xl bg-primary px-3 py-2 text-sm break-words whitespace-pre-wrap text-primary-foreground">
+                {msg.text}
+              </div>
+            {:else if msg.role === 'assistant'}
+              {#if msg.isStreaming}
+                <div
+                  class="max-w-[85%] rounded-xl bg-muted px-3 py-2 text-sm break-words whitespace-pre-wrap text-foreground">
+                  {msg.text}
+                </div>
+              {:else}
+                {#await renderMarkdown(msg.text)}
+                  <div
+                    class="max-w-[85%] rounded-xl bg-muted px-3 py-2 text-sm break-words whitespace-pre-wrap text-foreground">
+                    {msg.text}
+                  </div>
+                {:then html}
+                  <div
+                    class="prose prose-sm max-w-[85%] rounded-xl bg-muted px-3 py-2 dark:prose-invert [&_pre]:my-2 [&_pre]:overflow-x-auto [&_pre]:rounded-lg [&_pre]:p-0">
+                    <!-- eslint-disable-next-line svelte/no-at-html-tags -->
+                    {@html html}
+                  </div>
+                {/await}
+              {/if}
+            {:else}
+              <div
+                class="max-w-[85%] rounded-xl bg-muted/50 px-3 py-2 font-mono text-xs break-words whitespace-pre-wrap text-muted-foreground">
+                {msg.text}
+              </div>
+            {/if}
+          </div>
+        {/each}
+      {/if}
     </div>
   </div>
 </Card>

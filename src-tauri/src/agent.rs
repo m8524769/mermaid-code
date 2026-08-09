@@ -420,6 +420,22 @@ pub async fn list_folder_sessions(
     }
 }
 
+fn extract_text(content: &serde_json::Value) -> Option<String> {
+    let text = if let Some(s) = content.as_str() {
+        s.trim().to_string()
+    } else if let Some(arr) = content.as_array() {
+        arr.iter()
+            .find(|b| b["type"].as_str() == Some("text"))
+            .and_then(|b| b["text"].as_str())
+            .unwrap_or("")
+            .trim()
+            .to_string()
+    } else {
+        return None;
+    };
+    if text.is_empty() { None } else { Some(text) }
+}
+
 async fn read_first_prompt(path: &std::path::Path) -> Option<String> {
     use tokio::io::{AsyncBufReadExt, BufReader};
     let file = tokio::fs::File::open(path).await.ok()?;
@@ -433,29 +449,94 @@ async fn read_first_prompt(path: &std::path::Path) -> Option<String> {
         {
             continue;
         }
-        // Skip injected/system messages; allow null origin (older sessions)
-        let origin_kind = val["origin"]["kind"].as_str();
-        if matches!(origin_kind, Some(k) if k != "human") {
+        // Skip task-notification injections
+        if val["origin"]["kind"].as_str() == Some("task-notification") {
             continue;
         }
         let content = &val["message"]["content"];
-        let text = if let Some(s) = content.as_str() {
-            s.trim().to_string()
-        } else if let Some(arr) = content.as_array() {
-            arr.iter()
-                .find(|b| b["type"].as_str() == Some("text"))
-                .and_then(|b| b["text"].as_str())
-                .unwrap_or("")
-                .trim()
-                .to_string()
-        } else {
-            continue;
-        };
-        if !text.is_empty() {
+        // Skip tool_result messages (content is an array of tool_result blocks)
+        if let Some(arr) = content.as_array() {
+            if arr.iter().any(|b| b["type"].as_str() == Some("tool_result")) {
+                continue;
+            }
+        }
+        if let Some(text) = extract_text(content) {
             return Some(text);
         }
     }
     None
+}
+
+#[derive(Serialize)]
+pub struct HistoryMessage {
+    pub role: String,
+    pub text: String,
+}
+
+#[tauri::command]
+pub async fn load_session_history(
+    app: AppHandle,
+    agent_type: String,
+    folder_path: String,
+    session_id: String,
+) -> Result<Vec<HistoryMessage>, String> {
+    match agent_type.as_str() {
+        "claude-code" => {
+            let home = app.path().home_dir().map_err(|e| e.to_string())?;
+            let key: String = folder_path
+                .chars()
+                .map(|c| if c == '/' || c == '\\' || c == ':' { '-' } else { c })
+                .collect();
+            let path = home
+                .join(".claude")
+                .join("projects")
+                .join(key)
+                .join(format!("{session_id}.jsonl"));
+
+            use tokio::io::{AsyncBufReadExt, BufReader};
+            let file = tokio::fs::File::open(&path).await.map_err(|e| e.to_string())?;
+            let mut lines = BufReader::new(file).lines();
+            let mut messages: Vec<HistoryMessage> = vec![];
+
+            while let Ok(Some(line)) = lines.next_line().await {
+                let Ok(val) = serde_json::from_str::<serde_json::Value>(&line) else {
+                    continue;
+                };
+                match val["type"].as_str() {
+                    Some("user") => {
+                        if val["message"]["role"].as_str() != Some("user") { continue; }
+                        // Only accept messages explicitly authored by a human
+                        if val["origin"]["kind"].as_str() != Some("human") { continue; }
+                        if let Some(text) = extract_text(&val["message"]["content"]) {
+                            messages.push(HistoryMessage { role: "user".into(), text });
+                        }
+                    }
+                    Some("assistant") => {
+                        let mut parts = vec![];
+                        if let Some(arr) = val["message"]["content"].as_array() {
+                            for block in arr {
+                                if block["type"].as_str() == Some("text") {
+                                    if let Some(t) = block["text"].as_str() {
+                                        let t = t.trim();
+                                        if !t.is_empty() { parts.push(t.to_string()); }
+                                    }
+                                }
+                            }
+                        }
+                        if !parts.is_empty() {
+                            messages.push(HistoryMessage {
+                                role: "assistant".into(),
+                                text: parts.join("\n"),
+                            });
+                        }
+                    }
+                    _ => {}
+                }
+            }
+            Ok(messages)
+        }
+        _ => Err(format!("Agent type '{agent_type}' does not support session history")),
+    }
 }
 
 #[tauri::command]

@@ -1,6 +1,7 @@
 @import '@fontsource-variable/recursive/crsv.css';
 @import 'tailwindcss';
 @import 'tw-animate-css';
+@plugin '@tailwindcss/typography';
 
 @custom-variant dark (&:is(.dark *));
 
