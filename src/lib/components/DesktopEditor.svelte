@@ -259,7 +259,10 @@
       label: 'Save File',
       keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS],
       run: () => {
-        if (fileState.activeTabId) {
+        const activeTab = fileState.tabs.find((t) => t.id === fileState.activeTabId);
+        if (activeTab?.isDraft) {
+          void fileState.saveDraft();
+        } else if (fileState.activeTabId) {
           void fileState.saveTab(fileState.activeTabId);
         }
       }

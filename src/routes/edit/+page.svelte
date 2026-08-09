@@ -52,21 +52,6 @@
   ];
 
   let width = $state(0);
-
-  const saveDraftAsFile = async () => {
-    const code = validatedState.current.code;
-    const now = new Date();
-    const pad = (n: number) => String(n).padStart(2, '0');
-    const date = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
-    const time = `${pad(now.getHours())}.${pad(now.getMinutes())}.${pad(now.getSeconds())}`;
-    const defaultName = `Diagram ${date} at ${time}.mmd`;
-    const handle = await saveFileAs(code, defaultName);
-    if (handle) {
-      fileState.clearDraft();
-      await fileState.openFile(handle.path);
-    }
-  };
-
   let isDraggingOver = $state(false);
   let platform = $state<'windows' | 'macos' | 'linux' | ''>('');
   const isWindows = $derived(platform === 'windows');
@@ -142,13 +127,19 @@
           case 'open-folder':
             await fileState.openFolder();
             break;
-          case 'save':
-            if (fileState.activeTabId) await fileState.saveTab(fileState.activeTabId);
+          case 'save': {
+            const activeTab = fileState.tabs.find((t) => t.id === fileState.activeTabId);
+            if (activeTab?.isDraft) {
+              await fileState.saveDraft();
+            } else if (fileState.activeTabId) {
+              await fileState.saveTab(fileState.activeTabId);
+            }
             break;
+          }
           case 'save-as': {
             const activeTab = fileState.tabs.find((t) => t.id === fileState.activeTabId);
             if (activeTab?.isDraft) {
-              await saveDraftAsFile();
+              await fileState.saveDraft();
             } else if (activeTab) {
               const handle = await saveFileAs(activeTab.code, activeTab.name);
               if (handle) await fileState.openFile(handle.path);
@@ -357,7 +348,11 @@
         Save
       </Button>
     {:else}
-      <Button size="sm" variant="accent" onclick={saveDraftAsFile} title="Save draft as file">
+      <Button
+        size="sm"
+        variant="accent"
+        onclick={() => fileState.saveDraft()}
+        title="Save draft as file">
         Save As
       </Button>
     {/if}

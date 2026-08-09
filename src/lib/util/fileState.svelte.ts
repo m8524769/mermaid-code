@@ -9,6 +9,7 @@ import {
   readDir,
   readTextFile,
   rename as fsRename,
+  saveFileAs,
   watchFolder,
   writeTextFile
 } from '$/util/fileSystem';
@@ -611,6 +612,21 @@ export const fileState = {
     draft.code = '';
     draft.savedCode = '';
     draft.isDirty = false;
+  },
+
+  /** Save draft tab as a new file via Save As dialog. */
+  async saveDraft(): Promise<void> {
+    const now = new Date();
+    const pad = (n: number) => String(n).padStart(2, '0');
+    const date = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+    const time = `${pad(now.getHours())}.${pad(now.getMinutes())}.${pad(now.getSeconds())}`;
+    const defaultName = `Diagram ${date} at ${time}.mmd`;
+    const code = tabs.find((t) => t.isDraft)?.code ?? inputState.code;
+    const handle = await saveFileAs(code, defaultName);
+    if (handle) {
+      fileState.clearDraft();
+      await fileState.openFile(handle.path);
+    }
   },
 
   /** Set draft tab content (used by MCP preview). */
