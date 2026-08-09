@@ -12,10 +12,6 @@ All notable changes to Mermaid Code are documented here.
 
 - **Save draft via Ctrl+S**: pressing Ctrl+S (or ⌘S on macOS) in the Monaco editor on the Draft tab now correctly triggers Save As instead of doing nothing
 
-### Changed
-
-- **Save / Save As buttons**: now use an animated gradient border (rotating rainbow conic gradient) to draw attention
-
 ## [v0.4.5] - 2026-08-08
 
 ### Added
