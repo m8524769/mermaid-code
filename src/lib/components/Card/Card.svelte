@@ -62,7 +62,8 @@
     {#if icon || title}
       <span role="menubar" tabindex="0" class="flex min-w-0 flex-1 items-center gap-3">
         {#if icon}
-          <icon.component class={[icon.class, 'shrink-0']} />
+          {@const IconComponent = icon.component}
+          <IconComponent class={[icon.class, 'shrink-0']} />
         {/if}
         <span class="truncate">{title}</span>
       </span>

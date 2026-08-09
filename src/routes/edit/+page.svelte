@@ -3,10 +3,8 @@
   import Card from '$/components/Card/Card.svelte';
   import DiagramDocButton from '$/components/DiagramDocumentationButton.svelte';
   import Editor from '$/components/Editor.svelte';
-  import EnhancedEditsButton from '$/components/EnhancedEditsButton.svelte';
   import FileSidebar from '$/components/FileSidebar.svelte';
-  import History from '$/components/History/History.svelte';
-  import { startAutoSave } from '$/components/History/historyState.svelte';
+  import AgentPanel from '$/components/Agent/AgentPanel.svelte';
   import Navbar from '$/components/Navbar.svelte';
   import TitleBar from '$/components/TitleBar.svelte';
   import PanZoomToolbar from '$/components/PanZoomToolbar.svelte';
@@ -201,10 +199,6 @@
     });
   });
 
-  // Record the Timeline for the whole session, not just while the panel is open.
-  onMount(() => startAutoSave());
-
-  let isHistoryOpen = $state(false);
   const SIDEBAR_KEY = 'mermaid-sidebar-open';
   const ONBOARDED_KEY = 'mermaid-onboarded';
   let isSidebarOpen = $state(localStorage.getItem(SIDEBAR_KEY) === 'true');
@@ -246,20 +240,22 @@
 
   let editorPane: Resizable.Pane | undefined;
   let sidebarPane: Resizable.Pane | undefined;
+  let agentPane: Resizable.Pane | undefined;
   let isPresentationMode = $state(false);
   let isEditorCollapsed = $state(false);
+  let isAgentCollapsed = $state(false);
 
   const togglePresentationMode = async () => {
     const { getCurrentWindow } = await import('@tauri-apps/api/window');
     const win = getCurrentWindow();
     if (isPresentationMode) {
       isPresentationMode = false;
-      editorPane?.expand();
       await win.setFullscreen(false);
       setTimeout(() => panZoomState.reset(), 100);
     } else {
       isPresentationMode = true;
       editorPane?.collapse();
+      agentPane?.collapse();
       await win.setFullscreen(true);
       setTimeout(() => panZoomState.reset(), 100);
     }
@@ -340,7 +336,14 @@
     </div>
     <Share />
     {#if import.meta.env.DEV}
-      <Button size="sm" variant="gradient" onclick={null} title="Chat with AI Agent">Ask AI</Button>
+      <Button
+        size="sm"
+        variant="gradient"
+        onclick={() => {
+          if (isAgentCollapsed) agentPane?.expand();
+          else agentPane?.collapse();
+        }}
+        title="Chat with AI Agent">Ask AI</Button>
     {:else}
       {#if fileState.tabs.find((t) => t.id === fileState.activeTabId && !t.isDraft)}
         <Button
@@ -411,7 +414,6 @@
         <Resizable.Handle class="hidden opacity-0 sm:block" />
         <Resizable.Pane minSize={15} class="relative flex h-full flex-1 flex-col overflow-hidden">
           <View {panZoomState} shouldShowGrid={validatedState.current.grid} />
-          <!-- <div class="absolute top-0 left-5 hidden md:block"><EnhancedEditsButton /></div> -->
           {#if isEditorCollapsed && !isPresentationMode}
             <button
               class="absolute top-1/2 left-0 flex h-16 w-7 -translate-y-1/2 cursor-pointer items-center justify-center rounded-r-lg bg-muted/60 px-1 py-3 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
@@ -429,12 +431,18 @@
           <div class="absolute right-0 bottom-0"><VersionSecurityToolbar /></div>
           <div class="absolute bottom-0 left-0 sm:left-5"><SyncRoughToolbar /></div>
         </Resizable.Pane>
-        {#if isHistoryOpen}
-          <Resizable.Handle class="ml-1 hidden opacity-0 sm:block" />
-          <Resizable.Pane minSize={15} defaultSize={30} class="hidden h-full grow flex-col sm:flex">
-            <History />
-          </Resizable.Pane>
-        {/if}
+        <Resizable.Handle class="ml-1 hidden opacity-0 sm:block" />
+        <Resizable.Pane
+          collapsible
+          collapsedSize={0}
+          minSize={20}
+          defaultSize={30}
+          class="hidden h-full grow flex-col sm:flex"
+          onCollapse={() => (isAgentCollapsed = true)}
+          onExpand={() => (isAgentCollapsed = false)}
+          bind:this={agentPane}>
+          <AgentPanel onclose={() => agentPane?.collapse()} />
+        </Resizable.Pane>
       </Resizable.PaneGroup>
     </div>
   </div>
