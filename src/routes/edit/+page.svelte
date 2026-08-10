@@ -335,34 +335,14 @@
       {/if}
     </div>
     <Share />
-    {#if import.meta.env.DEV}
-      <Button
-        size="sm"
-        variant="gradient"
-        onclick={() => {
-          if (isAgentCollapsed) agentPane?.expand();
-          else agentPane?.collapse();
-        }}
-        title="Chat with AI Agent">Ask AI</Button>
-    {:else}
-      {#if fileState.tabs.find((t) => t.id === fileState.activeTabId && !t.isDraft)}
-        <Button
-          size="sm"
-          variant="accent"
-          onclick={() => fileState.saveTab(fileState.activeTabId!)}
-          title="Save (⌘S)">
-          Save
-        </Button>
-      {:else}
-        <Button
-          size="sm"
-          variant="accent"
-          onclick={() => fileState.saveDraft()}
-          title="Save draft as file">
-          Save As
-        </Button>
-      {/if}
-    {/if}
+    <Button
+      size="sm"
+      variant="gradient"
+      onclick={() => {
+        if (isAgentCollapsed) agentPane?.expand();
+        else agentPane?.collapse();
+      }}
+      title="Chat with AI Agent">Ask AI</Button>
   </Navbar>
 
   <div class="flex flex-1 flex-col overflow-hidden" bind:clientWidth={width}>
@@ -431,20 +411,18 @@
           <div class="absolute right-0 bottom-0"><VersionSecurityToolbar /></div>
           <div class="absolute bottom-0 left-0 sm:left-5"><SyncRoughToolbar /></div>
         </Resizable.Pane>
-        {#if import.meta.env.DEV}
-          <Resizable.Handle class="ml-1 hidden opacity-0 sm:block" />
-          <Resizable.Pane
-            collapsible
-            collapsedSize={0}
-            minSize={20}
-            defaultSize={30}
-            class="hidden h-full grow flex-col sm:flex"
-            onCollapse={() => (isAgentCollapsed = true)}
-            onExpand={() => (isAgentCollapsed = false)}
-            bind:this={agentPane}>
-            <AgentPanel onclose={() => agentPane?.collapse()} />
-          </Resizable.Pane>
-        {/if}
+        <Resizable.Handle class="ml-1 hidden opacity-0 sm:block" />
+        <Resizable.Pane
+          collapsible
+          collapsedSize={0}
+          minSize={20}
+          defaultSize={30}
+          class="hidden h-full grow flex-col sm:flex"
+          onCollapse={() => (isAgentCollapsed = true)}
+          onExpand={() => (isAgentCollapsed = false)}
+          bind:this={agentPane}>
+          <AgentPanel onclose={() => agentPane?.collapse()} />
+        </Resizable.Pane>
       </Resizable.PaneGroup>
     </div>
   </div>
