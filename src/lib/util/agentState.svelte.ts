@@ -65,6 +65,8 @@ interface RawEvent {
   session_id?: string;
   id?: string;
   text?: string;
+  thinking?: string;
+  is_streaming?: boolean;
   name?: string;
   input?: unknown;
   tool_use_id?: string;
@@ -85,7 +87,13 @@ function dispatch(agentId: string, e: RawEvent) {
     }
     case 'message': {
       if (e.id !== undefined && e.text !== undefined) {
-        upsertMessage(agentId, { id: e.id, role: 'assistant', text: e.text, isStreaming: true });
+        upsertMessage(agentId, {
+          id: e.id,
+          role: 'assistant',
+          text: e.text,
+          thinking: e.thinking,
+          isStreaming: e.is_streaming ?? false
+        });
       }
       break;
     }
@@ -203,7 +211,14 @@ function injectSession(agentId: string, folderPath: string, entry: SessionEntry)
   };
 }
 
+// agentId → token of the most recently requested history load; stale loads are discarded
+const historyLoadTokens = new Map<string, string>();
+
 async function loadSessionHistory(agentId: string, folderPath: string, sessionId: string) {
+  const token = `${folderPath}::${sessionId}`;
+  historyLoadTokens.set(agentId, token);
+  // Clear immediately so stale messages never show while loading
+  getSlice(agentId).messages = [];
   try {
     const { invoke } = await import('@tauri-apps/api/core');
     const msgs: Array<{ role: string; text: string; thinking: string | null }> = await invoke(
@@ -214,6 +229,8 @@ async function loadSessionHistory(agentId: string, folderPath: string, sessionId
         sessionId
       }
     );
+    // Discard if a newer load was requested while we were awaiting
+    if (historyLoadTokens.get(agentId) !== token) return;
     const slice = getSlice(agentId);
     slice.messages = msgs.map((m, i) => ({
       id: `history-${i}`,
@@ -222,7 +239,7 @@ async function loadSessionHistory(agentId: string, folderPath: string, sessionId
       thinking: m.thinking ?? undefined
     }));
   } catch {
-    // Session file unreadable — leave messages as-is
+    // Leave messages empty on error — don't show stale content
   }
 }
 

@@ -15,7 +15,7 @@ use crate::McpServerState;
 #[derive(Debug, Clone, Serialize)]
 #[serde(tag = "kind", rename_all = "snake_case")]
 pub enum DriverEvent {
-    Message { id: String, text: String },
+    Message { id: String, text: String, thinking: Option<String>, is_streaming: bool },
     ToolUse { id: String, name: String, input: Value },
     ToolResult { tool_use_id: String, content: String },
     SessionReady { session_id: String },
@@ -39,14 +39,31 @@ pub trait AgentDriver: Send {
 
 fn make_driver(agent_type: &str) -> Option<Box<dyn AgentDriver>> {
     match agent_type {
-        "claude-code" => Some(Box::new(ClaudeCodeDriver)),
+        "claude-code" => Some(Box::new(ClaudeCodeDriver::new())),
         _ => None,
     }
 }
 
 // ── ClaudeCodeDriver ──────────────────────────────────────────────────────────
 
-pub struct ClaudeCodeDriver;
+pub struct ClaudeCodeDriver {
+    // message id of the currently streaming assistant message
+    current_msg_id: Option<String>,
+    // msg_id → accumulated text for streaming messages
+    streaming_text: HashMap<String, String>,
+    // msg_ids processed via stream_event; skip buffered `assistant` for these
+    streamed_ids: std::collections::HashSet<String>,
+}
+
+impl ClaudeCodeDriver {
+    fn new() -> Self {
+        Self {
+            current_msg_id: None,
+            streaming_text: HashMap::new(),
+            streamed_ids: std::collections::HashSet::new(),
+        }
+    }
+}
 
 impl AgentDriver for ClaudeCodeDriver {
     fn spawn_command(&self, config: &SessionConfig) -> Option<Command> {
@@ -99,12 +116,9 @@ impl AgentDriver for ClaudeCodeDriver {
         match val["type"].as_str() {
             Some("system") if val["subtype"].as_str() == Some("init") => {
                 if let Some(id) = val["session_id"].as_str() {
-                    events.push(DriverEvent::SessionReady {
-                        session_id: id.to_string(),
-                    });
+                    events.push(DriverEvent::SessionReady { session_id: id.to_string() });
                 }
             }
-            // Permission request from --permission-prompt-tool stdio
             Some("control_request") => {
                 if val["request"]["subtype"].as_str() == Some("can_use_tool") {
                     let req = &val["request"];
@@ -117,15 +131,56 @@ impl AgentDriver for ClaudeCodeDriver {
                     }
                 }
             }
+            Some("stream_event") => {
+                // The outer wrapper is { "type": "stream_event", "event": {...}, "message": {"id": ...} }
+                let ev = &val["event"];
+                match ev["type"].as_str() {
+                    Some("message_start") => {
+                        // message_start carries the message id for all subsequent deltas
+                        if let Some(id) = ev["message"]["id"].as_str() {
+                            self.current_msg_id = Some(id.to_string());
+                            self.streamed_ids.insert(id.to_string());
+                        }
+                    }
+                    Some("content_block_start") => {
+                        // text block start — ensure accumulator exists
+                        if let Some(ref id) = self.current_msg_id.clone() {
+                            if ev["content_block"]["type"].as_str() == Some("text") {
+                                self.streaming_text.entry(id.clone()).or_default();
+                            }
+                        }
+                    }
+                    Some("content_block_delta") => {
+                        if ev["delta"]["type"].as_str() == Some("text_delta") {
+                            let delta = ev["delta"]["text"].as_str().unwrap_or("");
+                            if !delta.is_empty() {
+                                if let Some(ref id) = self.current_msg_id.clone() {
+                                    let acc = self.streaming_text.entry(id.clone()).or_default();
+                                    acc.push_str(delta);
+                                    events.push(DriverEvent::Message { id: id.clone(), text: acc.clone(), thinking: None, is_streaming: true });
+                                }
+                            }
+                        }
+                    }
+                    Some("message_stop") => {
+                        self.current_msg_id = None;
+                    }
+                    _ => {}
+                }
+            }
             Some("assistant") => {
                 let msg_id = val["message"]["id"].as_str().unwrap_or("").to_string();
+                let mut text_parts: Vec<String> = vec![];
+                let mut thinking: Option<String> = None;
                 for block in val["message"]["content"].as_array().into_iter().flatten() {
                     match block["type"].as_str() {
                         Some("text") => {
-                            let text = block["text"].as_str().unwrap_or("").to_string();
-                            if !text.is_empty() {
-                                events.push(DriverEvent::Message { id: msg_id.clone(), text });
-                            }
+                            let t = block["text"].as_str().unwrap_or("").trim().to_string();
+                            if !t.is_empty() { text_parts.push(t); }
+                        }
+                        Some("thinking") if thinking.is_none() => {
+                            let t = block["thinking"].as_str().unwrap_or("").trim().to_string();
+                            if !t.is_empty() { thinking = Some(t); }
                         }
                         Some("tool_use") => events.push(DriverEvent::ToolUse {
                             id: block["id"].as_str().unwrap_or("").to_string(),
@@ -133,6 +188,16 @@ impl AgentDriver for ClaudeCodeDriver {
                             input: block["input"].clone(),
                         }),
                         _ => {}
+                    }
+                }
+                let text = text_parts.join("\n");
+                if !text.is_empty() || thinking.is_some() {
+                    let is_streaming = false;
+                    // If this message was already streamed, mark complete and clean up
+                    self.streaming_text.remove(&msg_id);
+                    self.streamed_ids.remove(&msg_id);
+                    if !text.is_empty() {
+                        events.push(DriverEvent::Message { id: msg_id, text, thinking, is_streaming });
                     }
                 }
             }
@@ -156,6 +221,9 @@ impl AgentDriver for ClaudeCodeDriver {
                 }
             }
             Some("result") => {
+                self.current_msg_id = None;
+                self.streaming_text.clear();
+                self.streamed_ids.clear();
                 events.push(DriverEvent::Exit {
                     is_error: val["is_error"].as_bool().unwrap_or(false),
                     cost_usd: val["total_cost_usd"].as_f64(),
@@ -166,6 +234,7 @@ impl AgentDriver for ClaudeCodeDriver {
         }
         events
     }
+
     fn build_permission_response(&self, request_id: &str, approved: bool, tool_input: Option<&Value>) -> Option<String> {
         let inner = if approved {
             serde_json::json!({
@@ -390,6 +459,13 @@ async fn read_loop(
     let _ = tokio::fs::remove_file(&mcp_config_path).await;
 }
 
+fn sanitize_path(folder_path: &str) -> String {
+    folder_path
+        .chars()
+        .map(|c| if c.is_alphanumeric() { c } else { '-' })
+        .collect()
+}
+
 #[derive(Serialize)]
 pub struct SessionInfo {
     pub session_id: String,
@@ -405,30 +481,33 @@ pub async fn list_folder_sessions(
     match agent_type.as_str() {
         "claude-code" => {
             let home = app.path().home_dir().map_err(|e| e.to_string())?;
-            let key: String = folder_path
-                .chars()
-                .map(|c| if c == '/' || c == '\\' || c == ':' { '-' } else { c })
-                .collect();
+            let key = sanitize_path(&folder_path);
             let dir = home.join(".claude").join("projects").join(key);
             let mut entries = match tokio::fs::read_dir(&dir).await {
                 Ok(e) => e,
                 Err(_) => return Ok(vec![]),
             };
-            let mut sessions = vec![];
+            let mut sessions: Vec<(std::time::SystemTime, SessionInfo)> = vec![];
             while let Ok(Some(entry)) = entries.next_entry().await {
                 let name = entry.file_name();
                 let name = name.to_string_lossy();
                 if let Some(id) = name.strip_suffix(".jsonl") {
-                    if entry.metadata().await.map(|m| m.is_file()).unwrap_or(false) {
+                    let meta = entry.metadata().await;
+                    if meta.as_ref().map(|m| m.is_file()).unwrap_or(false) {
+                        let mtime = meta.ok()
+                            .and_then(|m| m.modified().ok())
+                            .unwrap_or(std::time::SystemTime::UNIX_EPOCH);
                         let first_prompt = read_first_prompt(&entry.path()).await;
-                        sessions.push(SessionInfo {
+                        sessions.push((mtime, SessionInfo {
                             session_id: id.to_string(),
                             first_prompt,
-                        });
+                        }));
                     }
                 }
             }
-            Ok(sessions)
+            // Most recently modified first
+            sessions.sort_by(|a, b| b.0.cmp(&a.0));
+            Ok(sessions.into_iter().map(|(_, s)| s).collect())
         }
         _ => Err(format!("Agent type '{agent_type}' does not support session listing")),
     }
@@ -498,10 +577,7 @@ pub async fn load_session_history(
     match agent_type.as_str() {
         "claude-code" => {
             let home = app.path().home_dir().map_err(|e| e.to_string())?;
-            let key: String = folder_path
-                .chars()
-                .map(|c| if c == '/' || c == '\\' || c == ':' { '-' } else { c })
-                .collect();
+            let key = sanitize_path(&folder_path);
             let path = home
                 .join(".claude")
                 .join("projects")

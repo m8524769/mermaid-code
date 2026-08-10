@@ -290,21 +290,23 @@
           </Popover.Close>
           {#if sessions.length > 0}
             <div class="my-0.5 border-t border-muted"></div>
-            {#each sessions as session}
-              <Popover.Close>
-                <button
-                  class="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-sm hover:bg-muted"
-                  onclick={() => (activeSessionId = session.sessionId)}>
-                  <HistoryIcon class="size-4 shrink-0 text-muted-foreground" />
-                  <span class="flex-1 truncate text-left">
-                    {session.firstPrompt ?? session.sessionId.slice(0, 8)}
-                  </span>
-                  {#if session.sessionId === activeSessionId}
-                    <CheckIcon class="size-4 text-foreground" />
-                  {/if}
-                </button>
-              </Popover.Close>
-            {/each}
+            <div class="flex max-h-64 flex-col overflow-y-auto">
+              {#each sessions as session}
+                <Popover.Close class="contents">
+                  <button
+                    class="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-sm hover:bg-muted"
+                    onclick={() => (activeSessionId = session.sessionId)}>
+                    <HistoryIcon class="size-4 shrink-0 text-muted-foreground" />
+                    <span class="flex-1 truncate text-left">
+                      {session.firstPrompt ?? session.sessionId.slice(0, 8)}
+                    </span>
+                    {#if session.sessionId === activeSessionId}
+                      <CheckIcon class="size-4 text-foreground" />
+                    {/if}
+                  </button>
+                </Popover.Close>
+              {/each}
+            </div>
           {/if}
         </Popover.Content>
       </Popover.Root>
