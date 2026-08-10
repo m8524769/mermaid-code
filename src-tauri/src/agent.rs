@@ -76,9 +76,11 @@ impl AgentDriver for ClaudeCodeDriver {
             "--include-partial-messages".to_string(),
             "--permission-prompt-tool".to_string(),
             "stdio".to_string(),
-            "--mcp-config".to_string(),
-            config.mcp_config_path.to_string_lossy().to_string(),
         ];
+        if let Some(ref p) = config.mcp_config_path {
+            args.push("--mcp-config".to_string());
+            args.push(p.to_string_lossy().to_string());
+        }
         if let Some(id) = &config.resume_session_id {
             args.push("--resume".to_string());
             args.push(id.clone());
@@ -260,8 +262,8 @@ impl AgentDriver for ClaudeCodeDriver {
 
 pub struct SessionConfig {
     pub prompt: String,
-    pub mcp_config_path: PathBuf,
-    pub resume_session_id: Option<String>, // Claude Code session_id for --resume
+    pub mcp_config_path: Option<PathBuf>,
+    pub resume_session_id: Option<String>,
 }
 
 // ── AgentManager ──────────────────────────────────────────────────────────────
@@ -305,35 +307,31 @@ pub async fn start_agent_session(
     app: AppHandle,
     params: StartAgentParams,
 ) -> Result<String, String> {
-    // Read current MCP token
-    let token = {
-        let mcp_state = app.state::<McpServerState>();
-        let guard = mcp_state.0.lock().await;
-        guard
-            .as_ref()
-            .ok_or("MCP server is not running")?
-            .token
-            .clone()
-    };
-
-    // Write mcp.json with current token
-    let data_dir = app.path().app_data_dir().map_err(|e| e.to_string())?;
-    let run_id = uuid::Uuid::new_v4().to_string();
-    let run_dir = data_dir.join("agent-runs").join(&run_id);
-    tokio::fs::create_dir_all(&run_dir).await.map_err(|e| e.to_string())?;
-    let mcp_config_path = run_dir.join("mcp.json");
-    let mcp_json = serde_json::json!({
-        "mcpServers": {
-            "mermaid-code-mcp": {
-                "type": "http",
-                "url": format!("http://127.0.0.1:{MCP_SERVER_PORT}/mcp"),
-                "headers": { "Authorization": format!("Bearer {token}") }
+    // If MCP is already running, inject its config; otherwise start without MCP
+    let mcp_config_path: Option<PathBuf> = async {
+        let token = {
+            let mcp_state = app.state::<McpServerState>();
+            let guard = mcp_state.0.lock().await;
+            guard.as_ref()?.token.clone()
+        };
+        let data_dir = app.path().app_data_dir().ok()?;
+        let run_dir = data_dir.join("agent-runs").join(uuid::Uuid::new_v4().to_string());
+        tokio::fs::create_dir_all(&run_dir).await.ok()?;
+        let path = run_dir.join("mcp.json");
+        let mcp_json = serde_json::json!({
+            "mcpServers": {
+                "mermaid-code-mcp": {
+                    "type": "http",
+                    "url": format!("http://127.0.0.1:{MCP_SERVER_PORT}/mcp"),
+                    "headers": { "Authorization": format!("Bearer {token}") }
+                }
             }
-        }
-    });
-    tokio::fs::write(&mcp_config_path, serde_json::to_string_pretty(&mcp_json).unwrap())
-        .await
-        .map_err(|e| e.to_string())?;
+        });
+        tokio::fs::write(&path, serde_json::to_string_pretty(&mcp_json).unwrap()).await.ok()?;
+        Some(path)
+    }.await;
+
+    let run_id = uuid::Uuid::new_v4().to_string();
 
     // Build driver (two instances: one for read_loop, one stored in AgentRun for permission responses)
     let agent_type = params.agent_type.as_str();
@@ -414,7 +412,7 @@ async fn read_loop(
     run_id: String,
     stdout: tokio::process::ChildStdout,
     mut driver: Box<dyn AgentDriver>,
-    mcp_config_path: PathBuf,
+    mcp_config_path: Option<PathBuf>,
 ) {
     let mut lines = BufReader::new(stdout).lines();
     let mut got_exit = false;
@@ -456,7 +454,9 @@ async fn read_loop(
         }));
     }
 
-    let _ = tokio::fs::remove_file(&mcp_config_path).await;
+    if let Some(ref p) = mcp_config_path {
+        let _ = tokio::fs::remove_file(p).await;
+    }
 }
 
 fn sanitize_path(folder_path: &str) -> String {
