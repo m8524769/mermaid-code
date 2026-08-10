@@ -8,6 +8,7 @@
   import { fileState } from '$lib/util/fileState.svelte';
   import { openFolderDialog } from '$lib/util/fileSystem';
   import { renderMarkdown } from '$lib/util/markdown';
+  import { untrack } from 'svelte';
   import ClaudeIcon from '~icons/logos/claude-icon';
   import OpenAIIcon from '~icons/logos/openai-icon';
   import CloseIcon from '~icons/material-symbols/close-rounded';
@@ -80,7 +81,7 @@
   );
 
   const sessions = $derived<SessionEntry[]>(
-    workingFolder ? agentState.getSessions(selectedAgentId, workingFolder) : []
+    workingFolder ? (slices[selectedAgentId]?.folderSessions[workingFolder] ?? []) : []
   );
 
   // Load sessions from Tauri whenever agent or folder changes
@@ -102,18 +103,22 @@
 
   $effect(() => {
     // Reset session and clear messages when folder or agent changes
-    workingFolder;
-    activeSessionId = localStorage.getItem(sessionKey(selectedAgentId));
-    agentState.clearMessages(selectedAgentId);
+    // Do NOT read runId here — it would re-trigger this effect when run exits
+    const agent = selectedAgentId;
+    void workingFolder;
+    activeSessionId = localStorage.getItem(sessionKey(agent));
+    untrack(() => agentState.clearMessages(agent));
   });
 
   // Load history when switching to an existing session
+  // Skip if this session has live messages
   $effect(() => {
-    if (workingFolder && activeSessionId) {
-      agentState.loadSessionHistory(selectedAgentId, workingFolder, activeSessionId);
-    } else {
-      agentState.clearMessages(selectedAgentId);
+    if (!workingFolder || !activeSessionId) {
+      untrack(() => agentState.clearMessages(selectedAgentId));
+      return;
     }
+    if (activeSessionId === liveSessionId) return;
+    agentState.loadSessionHistory(selectedAgentId, workingFolder, activeSessionId);
   });
 
   const activeSession = $derived(sessions.find((s) => s.sessionId === activeSessionId) ?? null);
@@ -131,6 +136,8 @@
 
   let inputText = $state('');
   let sending = $state(false);
+  let pendingFirstMessage: string | null = null;
+  let liveSessionId: string | null = null; // which session has live messages
 
   const runId = $derived(slices[selectedAgentId]?.activeRunId ?? null);
 
@@ -138,6 +145,29 @@
     const text = inputText.trim();
     if (!text || !workingFolder || sending) return;
     inputText = '';
+    sending = true;
+    try {
+      const { invoke } = await import('@tauri-apps/api/core');
+      if (!runId) {
+        pendingFirstMessage = text;
+        const id: string = await invoke('start_agent_session', {
+          params: {
+            prompt: text,
+            folder_path: workingFolder,
+            agent_type: selectedAgentId,
+            resume_session_id: activeSessionId ?? null
+          }
+        });
+        agentState.registerRun(selectedAgentId, id);
+        agentState.getSlice(selectedAgentId).messages = [{ id: `user-${id}`, role: 'user', text }];
+      } else {
+        await invoke('send_agent_message', { runId, content: text });
+      }
+    } catch (e) {
+      console.error('[agent] sendMessage error:', e);
+    } finally {
+      sending = false;
+    }
   }
 
   async function interruptRun() {
@@ -149,6 +179,28 @@
   }
 
   const messages = $derived(slices[selectedAgentId]?.messages ?? []);
+
+  // Sync session_id from slice (set by session_ready event) to local state
+  $effect(() => {
+    const newSessionId = slices[selectedAgentId]?.activeSessionId;
+    if (newSessionId && newSessionId !== activeSessionId && workingFolder) {
+      agentState.injectSession(selectedAgentId, workingFolder, {
+        sessionId: newSessionId,
+        firstPrompt: pendingFirstMessage
+      });
+      pendingFirstMessage = null;
+      liveSessionId = newSessionId;
+      activeSessionId = newSessionId;
+      slices[selectedAgentId].activeSessionId = null;
+    }
+  });
+
+  // When run ends, refresh session list so firstPrompt is populated from the written JSONL
+  $effect(() => {
+    if (!runId && workingFolder) {
+      setTimeout(() => agentState.loadSessions(selectedAgentId, workingFolder!), 500);
+    }
+  });
 
   let messagesEl = $state<HTMLDivElement | null>(null);
   $effect(() => {

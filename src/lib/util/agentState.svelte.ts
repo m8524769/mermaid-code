@@ -36,7 +36,6 @@ export const slices = $state<Record<string, AgentSlice>>({});
 
 // run_id → agentId
 const runOwner = new Map<string, string>();
-const runFolders = new Map<string, string>();
 
 function getSlice(agentId: string): AgentSlice {
   if (!slices[agentId]) {
@@ -147,9 +146,8 @@ async function init() {
   });
 }
 
-function registerRun(agentId: string, runId: string, folderPath: string) {
+function registerRun(agentId: string, runId: string) {
   runOwner.set(runId, agentId);
-  runFolders.set(runId, folderPath);
   const slice = getSlice(agentId);
   slice.activeRunId = runId;
   slice.activeSessionId = null;
@@ -159,7 +157,6 @@ function registerRun(agentId: string, runId: string, folderPath: string) {
 
 function unregisterRun(runId: string) {
   runOwner.delete(runId);
-  runFolders.delete(runId);
 }
 
 async function loadSessions(agentId: string, folderPath: string) {
@@ -170,10 +167,19 @@ async function loadSessions(agentId: string, folderPath: string) {
       { agentType: agentId, folderPath }
     );
     const slice = getSlice(agentId);
-    slice.folderSessions = {
-      ...slice.folderSessions,
-      [folderPath]: ids.map((s) => ({ sessionId: s.session_id, firstPrompt: s.first_prompt }))
-    };
+    const existing = slice.folderSessions[folderPath] ?? [];
+    // Merge: prefer in-memory firstPrompt over null from Tauri (timing / file-not-written-yet)
+    const merged: SessionEntry[] = ids.map((s) => {
+      const ex = existing.find((e) => e.sessionId === s.session_id);
+      return { sessionId: s.session_id, firstPrompt: s.first_prompt ?? ex?.firstPrompt ?? null };
+    });
+    // Keep injected sessions that Tauri hasn't flushed to disk yet
+    for (const ex of existing) {
+      if (!merged.find((m) => m.sessionId === ex.sessionId)) {
+        merged.unshift(ex);
+      }
+    }
+    slice.folderSessions = { ...slice.folderSessions, [folderPath]: merged };
   } catch {
     // Agent type may not support session listing — leave existing cache
   }
@@ -181,6 +187,20 @@ async function loadSessions(agentId: string, folderPath: string) {
 
 function clearMessages(agentId: string) {
   if (slices[agentId]) slices[agentId].messages = [];
+}
+
+function injectSession(agentId: string, folderPath: string, entry: SessionEntry) {
+  const slice = getSlice(agentId);
+  const existing = slice.folderSessions[folderPath] ?? [];
+  const prev = existing.find((s) => s.sessionId === entry.sessionId);
+  const merged: SessionEntry = {
+    sessionId: entry.sessionId,
+    firstPrompt: entry.firstPrompt ?? prev?.firstPrompt ?? null
+  };
+  slice.folderSessions = {
+    ...slice.folderSessions,
+    [folderPath]: [merged, ...existing.filter((s) => s.sessionId !== entry.sessionId)]
+  };
 }
 
 async function loadSessionHistory(agentId: string, folderPath: string, sessionId: string) {
@@ -212,13 +232,10 @@ export const agentState = {
   init,
   registerRun,
   unregisterRun,
+  injectSession,
   loadSessions,
   loadSessionHistory,
   clearMessages,
 
-  getSlice,
-
-  getSessions(agentId: string, folderPath: string): SessionEntry[] {
-    return slices[agentId]?.folderSessions[folderPath] ?? [];
-  }
+  getSlice
 };
