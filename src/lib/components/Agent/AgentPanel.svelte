@@ -10,7 +10,6 @@
   import { renderMarkdown } from '$lib/util/markdown';
   import { untrack } from 'svelte';
   import ClaudeIcon from '~icons/logos/claude-icon';
-  import OpenAIIcon from '~icons/logos/openai-icon';
   import CloseIcon from '~icons/material-symbols/close-rounded';
   import SyncAltIcon from '~icons/material-symbols/sync-alt-rounded';
   import CheckIcon from '~icons/material-symbols/check-rounded';
@@ -18,6 +17,7 @@
   import AddIcon from '~icons/material-symbols/add-rounded';
   import SendIcon from '~icons/material-symbols/send-rounded';
   import StopIcon from '~icons/material-symbols/stop-rounded';
+  import LockIcon from '~icons/material-symbols/lock-rounded';
 
   interface AgentOption {
     id: string;
@@ -209,6 +209,40 @@
       setTimeout(() => agentState.loadSessions(selectedAgentId, workingFolder!), 500);
     }
   });
+
+  const pendingPermission = $derived(slices[selectedAgentId]?.pendingPermission ?? null);
+
+  async function allowPermission() {
+    if (!pendingPermission || !runId) return;
+    try {
+      const { invoke } = await import('@tauri-apps/api/core');
+      await invoke('respond_agent_permission', {
+        runId,
+        requestId: pendingPermission.requestId,
+        approved: true,
+        toolInput: pendingPermission.toolInput ?? null
+      });
+      slices[selectedAgentId].pendingPermission = null;
+    } catch (e) {
+      console.error('[agent] allowPermission error:', e);
+    }
+  }
+
+  async function denyPermission() {
+    if (!pendingPermission || !runId) return;
+    try {
+      const { invoke } = await import('@tauri-apps/api/core');
+      await invoke('respond_agent_permission', {
+        runId,
+        requestId: pendingPermission.requestId,
+        approved: false,
+        toolInput: null
+      });
+      slices[selectedAgentId].pendingPermission = null;
+    } catch (e) {
+      console.error('[agent] denyPermission error:', e);
+    }
+  }
 
   let messagesEl = $state<HTMLDivElement | null>(null);
   $effect(() => {
@@ -404,13 +438,47 @@
       {/if}
     </div>
 
+    <!-- Permission banner -->
+    {#if pendingPermission}
+      <div class="border-t border-amber-500/30 bg-amber-500/10 p-3">
+        <div
+          class="mb-2 flex items-center gap-2 text-xs font-medium text-amber-600 dark:text-amber-400">
+          <LockIcon class="size-3.5 shrink-0" />
+          <span>Permission Request</span>
+        </div>
+        <p class="mb-1 text-xs text-foreground">
+          Allow <span class="font-mono font-medium">{pendingPermission.toolName}</span>?
+        </p>
+        {#if pendingPermission.toolInput && Object.keys(pendingPermission.toolInput as object).length > 0}
+          <pre
+            class="mb-2 max-h-24 overflow-auto rounded-md bg-muted p-2 font-mono text-[11px] text-muted-foreground">{JSON.stringify(
+              pendingPermission.toolInput,
+              null,
+              2
+            )}</pre>
+        {/if}
+        <div class="flex gap-2">
+          <button
+            onclick={allowPermission}
+            class="flex-1 rounded-md bg-green-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-green-700">
+            Allow
+          </button>
+          <button
+            onclick={denyPermission}
+            class="flex-1 rounded-md bg-muted px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted/80">
+            Deny
+          </button>
+        </div>
+      </div>
+    {/if}
+
     <!-- Input -->
     <div class="flex gap-1 border-t border-muted p-2">
       <textarea
         bind:value={inputText}
         placeholder={workingFolder ? 'Message...' : 'Select a folder first…'}
         rows="1"
-        disabled={!workingFolder}
+        disabled={!workingFolder || !!pendingPermission}
         style="field-sizing: content; max-height: 8lh;"
         class="flex-1 resize-none rounded-lg bg-muted px-3 py-2 text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50"
         oncompositionstart={() => (imeActive = true)}
@@ -431,7 +499,10 @@
       <button
         onclick={runId ? interruptRun : sendMessage}
         class="rounded-lg bg-primary p-2 text-primary-foreground hover:opacity-80 disabled:opacity-40"
-        disabled={!workingFolder || sending || (!runId && !inputText.trim())}>
+        disabled={!workingFolder ||
+          sending ||
+          (!runId && !inputText.trim()) ||
+          !!pendingPermission}>
         {#if runId}
           <StopIcon class="size-4" />
         {:else}
