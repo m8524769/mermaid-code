@@ -565,6 +565,39 @@ pub async fn list_folder_sessions(
     }
 }
 
+fn is_injected_content(text: &str) -> bool {
+    // Skip IDE context injections, task notifications, etc. — all start with a lowercase XML tag
+    let t = text.trim_start();
+    if t.starts_with('<') {
+        let tag_end = t[1..].find(|c: char| !c.is_alphanumeric() && c != '-' && c != '_');
+        if let Some(end) = tag_end {
+            let tag = &t[1..end + 1];
+            return !tag.is_empty() && tag.chars().next().map(|c| c.is_lowercase()).unwrap_or(false);
+        }
+    }
+    false
+}
+
+fn extract_session_name(content: &serde_json::Value) -> Option<String> {
+    if let Some(s) = content.as_str() {
+        let t = s.trim().to_string();
+        if !t.is_empty() && !is_injected_content(&t) {
+            return Some(parse_command_display_text(&t).unwrap_or(t));
+        }
+        return None;
+    }
+    if let Some(arr) = content.as_array() {
+        for block in arr {
+            if block["type"].as_str() != Some("text") { continue; }
+            let t = block["text"].as_str().unwrap_or("").trim();
+            if t.is_empty() || is_injected_content(t) { continue; }
+            let t = t.to_string();
+            return Some(parse_command_display_text(&t).unwrap_or(t));
+        }
+    }
+    None
+}
+
 fn extract_text(content: &serde_json::Value) -> Option<String> {
     let text = if let Some(s) = content.as_str() {
         s.trim().to_string()
@@ -613,33 +646,38 @@ fn extract_xml_tag(text: &str, tag: &str) -> Option<String> {
 
 async fn read_first_prompt(path: &std::path::Path) -> Option<String> {
     use tokio::io::{AsyncBufReadExt, BufReader};
+
+    // Scan from head for first meaningful user message
     let file = tokio::fs::File::open(path).await.ok()?;
     let mut lines = BufReader::new(file).lines();
+    let mut last_prompt_fallback: Option<String> = None;
     while let Ok(Some(line)) = lines.next_line().await {
-        let Ok(val) = serde_json::from_str::<serde_json::Value>(&line) else {
+        let Ok(val) = serde_json::from_str::<serde_json::Value>(&line) else { continue };
+        // Capture last-prompt entry as fallback (only entry in some session formats)
+        if val["type"].as_str() == Some("last-prompt") {
+            if let Some(t) = val["lastPrompt"].as_str() {
+                let t = t.trim().to_string();
+                if !t.is_empty() {
+                    last_prompt_fallback = Some(parse_command_display_text(&t).unwrap_or(t));
+                }
+            }
             continue;
-        };
+        }
         if val["type"].as_str() != Some("user")
             || val["message"]["role"].as_str() != Some("user")
         {
             continue;
         }
-        // Skip task-notification injections
-        if val["origin"]["kind"].as_str() == Some("task-notification") {
-            continue;
-        }
+        if val["origin"]["kind"].as_str() == Some("task-notification") { continue; }
         let content = &val["message"]["content"];
-        // Skip tool_result messages (content is an array of tool_result blocks)
         if let Some(arr) = content.as_array() {
-            if arr.iter().any(|b| b["type"].as_str() == Some("tool_result")) {
-                continue;
-            }
+            if arr.iter().any(|b| b["type"].as_str() == Some("tool_result")) { continue; }
         }
-        if let Some(text) = extract_text(content) {
+        if let Some(text) = extract_session_name(content) {
             return Some(text);
         }
     }
-    None
+    last_prompt_fallback
 }
 
 #[derive(Serialize)]
