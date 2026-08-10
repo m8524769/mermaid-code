@@ -2,6 +2,12 @@
 
 All notable changes to Mermaid Code are documented here.
 
+## [v0.4.7] - 2026-08-10
+
+### Fixed
+
+- **Copy/paste on macOS**: added the Edit menu (Cut, Copy, Paste, Select All, Undo, Redo) to the macOS menu bar, restoring keyboard shortcuts that were previously non-functional
+
 ## [v0.4.6] - 2026-08-09
 
 ### Added
