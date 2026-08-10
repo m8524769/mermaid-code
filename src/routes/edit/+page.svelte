@@ -431,18 +431,20 @@
           <div class="absolute right-0 bottom-0"><VersionSecurityToolbar /></div>
           <div class="absolute bottom-0 left-0 sm:left-5"><SyncRoughToolbar /></div>
         </Resizable.Pane>
-        <Resizable.Handle class="ml-1 hidden opacity-0 sm:block" />
-        <Resizable.Pane
-          collapsible
-          collapsedSize={0}
-          minSize={20}
-          defaultSize={30}
-          class="hidden h-full grow flex-col sm:flex"
-          onCollapse={() => (isAgentCollapsed = true)}
-          onExpand={() => (isAgentCollapsed = false)}
-          bind:this={agentPane}>
-          <AgentPanel onclose={() => agentPane?.collapse()} />
-        </Resizable.Pane>
+        {#if import.meta.env.DEV}
+          <Resizable.Handle class="ml-1 hidden opacity-0 sm:block" />
+          <Resizable.Pane
+            collapsible
+            collapsedSize={0}
+            minSize={20}
+            defaultSize={30}
+            class="hidden h-full grow flex-col sm:flex"
+            onCollapse={() => (isAgentCollapsed = true)}
+            onExpand={() => (isAgentCollapsed = false)}
+            bind:this={agentPane}>
+            <AgentPanel onclose={() => agentPane?.collapse()} />
+          </Resizable.Pane>
+        {/if}
       </Resizable.PaneGroup>
     </div>
   </div>
