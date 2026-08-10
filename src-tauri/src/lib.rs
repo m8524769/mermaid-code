@@ -245,6 +245,7 @@ pub fn run() {
             agent::respond_agent_permission,
             agent::list_folder_sessions,
             agent::load_session_history,
+            agent::delete_session,
         ])
         .setup(|app| {
             // macOS App menu (always first on macOS)

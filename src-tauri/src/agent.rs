@@ -747,6 +747,28 @@ pub async fn load_session_history(
 }
 
 #[tauri::command]
+pub async fn delete_session(
+    app: AppHandle,
+    agent_type: String,
+    folder_path: String,
+    session_id: String,
+) -> Result<(), String> {
+    match agent_type.as_str() {
+        "claude-code" => {
+            let home = app.path().home_dir().map_err(|e| e.to_string())?;
+            let key = sanitize_path(&folder_path);
+            let path = home
+                .join(".claude")
+                .join("projects")
+                .join(key)
+                .join(format!("{session_id}.jsonl"));
+            tokio::fs::remove_file(&path).await.map_err(|e| e.to_string())
+        }
+        _ => Err(format!("Agent type '{agent_type}' does not support session deletion")),
+    }
+}
+
+#[tauri::command]
 pub async fn list_agent_runs(app: AppHandle) -> Vec<RunSummary> {
     let state = app.state::<AgentManagerState>();
     let mgr = state.0.lock().await;

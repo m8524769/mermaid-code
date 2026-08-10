@@ -19,6 +19,7 @@
   import SendIcon from '~icons/material-symbols/send-rounded';
   import StopIcon from '~icons/material-symbols/stop-rounded';
   import LockIcon from '~icons/material-symbols/lock-rounded';
+  import DeleteIcon from '~icons/material-symbols/delete-outline-rounded';
 
   interface AgentOption {
     id: string;
@@ -332,21 +333,40 @@
           {#if sessions.length > 0}
             <div class="my-0.5 border-t border-muted"></div>
             <div class="flex max-h-64 flex-col overflow-y-auto">
-              {#each sessions as session}
-                <Popover.Close class="contents">
-                  <button
-                    class="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-sm hover:bg-muted disabled:cursor-not-allowed disabled:opacity-40"
-                    disabled={(!!runId && session.sessionId !== activeSessionId) || undefined}
-                    onclick={() => (activeSessionId = session.sessionId)}>
-                    <HistoryIcon class="size-4 shrink-0 text-muted-foreground" />
-                    <span class="flex-1 truncate text-left">
-                      {session.firstPrompt ?? session.sessionId.slice(0, 8)}
-                    </span>
-                    {#if session.sessionId === activeSessionId}
-                      <CheckIcon class="size-4 text-foreground" />
-                    {/if}
-                  </button>
-                </Popover.Close>
+              {#each sessions as session (session.sessionId)}
+                <div class="group flex items-center rounded-lg hover:bg-muted">
+                  <Popover.Close class="contents">
+                    <button
+                      class="flex min-w-0 flex-1 items-center gap-2 px-2 py-1.5 text-sm disabled:cursor-not-allowed disabled:opacity-40"
+                      disabled={(!!runId && session.sessionId !== activeSessionId) || undefined}
+                      onclick={() => (activeSessionId = session.sessionId)}>
+                      <HistoryIcon class="size-4 shrink-0 text-muted-foreground" />
+                      <span class="flex-1 truncate text-left">
+                        {session.firstPrompt ?? session.sessionId.slice(0, 8)}
+                      </span>
+                      {#if session.sessionId === activeSessionId}
+                        <CheckIcon class="size-4 shrink-0 text-foreground" />
+                      {/if}
+                    </button>
+                  </Popover.Close>
+                  {#if session.sessionId !== activeSessionId}
+                    {@const sid = session.sessionId}
+                    <button
+                      class="mr-1 hidden shrink-0 rounded-sm p-1 text-muted-foreground/50 group-hover:flex hover:bg-background hover:text-destructive"
+                      title="Delete session"
+                      onclick={async () => {
+                        try {
+                          await agentState.deleteSession(selectedAgentId, workingFolder!, sid);
+                          if (sid === activeSessionId) activeSessionId = null;
+                        } catch (e) {
+                          agentState.getSlice(selectedAgentId).errorMsg =
+                            e instanceof Error ? e.message : 'Failed to delete session.';
+                        }
+                      }}>
+                      <DeleteIcon class="size-3.5" />
+                    </button>
+                  {/if}
+                </div>
               {/each}
             </div>
           {/if}

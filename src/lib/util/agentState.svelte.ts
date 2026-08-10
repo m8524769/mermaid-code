@@ -280,6 +280,17 @@ async function loadSessionHistory(agentId: string, folderPath: string, sessionId
   }
 }
 
+async function deleteSession(agentId: string, folderPath: string, sessionId: string) {
+  const { invoke } = await import('@tauri-apps/api/core');
+  await invoke('delete_session', { agentType: agentId, folderPath, sessionId });
+  const slice = getSlice(agentId);
+  const existing = slice.folderSessions[folderPath] ?? [];
+  slice.folderSessions = {
+    ...slice.folderSessions,
+    [folderPath]: existing.filter((s) => s.sessionId !== sessionId)
+  };
+}
+
 // ── Public API ─────────────────────────────────────────────────────────────────
 
 export const agentState = {
@@ -289,6 +300,7 @@ export const agentState = {
   injectSession,
   loadSessions,
   loadSessionHistory,
+  deleteSession,
   clearMessages,
 
   getSlice
