@@ -416,11 +416,32 @@
                   </div>
                 {/await}
               {/if}
-            {:else}
-              <div
-                class="max-w-[85%] rounded-xl bg-muted/50 px-3 py-2 font-mono text-xs break-words whitespace-pre-wrap text-muted-foreground">
-                {msg.text}
-              </div>
+            {:else if msg.role === 'tool_use'}
+              <details class="max-w-[85%] rounded-xl border border-muted-foreground/20 text-xs">
+                <summary
+                  class="flex cursor-pointer items-center gap-1.5 px-3 py-1.5 select-none hover:text-foreground">
+                  <span class="size-1.5 rounded-full bg-muted-foreground/50"></span>
+                  <span class="font-medium text-muted-foreground">{msg.toolName ?? 'tool'}</span>
+                </summary>
+                <div
+                  class="border-t border-muted-foreground/20 px-3 py-2 font-mono text-xs break-words whitespace-pre-wrap text-muted-foreground">
+                  {msg.text}
+                </div>
+              </details>
+            {:else if msg.role === 'tool_result'}
+              {#if msg.text.trim()}
+                <details class="max-w-[85%] rounded-xl border border-muted-foreground/10 text-xs">
+                  <summary
+                    class="flex cursor-pointer items-center gap-1.5 px-3 py-1.5 text-muted-foreground/60 select-none hover:text-muted-foreground">
+                    <span class="size-1.5 rounded-full bg-green-500/60"></span>
+                    <span>Result</span>
+                  </summary>
+                  <div
+                    class="border-t border-muted-foreground/10 px-3 py-2 font-mono text-xs break-words whitespace-pre-wrap text-muted-foreground/70">
+                    {msg.text.length > 1000 ? msg.text.slice(0, 1000) + '\n…' : msg.text}
+                  </div>
+                </details>
+              {/if}
             {/if}
           </div>
         {/each}

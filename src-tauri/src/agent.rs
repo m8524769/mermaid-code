@@ -601,6 +601,8 @@ pub struct HistoryMessage {
     pub role: String,
     pub text: String,
     pub thinking: Option<String>,
+    pub tool_name: Option<String>,
+    pub tool_use_id: Option<String>,
 }
 
 #[tauri::command]
@@ -635,9 +637,28 @@ pub async fn load_session_history(
                         // Skip task-notification injections
                         if val["origin"]["kind"].as_str() == Some("task-notification") { continue; }
                         let content = &val["message"]["content"];
-                        // Skip tool_result messages
+                        // Extract tool_result messages as separate history entries
                         if let Some(arr) = content.as_array() {
                             if arr.iter().any(|b| b["type"].as_str() == Some("tool_result")) {
+                                for block in arr {
+                                    if block["type"].as_str() != Some("tool_result") { continue; }
+                                    let text = match &block["content"] {
+                                        v if v.is_array() => v.as_array().unwrap()
+                                            .iter()
+                                            .filter_map(|b| b["text"].as_str())
+                                            .collect::<Vec<_>>()
+                                            .join("\n"),
+                                        v if v.is_string() => v.as_str().unwrap_or("").to_string(),
+                                        _ => continue,
+                                    };
+                                    messages.push(HistoryMessage {
+                                        role: "tool_result".into(),
+                                        text,
+                                        thinking: None,
+                                        tool_name: None,
+                                        tool_use_id: block["tool_use_id"].as_str().map(|s| s.to_string()),
+                                    });
+                                }
                                 continue;
                             }
                         }
@@ -657,7 +678,7 @@ pub async fn load_session_history(
                             if SYNTHETIC_PREFIXES.iter().any(|p| text.starts_with(p)) {
                                 continue;
                             }
-                            messages.push(HistoryMessage { role: "user".into(), text, thinking: None });
+                            messages.push(HistoryMessage { role: "user".into(), text, thinking: None, tool_name: None, tool_use_id: None });
                         }
                     }
                     Some("assistant") => {
@@ -678,6 +699,30 @@ pub async fn load_session_history(
                                             if !t.is_empty() { thinking = Some(t.to_string()); }
                                         }
                                     }
+                                    Some("tool_use") => {
+                                        // Flush any accumulated text/thinking first
+                                        if !parts.is_empty() || thinking.is_some() {
+                                            messages.push(HistoryMessage {
+                                                role: "assistant".into(),
+                                                text: parts.join("\n"),
+                                                thinking: thinking.take(),
+                                                tool_name: None,
+                                                tool_use_id: None,
+                                            });
+                                            parts.clear();
+                                        }
+                                        let tool_name = block["name"].as_str().unwrap_or("").to_string();
+                                        let tool_use_id = block["id"].as_str().map(|s| s.to_string());
+                                        let input_text = serde_json::to_string_pretty(&block["input"])
+                                            .unwrap_or_default();
+                                        messages.push(HistoryMessage {
+                                            role: "tool_use".into(),
+                                            text: input_text,
+                                            thinking: None,
+                                            tool_name: Some(tool_name),
+                                            tool_use_id,
+                                        });
+                                    }
                                     _ => {}
                                 }
                             }
@@ -687,6 +732,8 @@ pub async fn load_session_history(
                                 role: "assistant".into(),
                                 text: parts.join("\n"),
                                 thinking,
+                                tool_name: None,
+                                tool_use_id: None,
                             });
                         }
                     }

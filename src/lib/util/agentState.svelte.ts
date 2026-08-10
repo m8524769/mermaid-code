@@ -247,22 +247,31 @@ async function loadSessionHistory(agentId: string, folderPath: string, sessionId
   historyLoadTokens.set(agentId, token);
   try {
     const { invoke } = await import('@tauri-apps/api/core');
-    const msgs: Array<{ role: string; text: string; thinking: string | null }> = await invoke(
-      'load_session_history',
-      {
-        agentType: agentId,
-        folderPath,
-        sessionId
-      }
-    );
+    const msgs: Array<{
+      role: string;
+      text: string;
+      thinking: string | null;
+      tool_name: string | null;
+      tool_use_id: string | null;
+    }> = await invoke('load_session_history', {
+      agentType: agentId,
+      folderPath,
+      sessionId
+    });
     // Discard if a newer load was requested while we were awaiting
     if (historyLoadTokens.get(agentId) !== token) return;
     const slice = getSlice(agentId);
     slice.messages = msgs.map((m, i) => ({
       id: `history-${i}`,
-      role: m.role === 'user' ? ('user' as const) : ('assistant' as const),
+      role: (['user', 'assistant', 'tool_use', 'tool_result'] as const).includes(
+        m.role as 'user' | 'assistant' | 'tool_use' | 'tool_result'
+      )
+        ? (m.role as AgentMessage['role'])
+        : ('assistant' as const),
       text: m.text,
-      thinking: m.thinking ?? undefined
+      thinking: m.thinking ?? undefined,
+      toolName: m.tool_name ?? undefined,
+      toolUseId: m.tool_use_id ?? undefined
     }));
   } catch {
     if (historyLoadTokens.get(agentId) === token) {
