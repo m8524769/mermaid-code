@@ -326,7 +326,7 @@ pub async fn start_agent_session(
         "mcpServers": {
             "mermaid-code-mcp": {
                 "type": "http",
-                "url": format!("http://127.0.0.1:{MCP_SERVER_PORT}"),
+                "url": format!("http://127.0.0.1:{MCP_SERVER_PORT}/mcp"),
                 "headers": { "Authorization": format!("Bearer {token}") }
             }
         }

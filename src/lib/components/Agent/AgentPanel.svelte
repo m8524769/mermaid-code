@@ -136,6 +136,8 @@
 
   let inputText = $state('');
   let sending = $state(false);
+  let imeActive = false;
+  let imeSkipNextEnter = false;
   let pendingFirstMessage: string | null = null;
   let liveSessionId: string | null = null; // which session has live messages
 
@@ -375,8 +377,17 @@
         rows="1"
         style="field-sizing: content; max-height: 8lh;"
         class="flex-1 resize-none rounded-lg bg-muted px-3 py-2 text-sm outline-none placeholder:text-muted-foreground"
+        oncompositionstart={() => (imeActive = true)}
+        oncompositionend={() => {
+          imeActive = false;
+          imeSkipNextEnter = true;
+        }}
         onkeydown={(e) => {
-          if (e.key === 'Enter' && !e.shiftKey) {
+          if (e.key === 'Enter' && !e.shiftKey && !imeActive) {
+            if (imeSkipNextEnter) {
+              imeSkipNextEnter = false;
+              return;
+            }
             e.preventDefault();
             if (!runId) sendMessage();
           }
