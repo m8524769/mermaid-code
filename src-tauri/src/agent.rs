@@ -30,6 +30,8 @@ pub trait AgentDriver: Send {
     fn spawn_command(&self, config: &SessionConfig) -> Option<Command>;
     /// Encodes a user turn as a stdin/HTTP payload. Returns None if multi-turn is unsupported.
     fn build_user_message(&self, _content: &str) -> Option<String> { None }
+    /// Encodes an interrupt signal. Returns None if unsupported.
+    fn build_interrupt(&self) -> Option<String> { None }
     fn parse_line(&mut self, line: &str) -> Vec<DriverEvent>;
     /// Encodes a permission response payload. Returns None if unsupported.
     fn build_permission_response(&self, request_id: &str, approved: bool, tool_input: Option<&Value>) -> Option<String>;
@@ -72,7 +74,19 @@ impl AgentDriver for ClaudeCodeDriver {
     fn build_user_message(&self, content: &str) -> Option<String> {
         let msg = serde_json::json!({
             "type": "user",
-            "message": { "role": "user", "content": content }
+            "message": {
+                "role": "user",
+                "content": [{ "type": "text", "text": content }]
+            }
+        });
+        Some(serde_json::to_string(&msg).unwrap())
+    }
+
+    fn build_interrupt(&self) -> Option<String> {
+        let msg = serde_json::json!({
+            "type": "control_request",
+            "request_id": uuid::Uuid::new_v4().to_string(),
+            "request": { "subtype": "interrupt" }
         });
         Some(serde_json::to_string(&msg).unwrap())
     }
@@ -573,10 +587,15 @@ pub async fn send_agent_message(
     let (line, tx) = {
         let mgr = state.0.lock().await;
         let run = mgr.runs.get(&run_id).ok_or("Run not found")?;
-        let line = run
-            .driver
-            .build_user_message(&content)
-            .ok_or("Driver does not support multi-turn messages")?;
+        let line = if content == "\x03" {
+            run.driver
+                .build_interrupt()
+                .ok_or("Driver does not support interrupt")?
+        } else {
+            run.driver
+                .build_user_message(&content)
+                .ok_or("Driver does not support multi-turn messages")?
+        };
         (line, run.stdin_tx.clone())
     };
     tx.send(line).await.map_err(|e| e.to_string())

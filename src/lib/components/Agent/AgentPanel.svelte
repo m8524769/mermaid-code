@@ -149,7 +149,9 @@
     try {
       const { invoke } = await import('@tauri-apps/api/core');
       if (!runId) {
-        pendingFirstMessage = text;
+        const isResume = !!activeSessionId;
+        if (!isResume) pendingFirstMessage = text;
+        const existingMessages = isResume ? [...(slices[selectedAgentId]?.messages ?? [])] : [];
         const id: string = await invoke('start_agent_session', {
           params: {
             prompt: text,
@@ -159,7 +161,11 @@
           }
         });
         agentState.registerRun(selectedAgentId, id);
-        agentState.getSlice(selectedAgentId).messages = [{ id: `user-${id}`, role: 'user', text }];
+        if (isResume && activeSessionId) liveSessionId = activeSessionId;
+        agentState.getSlice(selectedAgentId).messages = [
+          ...existingMessages,
+          { id: `user-${id}`, role: 'user', text }
+        ];
       } else {
         await invoke('send_agent_message', { runId, content: text });
       }
@@ -365,8 +371,14 @@
         bind:value={inputText}
         placeholder="Message..."
         rows="1"
+        style="field-sizing: content; max-height: 8lh;"
         class="flex-1 resize-none rounded-lg bg-muted px-3 py-2 text-sm outline-none placeholder:text-muted-foreground"
-      ></textarea>
+        onkeydown={(e) => {
+          if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            if (!runId) sendMessage();
+          }
+        }}></textarea>
       <button
         onclick={runId ? interruptRun : sendMessage}
         class="rounded-lg bg-primary p-2 text-primary-foreground hover:opacity-80 disabled:opacity-40"
