@@ -471,6 +471,7 @@ async fn read_first_prompt(path: &std::path::Path) -> Option<String> {
 pub struct HistoryMessage {
     pub role: String,
     pub text: String,
+    pub thinking: Option<String>,
 }
 
 #[tauri::command]
@@ -508,18 +509,28 @@ pub async fn load_session_history(
                         // Only accept messages explicitly authored by a human
                         if val["origin"]["kind"].as_str() != Some("human") { continue; }
                         if let Some(text) = extract_text(&val["message"]["content"]) {
-                            messages.push(HistoryMessage { role: "user".into(), text });
+                            messages.push(HistoryMessage { role: "user".into(), text, thinking: None });
                         }
                     }
                     Some("assistant") => {
                         let mut parts = vec![];
+                        let mut thinking: Option<String> = None;
                         if let Some(arr) = val["message"]["content"].as_array() {
                             for block in arr {
-                                if block["type"].as_str() == Some("text") {
-                                    if let Some(t) = block["text"].as_str() {
-                                        let t = t.trim();
-                                        if !t.is_empty() { parts.push(t.to_string()); }
+                                match block["type"].as_str() {
+                                    Some("text") => {
+                                        if let Some(t) = block["text"].as_str() {
+                                            let t = t.trim();
+                                            if !t.is_empty() { parts.push(t.to_string()); }
+                                        }
                                     }
+                                    Some("thinking") if thinking.is_none() => {
+                                        if let Some(t) = block["thinking"].as_str() {
+                                            let t = t.trim();
+                                            if !t.is_empty() { thinking = Some(t.to_string()); }
+                                        }
+                                    }
+                                    _ => {}
                                 }
                             }
                         }
@@ -527,6 +538,7 @@ pub async fn load_session_history(
                             messages.push(HistoryMessage {
                                 role: "assistant".into(),
                                 text: parts.join("\n"),
+                                thinking,
                             });
                         }
                     }

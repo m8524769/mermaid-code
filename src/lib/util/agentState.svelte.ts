@@ -4,6 +4,7 @@ export interface AgentMessage {
   id: string;
   role: 'user' | 'assistant' | 'tool_use' | 'tool_result';
   text: string;
+  thinking?: string;
   toolName?: string;
   toolUseId?: string;
   isStreaming?: boolean;
@@ -126,7 +127,7 @@ function dispatch(agentId: string, e: RawEvent) {
         m.isStreaming ? { ...m, isStreaming: false } : m
       );
       slice.pendingPermission = null;
-      if (e.is_error) slice.activeRunId = null;
+      slice.activeRunId = null;
       break;
     }
   }
@@ -185,16 +186,20 @@ function clearMessages(agentId: string) {
 async function loadSessionHistory(agentId: string, folderPath: string, sessionId: string) {
   try {
     const { invoke } = await import('@tauri-apps/api/core');
-    const msgs: Array<{ role: string; text: string }> = await invoke('load_session_history', {
-      agentType: agentId,
-      folderPath,
-      sessionId
-    });
+    const msgs: Array<{ role: string; text: string; thinking: string | null }> = await invoke(
+      'load_session_history',
+      {
+        agentType: agentId,
+        folderPath,
+        sessionId
+      }
+    );
     const slice = getSlice(agentId);
     slice.messages = msgs.map((m, i) => ({
       id: `history-${i}`,
       role: m.role === 'user' ? ('user' as const) : ('assistant' as const),
-      text: m.text
+      text: m.text,
+      thinking: m.thinking ?? undefined
     }));
   } catch {
     // Session file unreadable — leave messages as-is

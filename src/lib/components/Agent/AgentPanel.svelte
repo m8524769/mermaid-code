@@ -15,6 +15,8 @@
   import CheckIcon from '~icons/material-symbols/check-rounded';
   import HistoryIcon from '~icons/material-symbols/history-rounded';
   import AddIcon from '~icons/material-symbols/add-rounded';
+  import SendIcon from '~icons/material-symbols/send-rounded';
+  import StopIcon from '~icons/material-symbols/stop-rounded';
 
   interface AgentOption {
     id: string;
@@ -32,6 +34,9 @@
   }
 
   let { onclose }: Props = $props();
+
+  // Start event listener for agent events
+  agentState.init();
 
   const AGENT_KEY = 'mermaid-agent';
   const FOLDER_KEY = 'mermaid-agent-folder';
@@ -122,6 +127,25 @@
   async function pickFolder() {
     const path = await openFolderDialog();
     if (path) workingFolder = path;
+  }
+
+  let inputText = $state('');
+  let sending = $state(false);
+
+  const runId = $derived(slices[selectedAgentId]?.activeRunId ?? null);
+
+  async function sendMessage() {
+    const text = inputText.trim();
+    if (!text || !workingFolder || sending) return;
+    inputText = '';
+  }
+
+  async function interruptRun() {
+    if (!runId) return;
+    try {
+      const { invoke } = await import('@tauri-apps/api/core');
+      await invoke('send_agent_message', { runId, content: '\x03' });
+    } catch (e) {}
   }
 
   const messages = $derived(slices[selectedAgentId]?.messages ?? []);
@@ -241,6 +265,18 @@
                 {msg.text}
               </div>
             {:else if msg.role === 'assistant'}
+              {#if msg.thinking}
+                <details class="max-w-[85%] rounded-xl border border-muted-foreground/20 text-xs">
+                  <summary
+                    class="cursor-pointer px-3 py-1.5 text-muted-foreground select-none hover:text-foreground">
+                    Thinking
+                  </summary>
+                  <div
+                    class="border-t border-muted-foreground/20 px-3 py-2 break-words whitespace-pre-wrap text-muted-foreground">
+                    {msg.thinking}
+                  </div>
+                </details>
+              {/if}
               {#if msg.isStreaming}
                 <div
                   class="max-w-[85%] rounded-xl bg-muted px-3 py-2 text-sm break-words whitespace-pre-wrap text-foreground">
@@ -269,6 +305,26 @@
           </div>
         {/each}
       {/if}
+    </div>
+
+    <!-- Input -->
+    <div class="flex gap-1 border-t border-muted p-2">
+      <textarea
+        bind:value={inputText}
+        placeholder="Message..."
+        rows="1"
+        class="flex-1 resize-none rounded-lg bg-muted px-3 py-2 text-sm outline-none placeholder:text-muted-foreground"
+      ></textarea>
+      <button
+        onclick={runId ? interruptRun : sendMessage}
+        class="rounded-lg bg-primary p-2 text-primary-foreground hover:opacity-80 disabled:opacity-40"
+        disabled={sending || (!runId && !inputText.trim())}>
+        {#if runId}
+          <StopIcon class="size-4" />
+        {:else}
+          <SendIcon class="size-4" />
+        {/if}
+      </button>
     </div>
   </div>
 </Card>
