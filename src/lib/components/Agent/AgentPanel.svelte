@@ -138,7 +138,17 @@
   let sending = $state(false);
   let imeSkipNextEnter = false;
   let pendingFirstMessage: string | null = null;
-  let liveSessionId: string | null = null; // which session has live messages
+  let liveSessionId: string | null = null;
+  let cliAvailable = $state<boolean | null>(null);
+
+  $effect(() => {
+    const agentId = selectedAgentId;
+    cliAvailable = null;
+    (async () => {
+      const { invoke } = await import('@tauri-apps/api/core');
+      cliAvailable = await invoke<boolean>('check_agent_cli', { agentType: agentId });
+    })();
+  });
 
   async function sendMessage() {
     const text = inputText.trim();
@@ -492,6 +502,27 @@
       {/if}
     </div>
 
+    <!-- CLI not found banner -->
+    {#if cliAvailable === false}
+      <div
+        class="flex items-center gap-3 border-t border-red-400/40 bg-red-50/80 px-3 py-2.5 dark:bg-red-950/30">
+        <div class="flex min-w-0 flex-1 flex-col gap-0.5">
+          <span class="text-xs font-medium text-red-800 dark:text-red-300"
+            >Claude Code CLI not installed</span>
+          <span class="text-xs text-red-700/70 dark:text-red-400/70">
+            <button
+              class="underline underline-offset-2 hover:text-red-800 dark:hover:text-red-300"
+              onclick={async () => {
+                const { open } = await import('@tauri-apps/plugin-shell');
+                await open('https://docs.anthropic.com/en/docs/claude-code/getting-started');
+              }}>
+              Get started with Claude Code →
+            </button>
+          </span>
+        </div>
+      </div>
+    {/if}
+
     <!-- MCP banner -->
     {#if !mcpState.enabled}
       <div
@@ -567,7 +598,7 @@
         bind:value={inputText}
         placeholder={workingFolder ? 'Message...' : 'Select a folder first…'}
         rows="1"
-        disabled={!workingFolder || !!pendingPermission}
+        disabled={!workingFolder || !!pendingPermission || cliAvailable === false}
         style="field-sizing: content; max-height: 8lh;"
         class="flex-1 resize-none rounded-lg bg-muted px-3 py-2 text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50"
         oncompositionend={() => {
@@ -594,7 +625,8 @@
         disabled={!workingFolder ||
           sending ||
           (!runId && !inputText.trim()) ||
-          !!pendingPermission}>
+          !!pendingPermission ||
+          cliAvailable === false}>
         {#if runId}
           <StopIcon class="size-4" />
         {:else}

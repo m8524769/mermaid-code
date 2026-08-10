@@ -747,6 +747,30 @@ pub async fn load_session_history(
 }
 
 #[tauri::command]
+pub async fn check_agent_cli(agent_type: String) -> bool {
+    let cmd_name = match agent_type.as_str() {
+        "claude-code" => "claude",
+        _ => return false,
+    };
+    // Use `which` on Unix, `where` on Windows
+    #[cfg(not(target_os = "windows"))]
+    let found = tokio::process::Command::new("which")
+        .arg(cmd_name)
+        .output()
+        .await
+        .map(|o| o.status.success())
+        .unwrap_or(false);
+    #[cfg(target_os = "windows")]
+    let found = tokio::process::Command::new("where")
+        .arg(cmd_name)
+        .output()
+        .await
+        .map(|o| o.status.success())
+        .unwrap_or(false);
+    found
+}
+
+#[tauri::command]
 pub async fn delete_session(
     app: AppHandle,
     agent_type: String,
