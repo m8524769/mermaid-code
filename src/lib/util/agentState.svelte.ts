@@ -28,6 +28,7 @@ interface AgentSlice {
   pendingPermission: PermissionRequest | null;
   outputTokens: number;
   lastCostUsd: number | null;
+  errorMsg: string | null;
   // folderPath → session IDs loaded from Tauri
   folderSessions: Record<string, SessionEntry[]>;
 }
@@ -48,6 +49,7 @@ function getSlice(agentId: string): AgentSlice {
       pendingPermission: null,
       outputTokens: 0,
       lastCostUsd: null,
+      errorMsg: null,
       folderSessions: {} as Record<string, SessionEntry[]>
     };
   }
@@ -81,6 +83,7 @@ interface RawEvent {
   output_tokens?: number;
   is_error?: boolean;
   cost_usd?: number;
+  error?: string;
 }
 
 function dispatch(agentId: string, e: RawEvent) {
@@ -148,6 +151,9 @@ function dispatch(agentId: string, e: RawEvent) {
       slice.pendingPermission = null;
       if (e.cost_usd != null) slice.lastCostUsd = e.cost_usd;
       slice.outputTokens = 0;
+      if (e.is_error) {
+        slice.errorMsg = e.error ?? 'Agent exited with an error.';
+      }
       slice.activeRunId = null;
       break;
     }
@@ -177,6 +183,7 @@ function registerRun(agentId: string, runId: string) {
   slice.pendingPermission = null;
   slice.outputTokens = 0;
   slice.lastCostUsd = null;
+  slice.errorMsg = null;
 }
 
 function unregisterRun(runId: string) {
@@ -214,6 +221,7 @@ function clearMessages(agentId: string) {
     slices[agentId].messages = [];
     slices[agentId].outputTokens = 0;
     slices[agentId].lastCostUsd = null;
+    slices[agentId].errorMsg = null;
   }
 }
 

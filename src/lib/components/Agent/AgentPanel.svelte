@@ -6,6 +6,7 @@
   import * as Popover from '$lib/components/ui/popover';
   import { agentState, slices, type SessionEntry } from '$lib/util/agentState.svelte';
   import { fileState } from '$lib/util/fileState.svelte';
+  import { mcpState } from '$lib/util/mcpState.svelte';
   import { openFolderDialog } from '$lib/util/fileSystem';
   import { renderMarkdown } from '$lib/util/markdown';
   import { untrack } from 'svelte';
@@ -168,6 +169,7 @@
       }
     } catch (e) {
       console.error('[agent] sendMessage error:', e);
+      agentState.getSlice(selectedAgentId).errorMsg = e instanceof Error ? e.message : String(e);
     } finally {
       sending = false;
     }
@@ -212,6 +214,7 @@
   const pendingPermission = $derived(slices[selectedAgentId]?.pendingPermission ?? null);
   const outputTokens = $derived(slices[selectedAgentId]?.outputTokens ?? 0);
   const lastCostUsd = $derived(slices[selectedAgentId]?.lastCostUsd ?? null);
+  const errorMsg = $derived(slices[selectedAgentId]?.errorMsg ?? null);
 
   async function allowPermission() {
     if (!pendingPermission || !runId) return;
@@ -447,6 +450,41 @@
         {/if}
       {/if}
     </div>
+
+    <!-- MCP banner -->
+    {#if !mcpState.enabled}
+      <div
+        class="flex items-center gap-3 border-t border-amber-400/40 bg-amber-50/80 px-3 py-2.5 dark:bg-amber-950/30">
+        <div class="flex min-w-0 flex-1 flex-col gap-0.5">
+          <span class="text-xs font-medium text-amber-800 dark:text-amber-300"
+            >MCP Server disabled</span>
+          <span class="text-xs text-amber-700/70 dark:text-amber-400/70"
+            >Agent cannot read or edit diagrams.</span>
+        </div>
+        <button
+          onclick={async () => {
+            const { invoke } = await import('@tauri-apps/api/core');
+            await invoke('start_mcp_server');
+            mcpState.set(true);
+          }}
+          class="shrink-0 rounded-md border border-amber-400/60 bg-white px-2.5 py-1 text-xs font-medium text-amber-800 transition-colors hover:bg-amber-50 dark:border-amber-400/40 dark:bg-transparent dark:text-amber-300 dark:hover:bg-amber-900/40">
+          Enable
+        </button>
+      </div>
+    {/if}
+
+    <!-- Error banner -->
+    {#if errorMsg}
+      <div
+        class="flex items-start gap-2 border-t border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-600 dark:text-red-400">
+        <span class="flex-1 break-words">{errorMsg}</span>
+        <button
+          onclick={() => {
+            agentState.getSlice(selectedAgentId).errorMsg = null;
+          }}
+          class="shrink-0 opacity-60 hover:opacity-100">✕</button>
+      </div>
+    {/if}
 
     <!-- Permission banner -->
     {#if pendingPermission}
