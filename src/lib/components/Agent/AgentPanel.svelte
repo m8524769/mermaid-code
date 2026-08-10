@@ -110,14 +110,20 @@
     untrack(() => agentState.clearMessages(agent));
   });
 
+  const runId = $derived(slices[selectedAgentId]?.activeRunId ?? null);
+
   // Load history when switching to an existing session
-  // Skip if this session has live messages
   $effect(() => {
     if (!workingFolder || !activeSessionId) {
       untrack(() => agentState.clearMessages(selectedAgentId));
       return;
     }
-    if (activeSessionId === liveSessionId) return;
+    if (runId) return; // run is writing to messages — wait until it finishes
+    if (activeSessionId === liveSessionId) return; // still on the live session, preserve messages
+    untrack(() => {
+      liveSessionId = null; // user navigated away from live session
+      agentState.clearMessages(selectedAgentId);
+    });
     agentState.loadSessionHistory(selectedAgentId, workingFolder, activeSessionId);
   });
 
@@ -140,8 +146,6 @@
   let imeSkipNextEnter = false;
   let pendingFirstMessage: string | null = null;
   let liveSessionId: string | null = null; // which session has live messages
-
-  const runId = $derived(slices[selectedAgentId]?.activeRunId ?? null);
 
   async function sendMessage() {
     const text = inputText.trim();
@@ -191,14 +195,18 @@
   // Sync session_id from slice (set by session_ready event) to local state
   $effect(() => {
     const newSessionId = slices[selectedAgentId]?.activeSessionId;
-    if (newSessionId && newSessionId !== activeSessionId && workingFolder) {
+    if (newSessionId && workingFolder) {
       agentState.injectSession(selectedAgentId, workingFolder, {
         sessionId: newSessionId,
         firstPrompt: pendingFirstMessage
       });
       pendingFirstMessage = null;
       liveSessionId = newSessionId;
-      activeSessionId = newSessionId;
+      // Only update activeSessionId if we're still in a live run for this agent
+      // (prevents a delayed session_ready from stealing focus after user switched away)
+      if (runId && activeSessionId !== newSessionId) {
+        activeSessionId = newSessionId;
+      }
       slices[selectedAgentId].activeSessionId = null;
     }
   });

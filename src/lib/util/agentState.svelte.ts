@@ -217,8 +217,6 @@ const historyLoadTokens = new Map<string, string>();
 async function loadSessionHistory(agentId: string, folderPath: string, sessionId: string) {
   const token = `${folderPath}::${sessionId}`;
   historyLoadTokens.set(agentId, token);
-  // Clear immediately so stale messages never show while loading
-  getSlice(agentId).messages = [];
   try {
     const { invoke } = await import('@tauri-apps/api/core');
     const msgs: Array<{ role: string; text: string; thinking: string | null }> = await invoke(
@@ -239,7 +237,9 @@ async function loadSessionHistory(agentId: string, folderPath: string, sessionId
       thinking: m.thinking ?? undefined
     }));
   } catch {
-    // Leave messages empty on error — don't show stale content
+    if (historyLoadTokens.get(agentId) === token) {
+      getSlice(agentId).messages = [];
+    }
   }
 }
 
