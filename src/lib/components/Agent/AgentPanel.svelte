@@ -26,8 +26,8 @@
   }
 
   const agents: AgentOption[] = [
-    { id: 'claude-code', label: 'Claude Code', icon: ClaudeIcon },
-    { id: 'codex', label: 'Codex', icon: OpenAIIcon }
+    { id: 'claude-code', label: 'Claude Code', icon: ClaudeIcon }
+    // { id: 'codex', label: 'Codex', icon: OpenAIIcon }
   ];
 
   interface Props {
@@ -61,15 +61,7 @@
 
   $effect(() => {
     if (workingFolder) return;
-    if (fileState.rootPath) {
-      workingFolder = fileState.rootPath;
-      return;
-    }
-    import('@tauri-apps/api/path').then(({ homeDir }) =>
-      homeDir().then((h) => {
-        if (!workingFolder) workingFolder = h;
-      })
-    );
+    if (fileState.rootPath) workingFolder = fileState.rootPath;
   });
 
   $effect(() => {
@@ -289,7 +281,8 @@
           <!-- New session -->
           <Popover.Close>
             <button
-              class="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-sm hover:bg-muted"
+              class="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-sm hover:bg-muted disabled:cursor-not-allowed disabled:opacity-40"
+              disabled={!!runId || undefined}
               onclick={() => (activeSessionId = null)}>
               <AddIcon class="size-4 shrink-0" />
               <span class="flex-1 text-left">New session</span>
@@ -304,7 +297,8 @@
               {#each sessions as session}
                 <Popover.Close class="contents">
                   <button
-                    class="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-sm hover:bg-muted"
+                    class="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-sm hover:bg-muted disabled:cursor-not-allowed disabled:opacity-40"
+                    disabled={(!!runId && session.sessionId !== activeSessionId) || undefined}
                     onclick={() => (activeSessionId = session.sessionId)}>
                     <HistoryIcon class="size-4 shrink-0 text-muted-foreground" />
                     <span class="flex-1 truncate text-left">
@@ -327,12 +321,20 @@
       {#if messages.length === 0}
         <div class="flex flex-1 flex-col items-center justify-center gap-3 text-center select-none">
           <div class="rounded-2xl bg-muted p-4">
-            <svelte:component this={selectedAgentIcon} class="size-8 opacity-40" />
+            {#each [selectedAgentIcon] as AgentIcon}
+              <AgentIcon class="size-8 opacity-40" />
+            {/each}
           </div>
           <div class="flex flex-col gap-1">
             <p class="text-sm font-medium text-foreground/60">{selectedAgent.label}</p>
             <p class="text-xs text-muted-foreground">
-              {activeSessionId ? 'No messages in this session.' : 'Start a conversation below.'}
+              {#if !workingFolder}
+                Select a folder to get started.
+              {:else if activeSessionId}
+                No messages in this session.
+              {:else}
+                Start a conversation below.
+              {/if}
             </p>
           </div>
         </div>
@@ -384,6 +386,21 @@
             {/if}
           </div>
         {/each}
+        {#if runId && !messages.at(-1)?.isStreaming}
+          <div class="flex items-start">
+            <div class="rounded-xl bg-muted px-3 py-2.5">
+              <div class="flex gap-1">
+                <span
+                  class="size-1.5 animate-bounce rounded-full bg-muted-foreground/50 [animation-delay:-0.3s]"
+                ></span>
+                <span
+                  class="size-1.5 animate-bounce rounded-full bg-muted-foreground/50 [animation-delay:-0.15s]"
+                ></span>
+                <span class="size-1.5 animate-bounce rounded-full bg-muted-foreground/50"></span>
+              </div>
+            </div>
+          </div>
+        {/if}
       {/if}
     </div>
 
@@ -391,10 +408,11 @@
     <div class="flex gap-1 border-t border-muted p-2">
       <textarea
         bind:value={inputText}
-        placeholder="Message..."
+        placeholder={workingFolder ? 'Message...' : 'Select a folder first…'}
         rows="1"
+        disabled={!workingFolder}
         style="field-sizing: content; max-height: 8lh;"
-        class="flex-1 resize-none rounded-lg bg-muted px-3 py-2 text-sm outline-none placeholder:text-muted-foreground"
+        class="flex-1 resize-none rounded-lg bg-muted px-3 py-2 text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50"
         oncompositionstart={() => (imeActive = true)}
         oncompositionend={() => {
           imeActive = false;
@@ -413,7 +431,7 @@
       <button
         onclick={runId ? interruptRun : sendMessage}
         class="rounded-lg bg-primary p-2 text-primary-foreground hover:opacity-80 disabled:opacity-40"
-        disabled={sending || (!runId && !inputText.trim())}>
+        disabled={!workingFolder || sending || (!runId && !inputText.trim())}>
         {#if runId}
           <StopIcon class="size-4" />
         {:else}
