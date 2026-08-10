@@ -134,7 +134,6 @@
 
   let inputText = $state('');
   let sending = $state(false);
-  let imeActive = false;
   let imeSkipNextEnter = false;
   let pendingFirstMessage: string | null = null;
   let liveSessionId: string | null = null; // which session has live messages
@@ -211,6 +210,8 @@
   });
 
   const pendingPermission = $derived(slices[selectedAgentId]?.pendingPermission ?? null);
+  const outputTokens = $derived(slices[selectedAgentId]?.outputTokens ?? 0);
+  const lastCostUsd = $derived(slices[selectedAgentId]?.lastCostUsd ?? null);
 
   async function allowPermission() {
     if (!pendingPermission || !runId) return;
@@ -421,7 +422,7 @@
           </div>
         {/each}
         {#if runId && !messages.at(-1)?.isStreaming}
-          <div class="flex items-start">
+          <div class="flex items-center gap-2">
             <div class="rounded-xl bg-muted px-3 py-2.5">
               <div class="flex gap-1">
                 <span
@@ -433,6 +434,15 @@
                 <span class="size-1.5 animate-bounce rounded-full bg-muted-foreground/50"></span>
               </div>
             </div>
+            {#if outputTokens > 0}
+              <span class="text-xs text-muted-foreground/60"
+                >{outputTokens.toLocaleString()} tokens</span>
+            {/if}
+          </div>
+        {/if}
+        {#if !runId && lastCostUsd != null}
+          <div class="flex justify-end">
+            <span class="text-xs text-muted-foreground/50">${lastCostUsd.toFixed(4)}</span>
           </div>
         {/if}
       {/if}
@@ -481,15 +491,18 @@
         disabled={!workingFolder || !!pendingPermission}
         style="field-sizing: content; max-height: 8lh;"
         class="flex-1 resize-none rounded-lg bg-muted px-3 py-2 text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50"
-        oncompositionstart={() => (imeActive = true)}
         oncompositionend={() => {
-          imeActive = false;
           imeSkipNextEnter = true;
         }}
+        onkeyup={(e) => {
+          // Space/other keys confirm candidate without Enter — clear the flag so next Enter sends
+          if (e.key !== 'Enter') imeSkipNextEnter = false;
+        }}
         onkeydown={(e) => {
-          if (e.key === 'Enter' && !e.shiftKey && !imeActive) {
+          if (e.key === 'Enter' && !e.shiftKey) {
             if (imeSkipNextEnter) {
               imeSkipNextEnter = false;
+              e.preventDefault();
               return;
             }
             e.preventDefault();

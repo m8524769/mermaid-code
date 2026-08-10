@@ -26,6 +26,8 @@ interface AgentSlice {
   activeSessionId: string | null;
   messages: AgentMessage[];
   pendingPermission: PermissionRequest | null;
+  outputTokens: number;
+  lastCostUsd: number | null;
   // folderPath → session IDs loaded from Tauri
   folderSessions: Record<string, SessionEntry[]>;
 }
@@ -44,6 +46,8 @@ function getSlice(agentId: string): AgentSlice {
       activeSessionId: null,
       messages: [],
       pendingPermission: null,
+      outputTokens: 0,
+      lastCostUsd: null,
       folderSessions: {} as Record<string, SessionEntry[]>
     };
   }
@@ -74,7 +78,9 @@ interface RawEvent {
   request_id?: string;
   tool_name?: string;
   tool_input?: unknown;
+  output_tokens?: number;
   is_error?: boolean;
+  cost_usd?: number;
 }
 
 function dispatch(agentId: string, e: RawEvent) {
@@ -129,11 +135,19 @@ function dispatch(agentId: string, e: RawEvent) {
       }
       break;
     }
+    case 'usage': {
+      if (e.output_tokens !== undefined) {
+        slice.outputTokens = e.output_tokens;
+      }
+      break;
+    }
     case 'exit': {
       slice.messages = slice.messages.map((m) =>
         m.isStreaming ? { ...m, isStreaming: false } : m
       );
       slice.pendingPermission = null;
+      if (e.cost_usd != null) slice.lastCostUsd = e.cost_usd;
+      slice.outputTokens = 0;
       slice.activeRunId = null;
       break;
     }
@@ -161,6 +175,8 @@ function registerRun(agentId: string, runId: string) {
   slice.activeSessionId = null;
   slice.messages = [];
   slice.pendingPermission = null;
+  slice.outputTokens = 0;
+  slice.lastCostUsd = null;
 }
 
 function unregisterRun(runId: string) {
@@ -194,7 +210,11 @@ async function loadSessions(agentId: string, folderPath: string) {
 }
 
 function clearMessages(agentId: string) {
-  if (slices[agentId]) slices[agentId].messages = [];
+  if (slices[agentId]) {
+    slices[agentId].messages = [];
+    slices[agentId].outputTokens = 0;
+    slices[agentId].lastCostUsd = null;
+  }
 }
 
 function injectSession(agentId: string, folderPath: string, entry: SessionEntry) {

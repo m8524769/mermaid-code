@@ -20,6 +20,7 @@ pub enum DriverEvent {
     ToolResult { tool_use_id: String, content: String },
     SessionReady { session_id: String },
     PermissionRequest { request_id: String, tool_name: String, tool_input: Value },
+    Usage { output_tokens: u64 },
     Exit { is_error: bool, cost_usd: Option<f64>, error: Option<String> },
 }
 
@@ -162,6 +163,11 @@ impl AgentDriver for ClaudeCodeDriver {
                                     events.push(DriverEvent::Message { id: id.clone(), text: acc.clone(), thinking: None, is_streaming: true });
                                 }
                             }
+                        }
+                    }
+                    Some("message_delta") => {
+                        if let Some(tokens) = ev["usage"]["output_tokens"].as_u64() {
+                            events.push(DriverEvent::Usage { output_tokens: tokens });
                         }
                     }
                     Some("message_stop") => {
