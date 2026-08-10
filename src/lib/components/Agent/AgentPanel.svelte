@@ -325,7 +325,17 @@
     <!-- Content -->
     <div bind:this={messagesEl} class="flex flex-1 flex-col gap-2 overflow-y-auto p-2">
       {#if messages.length === 0}
-        <p class="text-sm text-muted-foreground">No messages yet.</p>
+        <div class="flex flex-1 flex-col items-center justify-center gap-3 text-center select-none">
+          <div class="rounded-2xl bg-muted p-4">
+            <svelte:component this={selectedAgentIcon} class="size-8 opacity-40" />
+          </div>
+          <div class="flex flex-col gap-1">
+            <p class="text-sm font-medium text-foreground/60">{selectedAgent.label}</p>
+            <p class="text-xs text-muted-foreground">
+              {activeSessionId ? 'No messages in this session.' : 'Start a conversation below.'}
+            </p>
+          </div>
+        </div>
       {:else}
         {#each messages as msg (msg.id)}
           <div class={['flex flex-col gap-0.5', msg.role === 'user' ? 'items-end' : 'items-start']}>

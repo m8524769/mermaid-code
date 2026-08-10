@@ -526,7 +526,37 @@ fn extract_text(content: &serde_json::Value) -> Option<String> {
     } else {
         return None;
     };
-    if text.is_empty() { None } else { Some(text) }
+    if text.is_empty() { None } else { Some(parse_command_display_text(&text).unwrap_or(text)) }
+}
+
+/// If `text` is purely Claude Code slash-command metadata XML
+/// (e.g. `<command-name>mcp</command-name><command-args>...</command-args>`),
+/// return the human-readable label (e.g. `/mcp`).  Returns None when the text
+/// is NOT command metadata and should be used as-is.
+fn parse_command_display_text(text: &str) -> Option<String> {
+    let trimmed = text.trim();
+    // Must contain a <command-name> tag
+    if !trimmed.contains("<command-name>") { return None; }
+    // Extract command-name
+    let name = extract_xml_tag(trimmed, "command-name")?;
+    let args = extract_xml_tag(trimmed, "command-args").unwrap_or_default();
+    let skill_format = extract_xml_tag(trimmed, "skill-format").as_deref() == Some("true");
+    let command_message = extract_xml_tag(trimmed, "command-message");
+    if skill_format {
+        return Some(format!("Skill({})", command_message.as_deref().unwrap_or(&name)));
+    }
+    let normalized = if name.starts_with('/') { name.clone() } else { format!("/{name}") };
+    let args = args.trim().to_string();
+    if args.is_empty() { Some(normalized) } else { Some(format!("{normalized} {args}")) }
+}
+
+fn extract_xml_tag(text: &str, tag: &str) -> Option<String> {
+    let open = format!("<{tag}>");
+    let close = format!("</{tag}>");
+    let start = text.find(&open)? + open.len();
+    let end = text[start..].find(&close)? + start;
+    let value = text[start..end].trim().to_string();
+    if value.is_empty() { None } else { Some(value) }
 }
 
 async fn read_first_prompt(path: &std::path::Path) -> Option<String> {
@@ -596,9 +626,18 @@ pub async fn load_session_history(
                 match val["type"].as_str() {
                     Some("user") => {
                         if val["message"]["role"].as_str() != Some("user") { continue; }
-                        // Only accept messages explicitly authored by a human
-                        if val["origin"]["kind"].as_str() != Some("human") { continue; }
-                        if let Some(text) = extract_text(&val["message"]["content"]) {
+                        // Skip task-notification injections
+                        if val["origin"]["kind"].as_str() == Some("task-notification") { continue; }
+                        let content = &val["message"]["content"];
+                        // Skip tool_result messages
+                        if let Some(arr) = content.as_array() {
+                            if arr.iter().any(|b| b["type"].as_str() == Some("tool_result")) {
+                                continue;
+                            }
+                        }
+                        // Skip isMeta entries (harness-injected metadata)
+                        if val["isMeta"].as_bool() == Some(true) { continue; }
+                        if let Some(text) = extract_text(content) {
                             messages.push(HistoryMessage { role: "user".into(), text, thinking: None });
                         }
                     }
