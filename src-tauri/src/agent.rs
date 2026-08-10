@@ -638,6 +638,19 @@ pub async fn load_session_history(
                         // Skip isMeta entries (harness-injected metadata)
                         if val["isMeta"].as_bool() == Some(true) { continue; }
                         if let Some(text) = extract_text(content) {
+                            // Skip known synthetic injection wrappers that are never typed by users
+                            const SYNTHETIC_PREFIXES: &[&str] = &[
+                                "<local-command-stdout>",
+                                "<local-command-stderr>",
+                                "<local-command-caveat>",
+                                "<task-notification>",
+                                "<ide-context>",
+                                "<user-prompt-submit-hook>",
+                                "<system-reminder>",
+                            ];
+                            if SYNTHETIC_PREFIXES.iter().any(|p| text.starts_with(p)) {
+                                continue;
+                            }
                             messages.push(HistoryMessage { role: "user".into(), text, thinking: None });
                         }
                     }
