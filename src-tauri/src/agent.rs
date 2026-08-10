@@ -88,6 +88,10 @@ impl AgentDriver for ClaudeCodeDriver {
         }
         let mut cmd = Command::new("claude");
         cmd.args(args);
+        // Inject shell PATH so `claude` is findable in packaged .app bundles
+        if let Some(ref path) = config.shell_path {
+            cmd.env("PATH", path);
+        }
         Some(cmd)
     }
 
@@ -270,6 +274,7 @@ pub struct SessionConfig {
     pub prompt: String,
     pub mcp_config_path: Option<PathBuf>,
     pub resume_session_id: Option<String>,
+    pub shell_path: Option<String>,
 }
 
 // ── AgentManager ──────────────────────────────────────────────────────────────
@@ -283,9 +288,18 @@ pub struct AgentRun {
     pub driver: Box<dyn AgentDriver>,
 }
 
-#[derive(Default)]
 pub struct AgentManager {
     runs: HashMap<String, AgentRun>,
+    /// PATH captured from the user's login+interactive shell at startup.
+    /// Used to ensure `claude` is findable even in packaged .app bundles
+    /// that inherit only launchd's minimal PATH.
+    pub shell_path: Option<String>,
+}
+
+impl Default for AgentManager {
+    fn default() -> Self {
+        Self { runs: HashMap::new(), shell_path: None }
+    }
 }
 
 pub struct AgentManagerState(pub Mutex<AgentManager>);
@@ -345,10 +359,22 @@ pub async fn start_agent_session(
         .ok_or_else(|| format!("Unknown agent type: {}", params.agent_type))?;
     let driver_for_run: Box<dyn AgentDriver> = make_driver(agent_type).unwrap();
 
+    let shell_path = {
+        let state = app.state::<AgentManagerState>();
+        let mut path = None;
+        for _ in 0..15 {
+            path = state.0.lock().await.shell_path.clone();
+            if path.is_some() { break; }
+            tokio::time::sleep(std::time::Duration::from_millis(200)).await;
+        }
+        path
+    };
+
     let config = SessionConfig {
         prompt: params.prompt,
         mcp_config_path: mcp_config_path.clone(),
         resume_session_id: params.resume_session_id,
+        shell_path,
     };
 
     // Spawn process
@@ -463,6 +489,26 @@ async fn read_loop(
     if let Some(ref p) = mcp_config_path {
         let _ = tokio::fs::remove_file(p).await;
     }
+}
+
+/// Capture PATH from the user's login+interactive shell.
+/// Called once at startup; result cached in AgentManager.
+#[cfg(not(target_os = "windows"))]
+pub async fn capture_shell_path() -> Option<String> {
+    let shell = std::env::var("SHELL").unwrap_or_else(|_| "/bin/zsh".to_string());
+    // `-l -i` = login + interactive, loads .zprofile + .zshrc (or bash equivalents)
+    let out = tokio::process::Command::new(&shell)
+        .args(["-l", "-i", "-c", "printf '%s' \"$PATH\""])
+        .env("PS1", "")   // suppress prompt output
+        .env("PROMPT", "")
+        .output()
+        .await
+        .ok()?;
+    if out.status.success() {
+        let path = String::from_utf8_lossy(&out.stdout).trim().to_string();
+        if !path.is_empty() { return Some(path); }
+    }
+    None
 }
 
 fn sanitize_path(folder_path: &str) -> String {
@@ -747,27 +793,41 @@ pub async fn load_session_history(
 }
 
 #[tauri::command]
-pub async fn check_agent_cli(agent_type: String) -> bool {
+pub async fn check_agent_cli(app: AppHandle, agent_type: String) -> bool {
     let cmd_name = match agent_type.as_str() {
         "claude-code" => "claude",
         _ => return false,
     };
-    // Use `which` on Unix, `where` on Windows
-    #[cfg(not(target_os = "windows"))]
-    let found = tokio::process::Command::new("which")
-        .arg(cmd_name)
-        .output()
-        .await
-        .map(|o| o.status.success())
-        .unwrap_or(false);
     #[cfg(target_os = "windows")]
-    let found = tokio::process::Command::new("where")
-        .arg(cmd_name)
-        .output()
-        .await
-        .map(|o| o.status.success())
-        .unwrap_or(false);
-    found
+    {
+        tokio::process::Command::new("where")
+            .arg(cmd_name)
+            .output()
+            .await
+            .map(|o| o.status.success())
+            .unwrap_or(false)
+    }
+    #[cfg(not(target_os = "windows"))]
+    {
+        // Wait for capture_shell_path() to finish (runs async at startup).
+        // Poll up to 10 s before falling back to system PATH.
+        let shell_path = {
+            let state = app.state::<AgentManagerState>();
+            let mut path = None;
+            for _ in 0..50 {
+                path = state.0.lock().await.shell_path.clone();
+                if path.is_some() { break; }
+                tokio::time::sleep(std::time::Duration::from_millis(200)).await;
+            }
+            path
+        };
+        let mut cmd = tokio::process::Command::new("which");
+        cmd.arg(cmd_name);
+        if let Some(ref path) = shell_path {
+            cmd.env("PATH", path);
+        }
+        cmd.output().await.map(|o| o.status.success()).unwrap_or(false)
+    }
 }
 
 #[tauri::command]

@@ -370,6 +370,18 @@ pub fn run() {
             {
                 app.get_webview_window("main").unwrap().open_devtools();
             }
+
+            // Capture shell PATH once at startup so packaged app can find CLIs like `claude`.
+            #[cfg(not(target_os = "windows"))]
+            {
+                let app_handle = app.handle().clone();
+                tauri::async_runtime::spawn(async move {
+                    if let Some(path) = agent::capture_shell_path().await {
+                        let state = app_handle.state::<agent::AgentManagerState>();
+                        state.0.lock().await.shell_path = Some(path);
+                    }
+                });
+            }
             // Windows: handle files passed as CLI args on first launch ("Open with")
             #[cfg(windows)]
             {

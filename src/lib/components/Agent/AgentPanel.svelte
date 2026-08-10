@@ -502,6 +502,23 @@
       {/if}
     </div>
 
+    <!-- CLI checking banner -->
+    {#if cliAvailable === null}
+      <div class="flex items-center gap-2 border-t border-muted bg-muted/40 px-3 py-2">
+        <svg
+          class="size-3.5 animate-spin text-muted-foreground"
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"
+          ></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+          ></path>
+        </svg>
+        <span class="text-xs text-muted-foreground">Checking environment…</span>
+      </div>
+    {/if}
+
     <!-- CLI not found banner -->
     {#if cliAvailable === false}
       <div
@@ -598,7 +615,7 @@
         bind:value={inputText}
         placeholder={workingFolder ? 'Message...' : 'Select a folder first…'}
         rows="1"
-        disabled={!workingFolder || !!pendingPermission || cliAvailable === false}
+        disabled={!workingFolder || !!pendingPermission || cliAvailable !== true}
         style="field-sizing: content; max-height: 8lh;"
         class="flex-1 resize-none rounded-lg bg-muted px-3 py-2 text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50"
         oncompositionend={() => {
@@ -626,7 +643,7 @@
           sending ||
           (!runId && !inputText.trim()) ||
           !!pendingPermission ||
-          cliAvailable === false}>
+          cliAvailable !== true}>
         {#if runId}
           <StopIcon class="size-4" />
         {:else}
