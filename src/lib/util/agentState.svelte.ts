@@ -178,6 +178,10 @@ async function loadSessions(agentId: string, folderPath: string) {
   }
 }
 
+function clearMessages(agentId: string) {
+  if (slices[agentId]) slices[agentId].messages = [];
+}
+
 async function loadSessionHistory(agentId: string, folderPath: string, sessionId: string) {
   try {
     const { invoke } = await import('@tauri-apps/api/core');
@@ -205,6 +209,7 @@ export const agentState = {
   unregisterRun,
   loadSessions,
   loadSessionHistory,
+  clearMessages,
 
   getSlice,
 

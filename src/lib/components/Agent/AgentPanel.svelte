@@ -96,15 +96,18 @@
   });
 
   $effect(() => {
-    // Reset session when folder changes (session belongs to a specific folder)
+    // Reset session and clear messages when folder or agent changes
     workingFolder;
     activeSessionId = localStorage.getItem(sessionKey(selectedAgentId));
+    agentState.clearMessages(selectedAgentId);
   });
 
   // Load history when switching to an existing session
   $effect(() => {
-    if (activeSessionId && workingFolder) {
+    if (workingFolder && activeSessionId) {
       agentState.loadSessionHistory(selectedAgentId, workingFolder, activeSessionId);
+    } else {
+      agentState.clearMessages(selectedAgentId);
     }
   });
 
