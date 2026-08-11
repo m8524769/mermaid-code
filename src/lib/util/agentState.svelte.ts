@@ -8,6 +8,7 @@ export interface AgentMessage {
   toolName?: string;
   toolUseId?: string;
   isStreaming?: boolean;
+  openedFiles?: string[];
 }
 
 export interface SessionEntry {
@@ -253,6 +254,7 @@ async function loadSessionHistory(agentId: string, folderPath: string, sessionId
       thinking: string | null;
       tool_name: string | null;
       tool_use_id: string | null;
+      opened_files: string[];
     }> = await invoke('load_session_history', {
       agentType: agentId,
       folderPath,
@@ -271,7 +273,8 @@ async function loadSessionHistory(agentId: string, folderPath: string, sessionId
       text: m.text,
       thinking: m.thinking ?? undefined,
       toolName: m.tool_name ?? undefined,
-      toolUseId: m.tool_use_id ?? undefined
+      toolUseId: m.tool_use_id ?? undefined,
+      openedFiles: m.opened_files.length > 0 ? m.opened_files : undefined
     }));
   } catch {
     if (historyLoadTokens.get(agentId) === token) {

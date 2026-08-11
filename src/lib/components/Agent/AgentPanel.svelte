@@ -20,6 +20,7 @@
   import StopIcon from '~icons/material-symbols/stop-rounded';
   import LockIcon from '~icons/material-symbols/lock-rounded';
   import DeleteIcon from '~icons/material-symbols/delete-outline-rounded';
+  import AttachFileIcon from '~icons/material-symbols/attach-file-rounded';
 
   interface AgentOption {
     id: string;
@@ -410,6 +411,16 @@
         {#each messages as msg (msg.id)}
           <div class={['flex flex-col gap-0.5', msg.role === 'user' ? 'items-end' : 'items-start']}>
             {#if msg.role === 'user'}
+              {#if msg.openedFiles && msg.openedFiles.length > 0}
+                <div class="flex max-w-[85%] flex-wrap gap-1">
+                  {#each msg.openedFiles as file}
+                    <span
+                      class="flex items-center gap-0.5 rounded-md border border-muted bg-muted/50 px-1.5 py-0.5 font-mono text-xs text-muted-foreground">
+                      <AttachFileIcon class="size-3 shrink-0" />{file.split('/').at(-1)}
+                    </span>
+                  {/each}
+                </div>
+              {/if}
               <div
                 class="max-w-[85%] rounded-xl bg-primary px-3 py-2 text-sm break-words whitespace-pre-wrap text-primary-foreground">
                 {msg.text}

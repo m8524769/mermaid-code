@@ -600,6 +600,7 @@ fn extract_session_name(content: &serde_json::Value) -> Option<String> {
 
 fn extract_text(content: &serde_json::Value) -> Option<String> {
     const SYNTHETIC_PREFIXES: &[&str] = &[
+        "<ide_opened_file>",
         "<local-command-stdout>",
         "<local-command-stderr>",
         "<local-command-caveat>",
@@ -694,6 +695,44 @@ async fn read_first_prompt(path: &std::path::Path) -> Option<String> {
     last_prompt_fallback
 }
 
+fn extract_opened_files(content: &serde_json::Value) -> Vec<String> {
+    let re = |text: &str| -> Vec<String> {
+        let mut files = vec![];
+        let mut search = text;
+        while let Some(start) = search.find("<ide_opened_file>") {
+            let rest = &search[start + "<ide_opened_file>".len()..];
+            if let Some(end) = rest.find("</ide_opened_file>") {
+                let inner = &rest[..end];
+                // "The user opened the file {path} in the IDE. This may or may not be related to the current task."
+                if let Some(path_start) = inner.find("The user opened the file ") {
+                    let after = &inner[path_start + "The user opened the file ".len()..];
+                    // Path ends at " in the IDE"
+                    let path = if let Some(end) = after.find(" in the IDE") {
+                        after[..end].trim().to_string()
+                    } else {
+                        after.trim().to_string()
+                    };
+                    if !path.is_empty() { files.push(path); }
+                }
+                search = &rest[end + "</ide_opened_file>".len()..];
+            } else {
+                break;
+            }
+        }
+        files
+    };
+
+    if let Some(s) = content.as_str() { return re(s); }
+    if let Some(arr) = content.as_array() {
+        return arr.iter()
+            .filter(|b| b["type"].as_str() == Some("text"))
+            .filter_map(|b| b["text"].as_str())
+            .flat_map(|t| re(t))
+            .collect();
+    }
+    vec![]
+}
+
 #[derive(Serialize)]
 pub struct HistoryMessage {
     pub role: String,
@@ -701,6 +740,7 @@ pub struct HistoryMessage {
     pub thinking: Option<String>,
     pub tool_name: Option<String>,
     pub tool_use_id: Option<String>,
+    pub opened_files: Vec<String>,
 }
 
 #[tauri::command]
@@ -755,6 +795,7 @@ pub async fn load_session_history(
                                         thinking: None,
                                         tool_name: None,
                                         tool_use_id: block["tool_use_id"].as_str().map(|s| s.to_string()),
+                                        opened_files: vec![],
                                     });
                                 }
                                 continue;
@@ -762,8 +803,17 @@ pub async fn load_session_history(
                         }
                         // Skip isMeta entries (harness-injected metadata)
                         if val["isMeta"].as_bool() == Some(true) { continue; }
-                        if let Some(text) = extract_text(content) {
-                            messages.push(HistoryMessage { role: "user".into(), text, thinking: None, tool_name: None, tool_use_id: None });
+                        let text = extract_text(content).unwrap_or_default();
+                        let opened_files = extract_opened_files(content);
+                        if !text.is_empty() || !opened_files.is_empty() {
+                            messages.push(HistoryMessage {
+                                role: "user".into(),
+                                text,
+                                thinking: None,
+                                tool_name: None,
+                                tool_use_id: None,
+                                opened_files,
+                            });
                         }
                     }
                     Some("assistant") => {
@@ -793,6 +843,7 @@ pub async fn load_session_history(
                                                 thinking: thinking.take(),
                                                 tool_name: None,
                                                 tool_use_id: None,
+                                                opened_files: vec![],
                                             });
                                             parts.clear();
                                         }
@@ -806,6 +857,7 @@ pub async fn load_session_history(
                                             thinking: None,
                                             tool_name: Some(tool_name),
                                             tool_use_id,
+                                            opened_files: vec![],
                                         });
                                     }
                                     _ => {}
@@ -819,6 +871,7 @@ pub async fn load_session_history(
                                 thinking,
                                 tool_name: None,
                                 tool_use_id: None,
+                                opened_files: vec![],
                             });
                         }
                     }
