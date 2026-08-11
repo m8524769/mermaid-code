@@ -677,37 +677,46 @@ fn extract_xml_tag(text: &str, tag: &str) -> Option<String> {
 async fn read_first_prompt(path: &std::path::Path) -> Option<String> {
     use tokio::io::{AsyncBufReadExt, BufReader};
 
-    // Scan from head for first meaningful user message
     let file = tokio::fs::File::open(path).await.ok()?;
     let mut lines = BufReader::new(file).lines();
+    let mut ai_title: Option<String> = None;
+    let mut first_prompt: Option<String> = None;
     let mut last_prompt_fallback: Option<String> = None;
     while let Ok(Some(line)) = lines.next_line().await {
         let Ok(val) = serde_json::from_str::<serde_json::Value>(&line) else { continue };
-        // Capture last-prompt entry as fallback (only entry in some session formats)
-        if val["type"].as_str() == Some("last-prompt") {
-            if let Some(t) = val["lastPrompt"].as_str() {
-                let t = t.trim().to_string();
-                if !t.is_empty() {
-                    last_prompt_fallback = Some(parse_command_display_text(&t).unwrap_or(t));
+        match val["type"].as_str() {
+            Some("ai-title") => {
+                if let Some(t) = val["aiTitle"].as_str() {
+                    let t = t.trim().to_string();
+                    if !t.is_empty() { ai_title = Some(t); }
                 }
             }
-            continue;
-        }
-        if val["type"].as_str() != Some("user")
-            || val["message"]["role"].as_str() != Some("user")
-        {
-            continue;
-        }
-        if val["origin"]["kind"].as_str() == Some("task-notification") { continue; }
-        let content = &val["message"]["content"];
-        if let Some(arr) = content.as_array() {
-            if arr.iter().any(|b| b["type"].as_str() == Some("tool_result")) { continue; }
-        }
-        if let Some(text) = extract_session_name(content) {
-            return Some(text);
+            Some("last-prompt") => {
+                if first_prompt.is_none() && last_prompt_fallback.is_none() {
+                    if let Some(t) = val["lastPrompt"].as_str() {
+                        let t = t.trim().to_string();
+                        if !t.is_empty() {
+                            last_prompt_fallback = Some(parse_command_display_text(&t).unwrap_or(t));
+                        }
+                    }
+                }
+            }
+            Some("user") if first_prompt.is_none()
+                && val["message"]["role"].as_str() == Some("user")
+                && val["origin"]["kind"].as_str() != Some("task-notification") =>
+            {
+                let content = &val["message"]["content"];
+                if let Some(arr) = content.as_array() {
+                    if arr.iter().any(|b| b["type"].as_str() == Some("tool_result")) { continue; }
+                }
+                if let Some(text) = extract_session_name(content) {
+                    first_prompt = Some(text);
+                }
+            }
+            _ => {}
         }
     }
-    last_prompt_fallback
+    ai_title.or(first_prompt).or(last_prompt_fallback)
 }
 
 fn extract_selected_code(content: &serde_json::Value) -> Vec<SelectedCode> {
