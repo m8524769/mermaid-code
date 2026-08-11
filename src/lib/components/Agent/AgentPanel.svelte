@@ -113,7 +113,10 @@
   // Load history when switching to an existing session
   $effect(() => {
     if (!workingFolder || !activeSessionId) {
-      untrack(() => agentState.clearMessages(selectedAgentId));
+      untrack(() => {
+        liveSessionId = null;
+        agentState.clearMessages(selectedAgentId);
+      });
       return;
     }
     if (runId) return; // run is writing to messages — wait until it finishes
