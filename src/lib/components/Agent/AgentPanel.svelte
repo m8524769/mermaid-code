@@ -478,9 +478,28 @@
             {:else if msg.role === 'tool_use'}
               <details class="max-w-[85%] rounded-xl border border-muted-foreground/20 text-xs">
                 <summary
-                  class="flex cursor-pointer items-center gap-1.5 px-3 py-1.5 select-none hover:text-foreground">
-                  <span class="size-1.5 rounded-full bg-muted-foreground/50"></span>
+                  class="flex cursor-pointer items-baseline gap-1.5 px-3 py-1.5 select-none hover:text-foreground">
+                  <span class="size-1.5 shrink-0 self-center rounded-full bg-muted-foreground/50"
+                  ></span>
                   <span class="font-medium text-muted-foreground">{msg.toolName ?? 'tool'}</span>
+                  {#if msg.text}
+                    {@const input = (() => {
+                      try {
+                        return JSON.parse(msg.text);
+                      } catch {
+                        return null;
+                      }
+                    })()}
+                    {@const filePath = input?.file_path ?? input?.path ?? null}
+                    {@const label = filePath
+                      ? filePath.split(/[/\\]/).at(-1)
+                      : (input?.command ?? null)}
+                    {#if label}
+                      <span
+                        class="truncate font-mono text-muted-foreground/60"
+                        style="max-width:24rem">{label}</span>
+                    {/if}
+                  {/if}
                 </summary>
                 <div
                   class="border-t border-muted-foreground/20 px-3 py-2 font-mono text-xs break-words whitespace-pre-wrap text-muted-foreground">
