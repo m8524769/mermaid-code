@@ -21,6 +21,7 @@
   import LockIcon from '~icons/material-symbols/lock-rounded';
   import DeleteIcon from '~icons/material-symbols/delete-outline-rounded';
   import AttachFileIcon from '~icons/material-symbols/attach-file-rounded';
+  import CodeBracketIcon from '~icons/material-symbols/code-rounded';
 
   interface AgentOption {
     id: string;
@@ -417,6 +418,18 @@
                     <span
                       class="flex items-center gap-0.5 rounded-md border border-muted bg-muted/50 px-1.5 py-0.5 font-mono text-xs text-muted-foreground">
                       <AttachFileIcon class="size-3 shrink-0" />{file.split('/').at(-1)}
+                    </span>
+                  {/each}
+                </div>
+              {/if}
+              {#if msg.selectedCode && msg.selectedCode.length > 0}
+                <div class="flex max-w-[85%] flex-wrap gap-1">
+                  {#each msg.selectedCode as sel}
+                    <span
+                      class="flex items-center gap-0.5 rounded-md border border-muted bg-muted/50 px-1.5 py-0.5 font-mono text-xs text-muted-foreground"
+                      title="{sel.file}:{sel.startLine}-{sel.endLine}">
+                      <CodeBracketIcon class="size-3 shrink-0" />{sel.symbol ??
+                        sel.file.split('/').at(-1)}:{sel.startLine}-{sel.endLine}
                     </span>
                   {/each}
                 </div>

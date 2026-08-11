@@ -601,6 +601,7 @@ fn extract_session_name(content: &serde_json::Value) -> Option<String> {
 fn extract_text(content: &serde_json::Value) -> Option<String> {
     const SYNTHETIC_PREFIXES: &[&str] = &[
         "<ide_opened_file>",
+        "<ide_selection>",
         "<local-command-stdout>",
         "<local-command-stderr>",
         "<local-command-caveat>",
@@ -695,6 +696,60 @@ async fn read_first_prompt(path: &std::path::Path) -> Option<String> {
     last_prompt_fallback
 }
 
+fn extract_selected_code(content: &serde_json::Value) -> Vec<SelectedCode> {
+    fn parse_one(text: &str) -> Vec<SelectedCode> {
+        let mut result = vec![];
+        let mut search = text;
+        while let Some(start) = search.find("<ide_selection>") {
+            let rest = &search[start + "<ide_selection>".len()..];
+            if let Some(end) = rest.find("</ide_selection>") {
+                let inner = rest[..end].trim();
+                // Format: "The user selected the lines {s} to {e} from {path}:\n{symbol}\n\n..."
+                if let Some(rest) = inner.strip_prefix("The user selected the lines ") {
+                    if let Some(from_pos) = rest.find(" from ") {
+                        let range = &rest[..from_pos];
+                        let after_from = &rest[from_pos + " from ".len()..];
+                        // path ends at first '\n', symbol is the next line
+                        let (file, symbol) = if let Some(nl) = after_from.find('\n') {
+                            let file = after_from[..nl].trim_end_matches(':').trim().to_string();
+                            let sym = after_from[nl + 1..].lines().next().unwrap_or("").trim().to_string();
+                            let sym = if sym.is_empty() { None } else { Some(sym) };
+                            (file, sym)
+                        } else {
+                            (after_from.trim_end_matches(':').trim().to_string(), None)
+                        };
+                        let (start_line, end_line) = if let Some(mid) = range.find(" to ") {
+                            let s = range[..mid].trim().parse::<u32>().unwrap_or(0);
+                            let e = range[mid + " to ".len()..].trim().parse::<u32>().unwrap_or(0);
+                            (s, e)
+                        } else { (0, 0) };
+                        if !file.is_empty() {
+                            result.push(SelectedCode { file, start_line, end_line, symbol });
+                        }
+                    }
+                }
+                search = &rest[end + "</ide_selection>".len()..];
+            } else { break; }
+        }
+        result
+    }
+
+    if let Some(s) = content.as_str() {
+        return parse_one(s.trim());
+    }
+    if let Some(arr) = content.as_array() {
+        return arr.iter()
+            .filter_map(|b| {
+                if b["type"].as_str() != Some("text") { return None; }
+                let t = b["text"].as_str()?.trim();
+                if t.contains("<ide_selection>") { Some(parse_one(t)) } else { None }
+            })
+            .flatten()
+            .collect();
+    }
+    vec![]
+}
+
 fn extract_opened_files(content: &serde_json::Value) -> Vec<String> {
     let re = |text: &str| -> Vec<String> {
         let mut files = vec![];
@@ -734,6 +789,14 @@ fn extract_opened_files(content: &serde_json::Value) -> Vec<String> {
 }
 
 #[derive(Serialize)]
+pub struct SelectedCode {
+    pub file: String,
+    pub start_line: u32,
+    pub end_line: u32,
+    pub symbol: Option<String>,
+}
+
+#[derive(Serialize)]
 pub struct HistoryMessage {
     pub role: String,
     pub text: String,
@@ -741,6 +804,7 @@ pub struct HistoryMessage {
     pub tool_name: Option<String>,
     pub tool_use_id: Option<String>,
     pub opened_files: Vec<String>,
+    pub selected_code: Vec<SelectedCode>,
 }
 
 #[tauri::command]
@@ -796,6 +860,7 @@ pub async fn load_session_history(
                                         tool_name: None,
                                         tool_use_id: block["tool_use_id"].as_str().map(|s| s.to_string()),
                                         opened_files: vec![],
+                                        selected_code: vec![],
                                     });
                                 }
                                 continue;
@@ -805,7 +870,8 @@ pub async fn load_session_history(
                         if val["isMeta"].as_bool() == Some(true) { continue; }
                         let text = extract_text(content).unwrap_or_default();
                         let opened_files = extract_opened_files(content);
-                        if !text.is_empty() || !opened_files.is_empty() {
+                        let selected_code = extract_selected_code(content);
+                        if !text.is_empty() || !opened_files.is_empty() || !selected_code.is_empty() {
                             messages.push(HistoryMessage {
                                 role: "user".into(),
                                 text,
@@ -813,6 +879,7 @@ pub async fn load_session_history(
                                 tool_name: None,
                                 tool_use_id: None,
                                 opened_files,
+                                selected_code,
                             });
                         }
                     }
@@ -844,6 +911,7 @@ pub async fn load_session_history(
                                                 tool_name: None,
                                                 tool_use_id: None,
                                                 opened_files: vec![],
+                                                selected_code: vec![],
                                             });
                                             parts.clear();
                                         }
@@ -858,6 +926,7 @@ pub async fn load_session_history(
                                             tool_name: Some(tool_name),
                                             tool_use_id,
                                             opened_files: vec![],
+                                            selected_code: vec![],
                                         });
                                     }
                                     _ => {}
@@ -872,6 +941,7 @@ pub async fn load_session_history(
                                 tool_name: None,
                                 tool_use_id: None,
                                 opened_files: vec![],
+                                selected_code: vec![],
                             });
                         }
                     }

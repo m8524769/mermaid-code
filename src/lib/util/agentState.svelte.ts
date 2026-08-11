@@ -1,5 +1,12 @@
 // ── Types ──────────────────────────────────────────────────────────────────────
 
+export interface SelectedCode {
+  file: string;
+  startLine: number;
+  endLine: number;
+  symbol?: string;
+}
+
 export interface AgentMessage {
   id: string;
   role: 'user' | 'assistant' | 'tool_use' | 'tool_result';
@@ -9,6 +16,7 @@ export interface AgentMessage {
   toolUseId?: string;
   isStreaming?: boolean;
   openedFiles?: string[];
+  selectedCode?: SelectedCode[];
 }
 
 export interface SessionEntry {
@@ -255,6 +263,12 @@ async function loadSessionHistory(agentId: string, folderPath: string, sessionId
       tool_name: string | null;
       tool_use_id: string | null;
       opened_files: string[];
+      selected_code: Array<{
+        file: string;
+        start_line: number;
+        end_line: number;
+        symbol: string | null;
+      }>;
     }> = await invoke('load_session_history', {
       agentType: agentId,
       folderPath,
@@ -274,7 +288,16 @@ async function loadSessionHistory(agentId: string, folderPath: string, sessionId
       thinking: m.thinking ?? undefined,
       toolName: m.tool_name ?? undefined,
       toolUseId: m.tool_use_id ?? undefined,
-      openedFiles: m.opened_files.length > 0 ? m.opened_files : undefined
+      openedFiles: m.opened_files.length > 0 ? m.opened_files : undefined,
+      selectedCode:
+        m.selected_code.length > 0
+          ? m.selected_code.map((s) => ({
+              file: s.file,
+              startLine: s.start_line,
+              endLine: s.end_line,
+              symbol: s.symbol ?? undefined
+            }))
+          : undefined
     }));
   } catch {
     if (historyLoadTokens.get(agentId) === token) {
