@@ -109,6 +109,7 @@
   });
 
   const runId = $derived(slices[selectedAgentId]?.activeRunId ?? null);
+  const isProcessing = $derived(slices[selectedAgentId]?.isProcessing ?? false);
 
   // Load history when switching to an existing session
   $effect(() => {
@@ -116,14 +117,19 @@
       untrack(() => {
         liveSessionId = null;
         agentState.clearMessages(selectedAgentId);
+        const rid = slices[selectedAgentId]?.activeRunId;
+        if (rid) void killRun(rid);
       });
       return;
     }
-    if (runId) return; // run is writing to messages — wait until it finishes
+    if (isProcessing) return; // mid-turn: wait until Claude finishes responding
     if (activeSessionId === liveSessionId) return; // still on the live session, preserve messages
     untrack(() => {
-      liveSessionId = null; // user navigated away from live session
+      liveSessionId = null;
       agentState.clearMessages(selectedAgentId);
+      // Kill any run from the previous session before loading the new one
+      const rid = slices[selectedAgentId]?.activeRunId;
+      if (rid) void killRun(rid);
     });
     agentState.loadSessionHistory(selectedAgentId, workingFolder, activeSessionId);
   });
@@ -183,11 +189,20 @@
           { id: `user-${id}`, role: 'user', text }
         ];
       } else {
+        // Persistent process alive — send next turn via stdin
+        const slice = agentState.getSlice(selectedAgentId);
+        slice.messages = [
+          ...slice.messages,
+          { id: `user-${Date.now()}`, role: 'user' as const, text }
+        ];
+        slice.isProcessing = true;
         await invoke('send_agent_message', { runId, content: text });
       }
     } catch (e) {
       console.error('[agent] sendMessage error:', e);
-      agentState.getSlice(selectedAgentId).errorMsg = e instanceof Error ? e.message : String(e);
+      const s = agentState.getSlice(selectedAgentId);
+      s.errorMsg = e instanceof Error ? e.message : String(e);
+      s.isProcessing = false;
     } finally {
       sending = false;
     }
@@ -198,6 +213,13 @@
     try {
       const { invoke } = await import('@tauri-apps/api/core');
       await invoke('send_agent_message', { runId, content: '\x03' });
+    } catch (e) {}
+  }
+
+  async function killRun(id: string) {
+    try {
+      const { invoke } = await import('@tauri-apps/api/core');
+      await invoke('kill_agent_run', { runId: id });
     } catch (e) {}
   }
 
@@ -222,7 +244,17 @@
     }
   });
 
-  // When run ends, refresh session list so firstPrompt is populated from the written JSONL
+  // Refresh session list after each turn completes (isProcessing: true→false) or when process exits
+  let _wasProcessing = false;
+  $effect(() => {
+    const processing = isProcessing;
+    const folder = workingFolder;
+    const agent = selectedAgentId;
+    if (_wasProcessing && !processing && folder) {
+      setTimeout(() => agentState.loadSessions(agent, folder), 500);
+    }
+    _wasProcessing = processing;
+  });
   $effect(() => {
     if (!runId && workingFolder) {
       setTimeout(() => agentState.loadSessions(selectedAgentId, workingFolder!), 500);
@@ -338,7 +370,7 @@
           <Popover.Close>
             <button
               class="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-sm hover:bg-muted disabled:cursor-not-allowed disabled:opacity-40"
-              disabled={!!runId || undefined}
+              disabled={isProcessing || undefined}
               onclick={() => (activeSessionId = null)}>
               <AddIcon class="size-4 shrink-0" />
               <span class="flex-1 text-left">New session</span>
@@ -355,7 +387,8 @@
                   <Popover.Close class="contents">
                     <button
                       class="flex min-w-0 flex-1 items-center gap-2 px-2 py-1.5 text-sm disabled:cursor-not-allowed disabled:opacity-40"
-                      disabled={(!!runId && session.sessionId !== activeSessionId) || undefined}
+                      disabled={(isProcessing && session.sessionId !== activeSessionId) ||
+                        undefined}
                       onclick={() => (activeSessionId = session.sessionId)}>
                       <HistoryIcon class="size-4 shrink-0 text-muted-foreground" />
                       <span class="flex-1 truncate text-left">
@@ -523,7 +556,7 @@
             {/if}
           </div>
         {/each}
-        {#if runId && !messages.at(-1)?.isStreaming}
+        {#if isProcessing && !messages.at(-1)?.isStreaming}
           <div class="flex items-center gap-2">
             <div class="rounded-xl bg-muted px-3 py-2.5">
               <div class="flex gap-1">
@@ -542,7 +575,7 @@
             {/if}
           </div>
         {/if}
-        {#if !runId && lastCostUsd != null}
+        {#if !isProcessing && lastCostUsd != null}
           <div class="flex justify-end">
             <span class="text-xs text-muted-foreground/50">${lastCostUsd.toFixed(4)}</span>
           </div>
@@ -681,18 +714,18 @@
               return;
             }
             e.preventDefault();
-            if (!runId) sendMessage();
+            if (!isProcessing) sendMessage();
           }
         }}></textarea>
       <button
-        onclick={runId ? interruptRun : sendMessage}
+        onclick={isProcessing ? interruptRun : sendMessage}
         class="rounded-lg bg-primary p-2 text-primary-foreground hover:opacity-80 disabled:opacity-40"
         disabled={!workingFolder ||
           sending ||
-          (!runId && !inputText.trim()) ||
+          (!isProcessing && !inputText.trim()) ||
           !!pendingPermission ||
           cliAvailable !== true}>
-        {#if runId}
+        {#if isProcessing}
           <StopIcon class="size-4" />
         {:else}
           <SendIcon class="size-4" />

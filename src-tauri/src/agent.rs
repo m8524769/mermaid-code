@@ -21,7 +21,7 @@ pub enum DriverEvent {
     SessionReady { session_id: String },
     PermissionRequest { request_id: String, tool_name: String, tool_input: Value },
     Usage { output_tokens: u64 },
-    Exit { is_error: bool, cost_usd: Option<f64>, error: Option<String> },
+    Exit { is_error: bool, cost_usd: Option<f64>, error: Option<String>, is_final: bool },
 }
 
 // ── Driver trait ──────────────────────────────────────────────────────────────
@@ -254,6 +254,7 @@ impl AgentDriver for ClaudeCodeDriver {
                     is_error: val["is_error"].as_bool().unwrap_or(false),
                     cost_usd: val["total_cost_usd"].as_f64(),
                     error: val["error"].as_str().map(str::to_string),
+                    is_final: false, // driver always yields turn-complete; read_loop decides finality
                 });
             }
             _ => {}
@@ -455,7 +456,7 @@ pub async fn start_agent_session(
                 child.kill().await.ok();
                 let _ = app2.emit("agent-event", serde_json::json!({
                     "run_id": &rid,
-                    "event": DriverEvent::Exit { is_error: false, cost_usd: None, error: None },
+                    "event": DriverEvent::Exit { is_error: false, cost_usd: None, error: None, is_final: true },
                 }));
                 if let Some(ref p) = mcp_path_for_kill {
                     let _ = tokio::fs::remove_file(p).await;
@@ -477,14 +478,18 @@ async fn read_loop(
     mcp_config_path: Option<PathBuf>,
 ) {
     let mut lines = BufReader::new(stdout).lines();
-    let mut got_exit = false;
-    let mut should_kill = false;
+    let mut in_turn = false;
+    let mut had_any_output = false;
+    let mut exited_via_error = false; // true when we break due to an error exit event
 
     'outer: while let Ok(Some(line)) = lines.next_line().await {
         let line = line.trim().to_string();
         if line.is_empty() { continue; }
 
         for event in driver.parse_line(&line) {
+            had_any_output = true;
+            in_turn = true;
+
             // Store session_id when Claude Code reports it
             if let DriverEvent::SessionReady { ref session_id } = event {
                 let mgr_state = app.state::<AgentManagerState>();
@@ -493,27 +498,48 @@ async fn read_loop(
                     run.session_id = Some(session_id.clone());
                 }
             }
-            if let DriverEvent::Exit { is_error, .. } = &event {
-                got_exit = true;
-                should_kill = *is_error; // error → kill; normal result → keep alive for next turn
-            }
+
+            // Rewrite Exit events: errors are final; normal turn-complete is not final
+            let event = match event {
+                DriverEvent::Exit { is_error, cost_usd, error, .. } => {
+                    in_turn = false;
+                    let is_final = is_error;
+                    DriverEvent::Exit { is_error, cost_usd, error, is_final }
+                }
+                other => other,
+            };
+
+            let should_break = matches!(&event, DriverEvent::Exit { is_error: true, .. });
             let _ = app.emit("agent-event", serde_json::json!({
                 "run_id": &run_id,
                 "event": &event,
             }));
-            if should_kill { break 'outer; }
+            if should_break {
+                exited_via_error = true;
+                break 'outer;
+            }
         }
     }
 
-    if !got_exit {
-        let _ = app.emit("agent-event", serde_json::json!({
-            "run_id": &run_id,
-            "event": DriverEvent::Exit {
-                is_error: true,
-                cost_usd: None,
-                error: Some("Process exited unexpectedly".to_string()),
-            },
-        }));
+    // EOF: only emit a final exit if we didn't already emit one via the error-exit path
+    if !exited_via_error {
+        if in_turn || !had_any_output {
+            let _ = app.emit("agent-event", serde_json::json!({
+                "run_id": &run_id,
+                "event": DriverEvent::Exit {
+                    is_error: true,
+                    cost_usd: None,
+                    error: Some("Process exited unexpectedly".to_string()),
+                    is_final: true,
+                },
+            }));
+        } else {
+            // Process exited cleanly between turns (stdin closed / app shutting down)
+            let _ = app.emit("agent-event", serde_json::json!({
+                "run_id": &run_id,
+                "event": DriverEvent::Exit { is_error: false, cost_usd: None, error: None, is_final: true },
+            }));
+        }
     }
 
     if let Some(ref p) = mcp_config_path {

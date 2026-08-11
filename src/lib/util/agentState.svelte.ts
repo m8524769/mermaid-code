@@ -32,6 +32,7 @@ export interface PermissionRequest {
 
 interface AgentSlice {
   activeRunId: string | null;
+  isProcessing: boolean;
   activeSessionId: string | null;
   messages: AgentMessage[];
   pendingPermission: PermissionRequest | null;
@@ -53,6 +54,7 @@ function getSlice(agentId: string): AgentSlice {
   if (!slices[agentId]) {
     slices[agentId] = {
       activeRunId: null,
+      isProcessing: false,
       activeSessionId: null,
       messages: [],
       pendingPermission: null,
@@ -82,6 +84,7 @@ interface RawEvent {
   text?: string;
   thinking?: string;
   is_streaming?: boolean;
+  is_final?: boolean;
   name?: string;
   input?: unknown;
   tool_use_id?: string;
@@ -163,7 +166,10 @@ function dispatch(agentId: string, e: RawEvent) {
       if (e.is_error) {
         slice.errorMsg = e.error ?? 'Agent exited with an error.';
       }
-      slice.activeRunId = null;
+      slice.isProcessing = false;
+      if (e.is_final) {
+        slice.activeRunId = null;
+      }
       break;
     }
   }
@@ -187,6 +193,7 @@ function registerRun(agentId: string, runId: string) {
   runOwner.set(runId, agentId);
   const slice = getSlice(agentId);
   slice.activeRunId = runId;
+  slice.isProcessing = true;
   slice.activeSessionId = null;
   slice.messages = [];
   slice.pendingPermission = null;
