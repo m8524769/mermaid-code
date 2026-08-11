@@ -1,4 +1,4 @@
-import { marked, type Renderer } from 'marked';
+import { Marked, marked, type Renderer } from 'marked';
 import { getSingletonHighlighter } from 'shiki';
 
 let highlighter: Awaited<ReturnType<typeof getSingletonHighlighter>> | null = null;
@@ -40,4 +40,17 @@ export async function renderMarkdown(text: string, dark = true): Promise<string>
 
   marked.use({ renderer });
   return marked.parse(text) as string;
+}
+
+const _streamingMarked = new Marked({
+  renderer: {
+    code({ text: code }) {
+      const escaped = code.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      return `<pre class="my-2 overflow-x-auto rounded-lg bg-black/10 text-xs dark:bg-white/10"><code class="block p-2">${escaped}</code></pre>`;
+    }
+  } as Partial<Renderer>
+});
+
+export function renderMarkdownSync(text: string): string {
+  return _streamingMarked.parse(text) as string;
 }

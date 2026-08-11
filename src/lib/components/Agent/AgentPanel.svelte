@@ -8,7 +8,8 @@
   import { fileState } from '$lib/util/fileState.svelte';
   import { mcpState } from '$lib/util/mcpState.svelte';
   import { openFolderDialog } from '$lib/util/fileSystem';
-  import { renderMarkdown } from '$lib/util/markdown';
+  import { mode } from 'mode-watcher';
+  import { renderMarkdown, renderMarkdownSync } from '$lib/util/markdown';
   import { untrack } from 'svelte';
   import ClaudeIcon from '~icons/logos/claude-icon';
   import CloseIcon from '~icons/material-symbols/close-rounded';
@@ -491,18 +492,19 @@
               {/if}
               {#if msg.isStreaming}
                 <div
-                  class="max-w-[85%] rounded-xl bg-muted px-3 py-2 text-sm break-words whitespace-pre-wrap text-foreground">
-                  {msg.text}
+                  class="prose prose-sm max-w-[85%] rounded-xl bg-muted px-3 py-2 dark:prose-invert [&_pre]:my-2 [&_pre]:overflow-x-auto [&_pre]:rounded-lg [&_pre]:p-3">
+                  <!-- eslint-disable-next-line svelte/no-at-html-tags -->
+                  {@html renderMarkdownSync(msg.text)}
                 </div>
               {:else}
-                {#await renderMarkdown(msg.text)}
+                {#await renderMarkdown(msg.text, mode.current === 'dark')}
                   <div
                     class="max-w-[85%] rounded-xl bg-muted px-3 py-2 text-sm break-words whitespace-pre-wrap text-foreground">
                     {msg.text}
                   </div>
                 {:then html}
                   <div
-                    class="prose prose-sm max-w-[85%] rounded-xl bg-muted px-3 py-2 dark:prose-invert [&_pre]:my-2 [&_pre]:overflow-x-auto [&_pre]:rounded-lg [&_pre]:p-0">
+                    class="prose prose-sm max-w-[85%] rounded-xl bg-muted px-3 py-2 dark:prose-invert [&_pre]:my-2 [&_pre]:overflow-x-auto [&_pre]:rounded-lg [&_pre]:p-3">
                     <!-- eslint-disable-next-line svelte/no-at-html-tags -->
                     {@html html}
                   </div>
