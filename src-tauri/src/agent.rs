@@ -300,6 +300,8 @@ pub struct AgentRun {
     pub session_id: Option<String>,
     pub stdin_tx: mpsc::Sender<String>,
     pub driver: Box<dyn AgentDriver>,
+    #[allow(dead_code)] // drop triggers kill_rx in the read loop's select!
+    pub kill_tx: tokio::sync::oneshot::Sender<()>,
 }
 
 pub struct AgentManager {
@@ -426,6 +428,11 @@ pub async fn start_agent_session(
         }
     });
 
+    // Spawn read loop; child is moved in to keep the process alive
+    let rid = run_id.clone();
+    let app2 = app.clone();
+    let (kill_tx, kill_rx) = tokio::sync::oneshot::channel::<()>();
+
     // Register run
     {
         let mgr_state = app.state::<AgentManagerState>();
@@ -437,15 +444,24 @@ pub async fn start_agent_session(
             session_id: None,
             stdin_tx,
             driver: driver_for_run,
+            kill_tx,
         });
     }
-
-    // Spawn read loop; child is moved in to keep the process alive
-    let rid = run_id.clone();
-    let app2 = app.clone();
+    let mcp_path_for_kill = mcp_config_path.clone();
     tokio::spawn(async move {
-        let _child = child; // keep alive until read_loop finishes
-        read_loop(app2.clone(), rid.clone(), stdout, driver, mcp_config_path).await;
+        tokio::select! {
+            _ = read_loop(app2.clone(), rid.clone(), stdout, driver, mcp_config_path) => {}
+            _ = kill_rx => {
+                child.kill().await.ok();
+                let _ = app2.emit("agent-event", serde_json::json!({
+                    "run_id": &rid,
+                    "event": DriverEvent::Exit { is_error: false, cost_usd: None, error: None },
+                }));
+                if let Some(ref p) = mcp_path_for_kill {
+                    let _ = tokio::fs::remove_file(p).await;
+                }
+            }
+        }
         let mgr_state = app2.state::<AgentManagerState>();
         mgr_state.0.lock().await.runs.remove(&rid);
     });
