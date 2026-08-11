@@ -73,7 +73,9 @@
   });
 
   const folderName = $derived(
-    workingFolder ? (workingFolder.split('/').filter(Boolean).at(-1) ?? workingFolder) : 'No folder'
+    workingFolder
+      ? (workingFolder.split(/[/\\]/).filter(Boolean).at(-1) ?? workingFolder)
+      : 'No folder'
   );
 
   const sessions = $derived<SessionEntry[]>(

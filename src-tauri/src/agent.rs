@@ -86,8 +86,22 @@ impl AgentDriver for ClaudeCodeDriver {
             args.push("--resume".to_string());
             args.push(id.clone());
         }
-        let mut cmd = Command::new("claude");
-        cmd.args(args);
+        #[cfg(target_os = "windows")]
+        let mut cmd = {
+            use std::os::windows::process::CommandExt;
+            const CREATE_NO_WINDOW: u32 = 0x08000000;
+            let mut c = Command::new("cmd");
+            c.args(["/c", "claude"]);
+            c.args(&args);
+            c.creation_flags(CREATE_NO_WINDOW);
+            c
+        };
+        #[cfg(not(target_os = "windows"))]
+        let mut cmd = {
+            let mut c = Command::new("claude");
+            c.args(&args);
+            c
+        };
         // Inject shell PATH so `claude` is findable in packaged .app bundles
         if let Some(ref path) = config.shell_path {
             cmd.env("PATH", path);
