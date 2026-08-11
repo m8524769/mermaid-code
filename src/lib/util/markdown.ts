@@ -1,3 +1,4 @@
+import DOMPurify from 'dompurify';
 import { Marked, marked, type Renderer } from 'marked';
 import { getSingletonHighlighter } from 'shiki';
 
@@ -39,7 +40,7 @@ export async function renderMarkdown(text: string, dark = true): Promise<string>
   };
 
   marked.use({ renderer });
-  return marked.parse(text) as string;
+  return DOMPurify.sanitize(marked.parse(text) as string);
 }
 
 const _streamingMarked = new Marked({
@@ -52,5 +53,5 @@ const _streamingMarked = new Marked({
 });
 
 export function renderMarkdownSync(text: string): string {
-  return _streamingMarked.parse(text) as string;
+  return DOMPurify.sanitize(_streamingMarked.parse(text) as string);
 }
