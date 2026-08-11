@@ -976,8 +976,11 @@ pub async fn check_agent_cli(app: AppHandle, agent_type: String) -> bool {
     };
     #[cfg(target_os = "windows")]
     {
+        use std::os::windows::process::CommandExt;
+        const CREATE_NO_WINDOW: u32 = 0x08000000;
         tokio::process::Command::new("where")
             .arg(cmd_name)
+            .creation_flags(CREATE_NO_WINDOW)
             .output()
             .await
             .map(|o| o.status.success())
