@@ -599,15 +599,29 @@ fn extract_session_name(content: &serde_json::Value) -> Option<String> {
 }
 
 fn extract_text(content: &serde_json::Value) -> Option<String> {
+    const SYNTHETIC_PREFIXES: &[&str] = &[
+        "<local-command-stdout>",
+        "<local-command-stderr>",
+        "<local-command-caveat>",
+        "<task-notification>",
+        "<ide-context>",
+        "<user-prompt-submit-hook>",
+        "<system-reminder>",
+    ];
+    let is_synthetic = |t: &str| SYNTHETIC_PREFIXES.iter().any(|p| t.starts_with(p));
+
     let text = if let Some(s) = content.as_str() {
-        s.trim().to_string()
+        let t = s.trim().to_string();
+        if is_synthetic(&t) { return None; }
+        t
     } else if let Some(arr) = content.as_array() {
         arr.iter()
-            .find(|b| b["type"].as_str() == Some("text"))
-            .and_then(|b| b["text"].as_str())
-            .unwrap_or("")
-            .trim()
-            .to_string()
+            .filter(|b| b["type"].as_str() == Some("text"))
+            .filter_map(|b| b["text"].as_str())
+            .map(|t| t.trim())
+            .filter(|t| !t.is_empty() && !is_synthetic(t))
+            .collect::<Vec<_>>()
+            .join("\n")
     } else {
         return None;
     };
@@ -749,19 +763,6 @@ pub async fn load_session_history(
                         // Skip isMeta entries (harness-injected metadata)
                         if val["isMeta"].as_bool() == Some(true) { continue; }
                         if let Some(text) = extract_text(content) {
-                            // Skip known synthetic injection wrappers that are never typed by users
-                            const SYNTHETIC_PREFIXES: &[&str] = &[
-                                "<local-command-stdout>",
-                                "<local-command-stderr>",
-                                "<local-command-caveat>",
-                                "<task-notification>",
-                                "<ide-context>",
-                                "<user-prompt-submit-hook>",
-                                "<system-reminder>",
-                            ];
-                            if SYNTHETIC_PREFIXES.iter().any(|p| text.starts_with(p)) {
-                                continue;
-                            }
                             messages.push(HistoryMessage { role: "user".into(), text, thinking: None, tool_name: None, tool_use_id: None });
                         }
                     }
