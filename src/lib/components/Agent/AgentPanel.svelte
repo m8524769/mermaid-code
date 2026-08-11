@@ -12,7 +12,6 @@
   import { renderMarkdown, renderMarkdownSync } from '$lib/util/markdown';
   import { untrack } from 'svelte';
   import ClaudeIcon from '~icons/logos/claude-icon';
-  import CloseIcon from '~icons/material-symbols/close-rounded';
   import SyncAltIcon from '~icons/material-symbols/sync-alt-rounded';
   import CheckIcon from '~icons/material-symbols/check-rounded';
   import HistoryIcon from '~icons/material-symbols/history-rounded';
@@ -34,12 +33,6 @@
     { id: 'claude-code', label: 'Claude Code', icon: ClaudeIcon }
     // { id: 'codex', label: 'Codex', icon: OpenAIIcon }
   ];
-
-  interface Props {
-    onclose?: () => void;
-  }
-
-  let { onclose }: Props = $props();
 
   // Start event listener for agent events
   agentState.init();
@@ -334,9 +327,6 @@
           {/each}
         </Popover.Content>
       </Popover.Root>
-      <Button size="icon" variant="ghost" onclick={onclose} title="Close">
-        <CloseIcon />
-      </Button>
     </div>
   {/snippet}
 
@@ -528,7 +518,7 @@
                     {@const filePath = input?.file_path ?? input?.path ?? null}
                     {@const label = filePath
                       ? filePath.split(/[/\\]/).at(-1)
-                      : (input?.command ?? null)}
+                      : (input?.command ?? input?.description ?? null)}
                     {#if label}
                       <span
                         class="truncate font-mono text-muted-foreground/60"

@@ -421,7 +421,7 @@
           onCollapse={() => (isAgentCollapsed = true)}
           onExpand={() => (isAgentCollapsed = false)}
           bind:this={agentPane}>
-          <AgentPanel onclose={() => agentPane?.collapse()} />
+          <AgentPanel />
         </Resizable.Pane>
       </Resizable.PaneGroup>
     </div>
