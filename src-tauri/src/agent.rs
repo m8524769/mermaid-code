@@ -639,6 +639,7 @@ fn extract_text(content: &serde_json::Value) -> Option<String> {
         "<ide-context>",
         "<user-prompt-submit-hook>",
         "<system-reminder>",
+        "This session is being continued from a previous conversation that ran out of context. The summary below covers the earlier portion of the conversation.",
     ];
     let is_synthetic = |t: &str| SYNTHETIC_PREFIXES.iter().any(|p| t.starts_with(p));
 
