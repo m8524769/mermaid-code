@@ -419,7 +419,7 @@
                   {#each msg.openedFiles as file}
                     <span
                       class="flex items-center gap-0.5 rounded-md border border-muted bg-muted/50 px-1.5 py-0.5 font-mono text-xs text-muted-foreground">
-                      <AttachFileIcon class="size-3 shrink-0" />{file.split('/').at(-1)}
+                      <AttachFileIcon class="size-3 shrink-0" />{file.split(/[/\\]/).at(-1)}
                     </span>
                   {/each}
                 </div>
@@ -431,7 +431,7 @@
                       class="flex items-center gap-0.5 rounded-md border border-muted bg-muted/50 px-1.5 py-0.5 font-mono text-xs text-muted-foreground"
                       title="{sel.file}:{sel.startLine}-{sel.endLine}">
                       <CodeBracketIcon class="size-3 shrink-0" />{sel.symbol ??
-                        sel.file.split('/').at(-1)}:{sel.startLine}-{sel.endLine}
+                        sel.file.split(/[/\\]/).at(-1)}:{sel.startLine}-{sel.endLine}
                     </span>
                   {/each}
                 </div>
