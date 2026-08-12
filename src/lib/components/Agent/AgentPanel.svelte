@@ -276,6 +276,8 @@
     }
   }
 
+  let denyMessage = $state('');
+
   async function denyPermission() {
     if (!pendingPermission || !runId) return;
     try {
@@ -284,9 +286,11 @@
         runId,
         requestId: pendingPermission.requestId,
         approved: false,
-        toolInput: null
+        toolInput: null,
+        denyMessage: denyMessage.trim() || null
       });
       slices[selectedAgentId].pendingPermission = null;
+      denyMessage = '';
     } catch (e) {
       console.error('[agent] denyPermission error:', e);
     }
@@ -667,6 +671,12 @@
               2
             )}</pre>
         {/if}
+        <textarea
+          bind:value={denyMessage}
+          placeholder="Tell Claude what to do instead"
+          rows="1"
+          class="mb-2 w-full resize-none rounded-md bg-muted px-2 py-1.5 text-xs outline-none placeholder:text-muted-foreground/60"
+        ></textarea>
         <div class="flex gap-2">
           <button
             onclick={allowPermission}

@@ -35,7 +35,7 @@ pub trait AgentDriver: Send {
     fn build_interrupt(&self) -> Option<String> { None }
     fn parse_line(&mut self, line: &str) -> Vec<DriverEvent>;
     /// Encodes a permission response payload. Returns None if unsupported.
-    fn build_permission_response(&self, request_id: &str, approved: bool, tool_input: Option<&Value>) -> Option<String>;
+    fn build_permission_response(&self, request_id: &str, approved: bool, tool_input: Option<&Value>, deny_message: Option<&str>) -> Option<String>;
 }
 
 fn make_driver(agent_type: &str) -> Option<Box<dyn AgentDriver>> {
@@ -262,14 +262,21 @@ impl AgentDriver for ClaudeCodeDriver {
         events
     }
 
-    fn build_permission_response(&self, request_id: &str, approved: bool, tool_input: Option<&Value>) -> Option<String> {
+    fn build_permission_response(&self, request_id: &str, approved: bool, tool_input: Option<&Value>, deny_message: Option<&str>) -> Option<String> {
         let inner = if approved {
             serde_json::json!({
                 "behavior": "allow",
                 "updatedInput": tool_input.unwrap_or(&Value::Object(Default::default())),
             })
         } else {
-            serde_json::json!({ "behavior": "deny", "message": "User denied permission" })
+            let message = match deny_message {
+                Some(reason) if !reason.trim().is_empty() => format!(
+                    "The user doesn't want to proceed with this tool use. The tool use was rejected. To tell you how to proceed, the user said:\n{}",
+                    reason.trim()
+                ),
+                _ => "The user doesn't want to proceed with this tool use. The tool use was rejected. STOP what you are doing and wait for the user to tell you how to proceed.".to_string(),
+            };
+            serde_json::json!({ "behavior": "deny", "message": message })
         };
         let msg = serde_json::json!({
             "type": "control_response",
@@ -1135,6 +1142,7 @@ pub async fn respond_agent_permission(
     request_id: String,
     approved: bool,
     tool_input: Option<Value>,
+    deny_message: Option<String>,
 ) -> Result<(), String> {
     let state = app.state::<AgentManagerState>();
     let (line, tx) = {
@@ -1142,7 +1150,7 @@ pub async fn respond_agent_permission(
         let run = mgr.runs.get(&run_id).ok_or("Run not found")?;
         let line = run
             .driver
-            .build_permission_response(&request_id, approved, tool_input.as_ref())
+            .build_permission_response(&request_id, approved, tool_input.as_ref(), deny_message.as_deref())
             .ok_or("Driver does not support permission responses")?;
         (line, run.stdin_tx.clone())
     }; // lock released here
