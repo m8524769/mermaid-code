@@ -22,6 +22,7 @@
   import DeleteIcon from '~icons/material-symbols/delete-outline-rounded';
   import AttachFileIcon from '~icons/material-symbols/attach-file-rounded';
   import CodeBracketIcon from '~icons/material-symbols/code-rounded';
+  import FolderOpenIcon from '~icons/material-symbols/folder-open-outline-rounded';
 
   interface AgentOption {
     id: string;
@@ -39,6 +40,7 @@
 
   const AGENT_KEY = 'mermaid-agent';
   const FOLDER_KEY = 'mermaid-agent-folder';
+  const RECENT_FOLDERS_KEY = 'mermaid-agent-recent-folders';
   const sessionKey = (agentId: string, folder: string | null) =>
     `mermaid-agent-session-${agentId}-${folder ?? ''}`;
 
@@ -72,6 +74,30 @@
       ? (workingFolder.split(/[/\\]/).filter(Boolean).at(-1) ?? workingFolder)
       : 'No folder'
   );
+
+  const recentAgentFolders = $state<string[]>(
+    (() => {
+      try {
+        return JSON.parse(localStorage.getItem(RECENT_FOLDERS_KEY) ?? '[]');
+      } catch {
+        return [];
+      }
+    })()
+  );
+
+  let folderPopoverOpen = $state(false);
+
+  $effect(() => {
+    if (!workingFolder) return;
+    const folder = workingFolder;
+    untrack(() => {
+      const idx = recentAgentFolders.indexOf(folder);
+      if (idx !== -1) recentAgentFolders.splice(idx, 1);
+      recentAgentFolders.unshift(folder);
+      if (recentAgentFolders.length > 10) recentAgentFolders.splice(10);
+      localStorage.setItem(RECENT_FOLDERS_KEY, JSON.stringify(recentAgentFolders));
+    });
+  });
 
   const sessions = $derived<SessionEntry[]>(
     workingFolder ? (slices[selectedAgentId]?.folderSessions[workingFolder] ?? []) : []
@@ -344,14 +370,54 @@
     <!-- Toolbar -->
     <div class="flex items-center gap-0.5 border-b border-muted px-1.5 py-1">
       <!-- Folder picker -->
-      <Button
-        size="sm"
-        variant="ghost"
-        class="h-6 max-w-32 gap-1 px-1.5 text-xs"
-        onclick={pickFolder}
-        title={workingFolder ?? 'Select folder'}>
-        <span class="truncate">{folderName}</span>
-      </Button>
+      <Popover.Root bind:open={folderPopoverOpen}>
+        <Popover.Trigger class="flex min-w-0 items-center">
+          <Button
+            size="sm"
+            variant="ghost"
+            class="h-6 max-w-32 gap-1 px-1.5 text-xs"
+            title={workingFolder ?? 'Select folder'}>
+            <span class="truncate">{folderName}</span>
+          </Button>
+        </Popover.Trigger>
+        <Popover.Content class="w-72 p-1" align="start">
+          {#each recentAgentFolders as folder (folder)}
+            {@const name = folder.split(/[/\\]/).filter(Boolean).at(-1) ?? folder}
+            <Popover.Close class="contents">
+              <button
+                onclick={() => (workingFolder = folder)}
+                disabled={isProcessing}
+                class="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs hover:bg-muted disabled:pointer-events-none disabled:opacity-50 {workingFolder ===
+                folder
+                  ? 'text-foreground'
+                  : 'text-muted-foreground'}">
+                {#if workingFolder === folder}
+                  <CheckIcon class="size-3 shrink-0" />
+                {:else}
+                  <span class="size-3 shrink-0"></span>
+                {/if}
+                <span class="truncate font-medium">{name}</span>
+                <span
+                  class="ml-auto shrink-0 truncate font-mono text-[10px] text-muted-foreground/50"
+                  style="max-width:8rem"
+                  title={folder}>{folder}</span>
+              </button>
+            </Popover.Close>
+          {/each}
+          {#if recentAgentFolders.length > 0}
+            <div class="my-1 border-t border-muted"></div>
+          {/if}
+          <Popover.Close class="contents">
+            <button
+              onclick={pickFolder}
+              disabled={isProcessing}
+              class="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs text-muted-foreground hover:bg-muted disabled:pointer-events-none disabled:opacity-50">
+              <FolderOpenIcon class="size-3 shrink-0" />
+              Browse...
+            </button>
+          </Popover.Close>
+        </Popover.Content>
+      </Popover.Root>
 
       <span class="text-xs text-muted-foreground/40">/</span>
 
