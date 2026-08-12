@@ -4,13 +4,17 @@ English | [简体中文](README.zh-CN.md)
 
 # Mermaid Code
 
-A local-first Mermaid diagram editor built on [Mermaid Live Editor](https://github.com/mermaid-js/mermaid-live-editor), enhanced with desktop-native features via [Tauri](https://tauri.app).
+A local-first Mermaid diagram editor built on [Mermaid Live Editor](https://github.com/mermaid-js/mermaid-live-editor), enhanced with AI agent integration and desktop-native features via [Tauri](https://tauri.app).
 
 ![Mermaid Code showcase](showcase.png)
 
 ## Built for AI-First Workflows
 
-Mermaid Code works seamlessly with AI coding agents (Claude Code, Codex, etc.). Because diagrams live as plain `.mmd` files on your local filesystem, an agent can read your codebase and write diagrams directly — no copy-pasting, no browser automation required.
+Mermaid Code is designed around AI-native diagram workflows.
+
+**Built-in AI Agent panel** — chat with Claude Code directly inside the app. Ask it to create, modify, or explain diagrams in your project folder. The agent has full access to your local files and the MCP server, so it can read your codebase, write `.mmd` files, and see the live preview — all without leaving Mermaid Code.
+
+External AI agents (Codex, OpenCode, etc.) can also connect via the built-in MCP server to interact with the app, read your codebase, and write diagrams directly — no copy-pasting, no browser automation required.
 
 ```
 # Example: ask your AI agent to generate a diagram from code
@@ -42,13 +46,18 @@ brew install --cask mermaid-code
 
 ## Enhancements over Mermaid Live Editor
 
+### AI Agent Panel
+
+- **Built-in Claude Code integration** — chat with Claude Code directly inside the app without switching windows
+- Multi-turn conversations with session history — resume previous sessions per folder
+- **Built-in MCP server** — lets AI agents interact with the app directly (see [MCP Server Integration](#mcp-server-integration-experimental))
+
 ### Desktop App (Tauri)
 
 - Native macOS/Windows application
 - Local file system access — open, edit, and save `.mmd` files directly
 - "Open with" support — double-click any `.mmd` or `.mermaid` file in Finder or Explorer to open it directly in Mermaid Code
 - App quit guard: prompts when unsaved changes exist on close
-- **Built-in MCP server** — lets AI agents interact with the app directly (see [MCP Server Integration](#mcp-server-integration-experimental))
 
 ### File Manager Sidebar
 
