@@ -39,7 +39,8 @@
 
   const AGENT_KEY = 'mermaid-agent';
   const FOLDER_KEY = 'mermaid-agent-folder';
-  const sessionKey = (id: string) => `mermaid-agent-session-${id}`;
+  const sessionKey = (agentId: string, folder: string | null) =>
+    `mermaid-agent-session-${agentId}-${folder ?? ''}`;
 
   let selectedAgentId = $state(localStorage.getItem(AGENT_KEY) ?? 'claude-code');
   let agentPopoverOpen = $state(false);
@@ -81,16 +82,21 @@
     if (workingFolder) agentState.loadSessions(selectedAgentId, workingFolder);
   });
 
-  // Active session: null means "new session"; persisted per agent
+  // Active session: null means "new session"; persisted per agent+folder
   let activeSessionId = $state<string | null>(
-    localStorage.getItem(sessionKey(localStorage.getItem(AGENT_KEY) ?? 'claude-code'))
+    localStorage.getItem(
+      sessionKey(localStorage.getItem(AGENT_KEY) ?? 'claude-code', localStorage.getItem(FOLDER_KEY))
+    )
   );
 
   $effect(() => {
-    // Persist active session per agent
-    const key = sessionKey(selectedAgentId);
-    if (activeSessionId) localStorage.setItem(key, activeSessionId);
-    else localStorage.removeItem(key);
+    // Persist active session per agent+folder — only reacts to activeSessionId changes
+    const sid = activeSessionId;
+    untrack(() => {
+      const key = sessionKey(selectedAgentId, workingFolder);
+      if (sid) localStorage.setItem(key, sid);
+      else localStorage.removeItem(key);
+    });
   });
 
   $effect(() => {
@@ -98,7 +104,7 @@
     // Do NOT read runId here — it would re-trigger this effect when run exits
     const agent = selectedAgentId;
     void workingFolder;
-    activeSessionId = localStorage.getItem(sessionKey(agent));
+    activeSessionId = localStorage.getItem(sessionKey(agent, workingFolder));
     untrack(() => agentState.clearMessages(agent));
   });
 
