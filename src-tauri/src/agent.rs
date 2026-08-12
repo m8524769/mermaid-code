@@ -353,6 +353,9 @@ pub async fn start_agent_session(
 ) -> Result<String, String> {
     // If MCP is already running, inject its config; otherwise start without MCP
     let mcp_config_path: Option<PathBuf> = async {
+        // Verify MCP server is actually listening before passing config
+        tokio::net::TcpStream::connect(format!("127.0.0.1:{MCP_SERVER_PORT}"))
+            .await.ok()?;
         let token = {
             let mcp_state = app.state::<McpServerState>();
             let guard = mcp_state.0.lock().await;
