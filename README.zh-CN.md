@@ -6,7 +6,7 @@
 
 一款基于 [Mermaid Live Editor](https://github.com/mermaid-js/mermaid-live-editor) 的本地 Mermaid 图表编辑器，并借助 [Tauri](https://tauri.app) 赋予跨平台原生桌面应用体验。
 
-![Mermaid Code showcase](showcase.png)
+![Mermaid Code showcase](showcase.zh-CN.png)
 
 ## 为「以 AI 为中心」的工作流而打造
 
