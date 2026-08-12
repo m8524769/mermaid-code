@@ -28,6 +28,7 @@
   import CodeIcon from '~icons/custom/code';
   import FolderIcon from '~icons/material-symbols/folder-outline-rounded';
   import GearIcon from '~icons/material-symbols/settings-outline-rounded';
+  import ToggleEditorButton from '$/components/ToggleEditorButton.svelte';
 
   const panZoomState = new PanZoomState();
 
@@ -394,14 +395,12 @@
         <Resizable.Handle class="hidden opacity-0 sm:block" />
         <Resizable.Pane minSize={15} class="relative flex h-full flex-1 flex-col overflow-hidden">
           <View {panZoomState} shouldShowGrid={validatedState.current.grid} />
-          {#if isEditorCollapsed && !isPresentationMode}
-            <button
-              class="absolute top-1/2 left-0 flex h-16 w-7 -translate-y-1/2 cursor-pointer items-center justify-center rounded-r-lg bg-muted/60 px-1 py-3 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-              onclick={() => editorPane?.expand()}
-              title="Show editor">
-              <CodeIcon class="size-4" />
-            </button>
-          {/if}
+          <div class="absolute top-0 left-5 hidden md:block">
+            <ToggleEditorButton
+              collapsed={isEditorCollapsed}
+              ontoggle={() =>
+                isEditorCollapsed ? editorPane?.expand() : editorPane?.collapse()} />
+          </div>
           <div class="absolute top-0 right-0">
             <PanZoomToolbar
               {panZoomState}

@@ -518,7 +518,7 @@
                     {@const filePath = input?.file_path ?? input?.path ?? null}
                     {@const label = filePath
                       ? filePath.split(/[/\\]/).at(-1)
-                      : (input?.command ?? input?.description ?? null)}
+                      : (input?.command ?? input?.skill ?? input?.description ?? null)}
                     {#if label}
                       <span
                         class="truncate font-mono text-muted-foreground/60"
