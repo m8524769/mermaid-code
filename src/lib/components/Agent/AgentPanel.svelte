@@ -646,7 +646,7 @@
               {/if}
               {#if msg.isStreaming}
                 <div
-                  class="prose prose-sm max-w-[85%] rounded-xl bg-muted px-3 py-2 dark:prose-invert [&_pre]:my-2 [&_pre]:overflow-x-auto [&_pre]:rounded-lg [&_pre]:px-3 [&_pre]:py-2">
+                  class="prose prose-sm max-w-[85%] rounded-xl bg-muted px-3 py-2 dark:prose-invert [&_hr]:my-3 [&_pre]:my-2 [&_pre]:overflow-x-auto [&_pre]:rounded-lg [&_pre]:px-3 [&_pre]:py-2">
                   <!-- eslint-disable-next-line svelte/no-at-html-tags -->
                   {@html renderMarkdownSync(msg.text)}
                 </div>
@@ -658,7 +658,7 @@
                   </div>
                 {:then html}
                   <div
-                    class="prose prose-sm max-w-[85%] rounded-xl bg-muted px-3 py-2 dark:prose-invert [&_pre]:my-2 [&_pre]:overflow-x-auto [&_pre]:rounded-lg [&_pre]:px-3 [&_pre]:py-2">
+                    class="prose prose-sm max-w-[85%] rounded-xl bg-muted px-3 py-2 dark:prose-invert [&_hr]:my-3 [&_pre]:my-2 [&_pre]:overflow-x-auto [&_pre]:rounded-lg [&_pre]:px-3 [&_pre]:py-2">
                     <!-- eslint-disable-next-line svelte/no-at-html-tags -->
                     {@html html}
                   </div>
