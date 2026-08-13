@@ -635,8 +635,9 @@
               {#if msg.thinking}
                 <details class="max-w-[85%] rounded-xl border border-muted-foreground/20 text-xs">
                   <summary
-                    class="cursor-pointer px-3 py-1.5 text-muted-foreground select-none hover:text-foreground">
-                    Thinking
+                    class="flex cursor-pointer items-center gap-1.5 px-3 py-1.5 select-none hover:text-foreground">
+                    <span class="size-1.5 shrink-0 rounded-full bg-muted-foreground/50"></span>
+                    <span class="font-medium text-muted-foreground">Thinking</span>
                   </summary>
                   <div
                     class="border-t border-muted-foreground/20 px-3 py-2 break-words whitespace-pre-wrap text-muted-foreground">
