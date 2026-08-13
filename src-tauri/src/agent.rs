@@ -82,6 +82,13 @@ impl AgentDriver for ClaudeCodeDriver {
             args.push("--mcp-config".to_string());
             args.push(p.to_string_lossy().to_string());
         }
+        match config.permission_mode.as_deref() {
+            Some(mode) if !mode.is_empty() => {
+                args.push("--permission-mode".to_string());
+                args.push(mode.to_string());
+            }
+            _ => {}
+        }
         if let Some(id) = &config.resume_session_id {
             args.push("--resume".to_string());
             args.push(id.clone());
@@ -297,6 +304,7 @@ pub struct SessionConfig {
     pub mcp_config_path: Option<PathBuf>,
     pub resume_session_id: Option<String>,
     pub shell_path: Option<String>,
+    pub permission_mode: Option<String>,
 }
 
 // ── AgentManager ──────────────────────────────────────────────────────────────
@@ -336,6 +344,7 @@ pub struct StartAgentParams {
     pub folder_path: String,
     pub agent_type: String,
     pub resume_session_id: Option<String>,
+    pub permission_mode: Option<String>,
 }
 
 #[derive(Serialize)]
@@ -402,6 +411,7 @@ pub async fn start_agent_session(
         mcp_config_path: mcp_config_path.clone(),
         resume_session_id: params.resume_session_id,
         shell_path,
+        permission_mode: params.permission_mode,
     };
 
     // Spawn process

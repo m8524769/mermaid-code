@@ -22,6 +22,9 @@
   import DeleteIcon from '~icons/material-symbols/delete-outline-rounded';
   import AttachFileIcon from '~icons/material-symbols/attach-file-rounded';
   import CodeBracketIcon from '~icons/material-symbols/code-rounded';
+  import ManualIcon from '~icons/material-symbols/back-hand-rounded';
+  import PlanIcon from '~icons/material-symbols/checklist-rounded';
+  import AutoIcon from '~icons/material-symbols/bolt-rounded';
   import FolderOpenIcon from '~icons/material-symbols/folder-open-outline-rounded';
 
   interface AgentOption {
@@ -41,6 +44,7 @@
   const AGENT_KEY = 'mermaid-agent';
   const FOLDER_KEY = 'mermaid-agent-folder';
   const RECENT_FOLDERS_KEY = 'mermaid-agent-recent-folders';
+  const PERMISSION_MODE_KEY = 'mermaid-agent-permission-mode';
   const sessionKey = (agentId: string, folder: string | null) =>
     `mermaid-agent-session-${agentId}-${folder ?? ''}`;
 
@@ -173,6 +177,49 @@
     if (path) workingFolder = path;
   }
 
+  type PermissionMode = 'manual' | 'acceptEdits' | 'plan' | 'auto';
+  const PERMISSION_MODES: {
+    value: PermissionMode;
+    label: string;
+    description: string;
+    icon: Component<any>;
+  }[] = [
+    {
+      value: 'manual',
+      label: 'Manual',
+      description: 'Ask for approval before making each edit',
+      icon: ManualIcon
+    },
+    {
+      value: 'acceptEdits',
+      label: 'Edit automatically',
+      description: 'Auto-approve file edits, ask for Bash commands',
+      icon: CodeBracketIcon
+    },
+    {
+      value: 'plan',
+      label: 'Plan',
+      description: 'Explore the code and present a plan before editing',
+      icon: PlanIcon
+    },
+    {
+      value: 'auto',
+      label: 'Auto',
+      description: 'Approve safe actions automatically, pause for risky ones',
+      icon: AutoIcon
+    }
+  ];
+  const VALID_PERMISSION_MODES: PermissionMode[] = ['manual', 'acceptEdits', 'plan', 'auto'];
+  let permissionMode = $state<PermissionMode>(
+    (() => {
+      const stored = localStorage.getItem(PERMISSION_MODE_KEY) as PermissionMode;
+      return VALID_PERMISSION_MODES.includes(stored) ? stored : 'manual';
+    })()
+  );
+  $effect(() => {
+    localStorage.setItem(PERMISSION_MODE_KEY, permissionMode);
+  });
+
   let inputText = $state('');
   let sending = $state(false);
   let imeSkipNextEnter = false;
@@ -205,7 +252,8 @@
             prompt: text,
             folder_path: workingFolder,
             agent_type: selectedAgentId,
-            resume_session_id: activeSessionId ?? null
+            resume_session_id: activeSessionId ?? null,
+            permission_mode: permissionMode === 'manual' ? null : permissionMode
           }
         });
         agentState.registerRun(selectedAgentId, id);
@@ -489,6 +537,46 @@
           {/if}
         </Popover.Content>
       </Popover.Root>
+
+      <!-- Permission mode selector -->
+      <div class="ml-auto">
+        <Popover.Root>
+          <Popover.Trigger class="flex items-center">
+            <Button
+              size="sm"
+              variant="ghost"
+              disabled={isProcessing}
+              class="h-6 px-1.5 text-xs text-muted-foreground"
+              title="Permission mode">
+              {PERMISSION_MODES.find((m) => m.value === permissionMode)?.label ?? 'Manual'}
+            </Button>
+          </Popover.Trigger>
+          <Popover.Content class="w-72 p-1" align="end">
+            {#each PERMISSION_MODES as m (m.value)}
+              {@const ModeIcon = m.icon}
+              <Popover.Close class="contents">
+                <button
+                  onclick={() => (permissionMode = m.value)}
+                  class="flex w-full items-start gap-3 rounded-md px-2 py-2 text-left hover:bg-muted {permissionMode ===
+                  m.value
+                    ? 'bg-muted/60'
+                    : ''}">
+                  <ModeIcon class="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+                  <div class="min-w-0">
+                    <div class="flex items-center gap-2 text-xs font-medium text-foreground">
+                      {m.label}
+                      {#if permissionMode === m.value}
+                        <CheckIcon class="size-4 text-muted-foreground" />
+                      {/if}
+                    </div>
+                    <div class="text-[11px] text-muted-foreground">{m.description}</div>
+                  </div>
+                </button>
+              </Popover.Close>
+            {/each}
+          </Popover.Content>
+        </Popover.Root>
+      </div>
     </div>
 
     <!-- Content -->
