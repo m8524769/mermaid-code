@@ -383,6 +383,19 @@
       if (messagesEl) messagesEl.scrollTop = messagesEl.scrollHeight;
     });
   });
+
+  async function handleLinkClick(e: MouseEvent | KeyboardEvent, target: EventTarget | null) {
+    const a = (target as HTMLElement).closest('a');
+    if (!a) return;
+    const raw = a.getAttribute('href') ?? '';
+    e.preventDefault();
+    if (!raw.startsWith('http://') && !raw.startsWith('https://') && !raw.startsWith('file://'))
+      return;
+    try {
+      const { open } = await import('@tauri-apps/plugin-shell');
+      await open(a.href);
+    } catch {}
+  }
 </script>
 
 <Card title={selectedAgent.label} isOpen isClosable={false} icon={{ component: selectedAgentIcon }}>
@@ -580,7 +593,14 @@
     </div>
 
     <!-- Content -->
-    <div bind:this={messagesEl} class="flex flex-1 flex-col gap-2 overflow-y-auto p-2">
+    <div
+      bind:this={messagesEl}
+      role="presentation"
+      class="flex flex-1 flex-col gap-2 overflow-y-auto p-2"
+      onclick={(e) => handleLinkClick(e, e.target)}
+      onkeydown={(e) => {
+        if (e.key === 'Enter') handleLinkClick(e, e.target);
+      }}>
       {#if messages.length === 0}
         <div class="flex flex-1 flex-col items-center justify-center gap-3 text-center select-none">
           <div class="rounded-2xl bg-muted p-4">
