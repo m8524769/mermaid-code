@@ -2,11 +2,10 @@
   import MainMenu from '$/components/MainMenu.svelte';
   import { Separator } from '$/components/ui/separator';
   import { updateState } from '$/util/updateState.svelte';
-  import { type ComponentProps, type Snippet } from 'svelte';
+  import { fileState } from '$/util/fileState.svelte';
+  import { type Snippet } from 'svelte';
   import MermaidIcon from '~icons/custom/mermaid';
-  import GithubIcon from '~icons/mdi/github';
   import { version as appVersion } from '../../../package.json';
-  import DropdownNavMenu from './DropdownNavMenu.svelte';
 
   interface Props {
     children: Snippet;
@@ -14,15 +13,11 @@
 
   let { children }: Props = $props();
 
-  type Links = ComponentProps<typeof DropdownNavMenu>['links'];
-
-  const githubLinks: Links = [
-    {
-      title: 'Mermaid Code',
-      href: 'https://github.com/m8524769/mermaid-code'
-    },
-    { title: 'Mermaid JS', href: 'https://github.com/mermaid-js/mermaid' }
-  ];
+  const activeFileName = $derived(
+    fileState.tabs
+      .find((t) => t.id === fileState.activeTabId)
+      ?.name.replace(/\.(mmd|mermaid)$/i, '') ?? null
+  );
 </script>
 
 <nav class="z-50 flex p-4 sm:p-6">
@@ -60,7 +55,11 @@
   <div
     id="menu"
     class="hidden flex-nowrap items-center justify-between gap-3 overflow-hidden md:flex">
-    <DropdownNavMenu icon={GithubIcon} links={githubLinks} />
+    {#if activeFileName}
+      <span class="max-w-64 truncate text-sm text-muted-foreground" title={activeFileName}>
+        {activeFileName}
+      </span>
+    {/if}
     <Separator orientation="vertical" />
     {@render children()}
   </div>
