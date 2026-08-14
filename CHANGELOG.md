@@ -2,6 +2,22 @@
 
 All notable changes to Mermaid Code are documented here.
 
+## [v0.5.0] - 2026-08-13
+
+### Added
+
+- **AI Agent panel**: built-in Claude Code integration — chat with Claude Code directly inside the app without switching to a terminal; supports multi-turn conversations, session history, and resuming previous sessions per folder
+- **Tool use visibility**: tool calls and their results are displayed inline in the conversation as collapsible items, showing the tool name, input, and output
+- **Token usage and cost**: output token count and cumulative USD cost are shown per session
+- **Permission mode selector**: choose between Manual, Edit automatically, Plan, and Auto modes for each session; dynamically switchable mid-session
+- **Permission request UI**: Claude pauses before executing potentially dangerous operations and shows an inline permission request; users can allow or deny each action, with an optional message to guide Claude on what to do instead
+- **Recent agent working directories**: folder picker in the Agent panel remembers recently used directories for quick switching
+- **Active file name in Navbar**: displays the current diagram file name (without extension) in the top navigation bar
+
+### Changed
+
+- **Presentation mode**: all toolbar overlays are now hidden in presentation mode for a clean fullscreen view
+
 ## [v0.4.7] - 2026-08-10
 
 ### Fixed
