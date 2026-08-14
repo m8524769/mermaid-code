@@ -566,7 +566,7 @@
       <!-- Permission mode selector -->
       <div class="ml-auto">
         <Popover.Root>
-          <Popover.Trigger class="flex items-center">
+          <Popover.Trigger disabled={isProcessing} class="flex items-center">
             <Button
               size="sm"
               variant="ghost"
