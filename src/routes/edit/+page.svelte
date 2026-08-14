@@ -396,10 +396,12 @@
         <Resizable.Pane minSize={15} class="relative flex h-full flex-1 flex-col overflow-hidden">
           <View {panZoomState} shouldShowGrid={validatedState.current.grid} />
           <div class="absolute top-0 left-5 hidden md:block">
-            <ToggleEditorButton
-              collapsed={isEditorCollapsed}
-              ontoggle={() =>
-                isEditorCollapsed ? editorPane?.expand() : editorPane?.collapse()} />
+            {#if !isPresentationMode}
+              <ToggleEditorButton
+                collapsed={isEditorCollapsed}
+                ontoggle={() =>
+                  isEditorCollapsed ? editorPane?.expand() : editorPane?.collapse()} />
+            {/if}
           </div>
           <div class="absolute top-0 right-0">
             <PanZoomToolbar
@@ -407,8 +409,10 @@
               onPresentationToggle={togglePresentationMode}
               {isPresentationMode} />
           </div>
-          <div class="absolute right-0 bottom-0"><VersionSecurityToolbar /></div>
-          <div class="absolute bottom-0 left-0 sm:left-5"><SyncRoughToolbar /></div>
+          {#if !isPresentationMode}
+            <div class="absolute right-0 bottom-0"><VersionSecurityToolbar /></div>
+            <div class="absolute bottom-0 left-0 sm:left-5"><SyncRoughToolbar /></div>
+          {/if}
         </Resizable.Pane>
         <Resizable.Handle class="ml-1 hidden opacity-0 sm:block" />
         <Resizable.Pane
