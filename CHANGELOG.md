@@ -2,7 +2,7 @@
 
 All notable changes to Mermaid Code are documented here.
 
-## [v0.5.0] - 2026-08-13
+## [v0.5.0] - 2026-08-14
 
 ### Added
 
