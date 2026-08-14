@@ -243,6 +243,7 @@ pub fn run() {
             agent::send_agent_message,
             agent::kill_agent_run,
             agent::respond_agent_permission,
+            agent::set_agent_permission_mode,
             agent::list_folder_sessions,
             agent::load_session_history,
             agent::delete_session,

@@ -220,6 +220,18 @@
     localStorage.setItem(PERMISSION_MODE_KEY, permissionMode);
   });
 
+  async function setPermissionMode(m: PermissionMode) {
+    permissionMode = m;
+    if (runId) {
+      try {
+        const { invoke } = await import('@tauri-apps/api/core');
+        await invoke('set_agent_permission_mode', { runId, mode: m });
+      } catch (e) {
+        console.error('[agent] setPermissionMode error:', e);
+      }
+    }
+  }
+
   let inputText = $state('');
   let sending = $state(false);
   let imeSkipNextEnter = false;
@@ -569,7 +581,7 @@
               {@const ModeIcon = m.icon}
               <Popover.Close class="contents">
                 <button
-                  onclick={() => (permissionMode = m.value)}
+                  onclick={() => setPermissionMode(m.value)}
                   class="flex w-full items-start gap-3 rounded-md px-2 py-2 text-left hover:bg-muted {permissionMode ===
                   m.value
                     ? 'bg-muted/60'

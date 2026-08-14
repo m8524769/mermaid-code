@@ -36,6 +36,8 @@ pub trait AgentDriver: Send {
     fn parse_line(&mut self, line: &str) -> Vec<DriverEvent>;
     /// Encodes a permission response payload. Returns None if unsupported.
     fn build_permission_response(&self, request_id: &str, approved: bool, tool_input: Option<&Value>, deny_message: Option<&str>) -> Option<String>;
+    /// Encodes a set_permission_mode request. Returns None if unsupported.
+    fn build_set_permission_mode(&self, _mode: &str) -> Option<String> { None }
 }
 
 fn make_driver(agent_type: &str) -> Option<Box<dyn AgentDriver>> {
@@ -292,6 +294,15 @@ impl AgentDriver for ClaudeCodeDriver {
                 "request_id": request_id,
                 "response": inner,
             }
+        });
+        Some(serde_json::to_string(&msg).unwrap())
+    }
+
+    fn build_set_permission_mode(&self, mode: &str) -> Option<String> {
+        let msg = serde_json::json!({
+            "type": "control_request",
+            "request_id": uuid::Uuid::new_v4().to_string(),
+            "request": { "subtype": "set_permission_mode", "mode": mode }
         });
         Some(serde_json::to_string(&msg).unwrap())
     }
@@ -1167,5 +1178,24 @@ pub async fn respond_agent_permission(
             .ok_or("Driver does not support permission responses")?;
         (line, run.stdin_tx.clone())
     }; // lock released here
+    tx.send(line).await.map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn set_agent_permission_mode(
+    app: AppHandle,
+    run_id: String,
+    mode: String,
+) -> Result<(), String> {
+    let state = app.state::<AgentManagerState>();
+    let (line, tx) = {
+        let mgr = state.0.lock().await;
+        let run = mgr.runs.get(&run_id).ok_or("Run not found")?;
+        let line = run
+            .driver
+            .build_set_permission_mode(&mode)
+            .ok_or("Driver does not support permission mode switching")?;
+        (line, run.stdin_tx.clone())
+    };
     tx.send(line).await.map_err(|e| e.to_string())
 }
