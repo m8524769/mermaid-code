@@ -699,10 +699,13 @@ const handleWatchEvent = async (event: import('$/util/fileSystem').WatchEvent): 
         tabs = tabs.filter((t) => t.id !== tab.id);
         if (activeTabId === tab.id) {
           const next = tabs[0] ?? null;
-          activeTabId = next?.id ?? null;
           if (next) {
+            activeTabId = next.id;
             updateCode(next.code, { updateDiagram: true });
           } else {
+            const draft = makeDraftTab();
+            tabs = [draft];
+            activeTabId = DRAFT_TAB_ID;
             updateCode('', { updateDiagram: true });
           }
         }
