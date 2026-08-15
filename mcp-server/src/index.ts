@@ -80,6 +80,7 @@ function createMcpServer(): McpServer {
 
 // Stateless Streamable HTTP — one transport per request
 Bun.serve({
+  hostname: '127.0.0.1',
   port: MCP_HTTP_PORT,
   async fetch(req: Request): Promise<Response> {
     const url = new URL(req.url);
