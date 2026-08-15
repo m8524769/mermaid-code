@@ -605,6 +605,15 @@ fn sanitize_path(folder_path: &str) -> String {
         .collect()
 }
 
+fn validate_session_id(session_id: &str) -> Result<(), String> {
+    // Session IDs must be UUIDs — reject anything that could cause path traversal
+    if session_id.chars().all(|c| c.is_ascii_hexdigit() || c == '-') && !session_id.is_empty() {
+        Ok(())
+    } else {
+        Err(format!("Invalid session_id: {session_id}"))
+    }
+}
+
 #[derive(Serialize)]
 pub struct SessionInfo {
     pub session_id: String,
@@ -913,6 +922,7 @@ pub async fn load_session_history(
 ) -> Result<Vec<HistoryMessage>, String> {
     match agent_type.as_str() {
         "claude-code" => {
+            validate_session_id(&session_id)?;
             let home = app.path().home_dir().map_err(|e| e.to_string())?;
             let key = sanitize_path(&folder_path);
             let path = home
@@ -1101,6 +1111,7 @@ pub async fn delete_session(
 ) -> Result<(), String> {
     match agent_type.as_str() {
         "claude-code" => {
+            validate_session_id(&session_id)?;
             let home = app.path().home_dir().map_err(|e| e.to_string())?;
             let key = sanitize_path(&folder_path);
             let path = home
