@@ -660,6 +660,34 @@ const handleWatchEvent = async (event: import('$/util/fileSystem').WatchEvent): 
   // Check if any open tab was affected
   const kind = event.type;
   if (typeof kind === 'object' && 'modify' in kind) {
+    if ((kind as any).modify?.kind === 'rename') {
+      // macOS fires modify.rename when a file is moved to Trash or renamed
+      const { exists } = await import('@tauri-apps/plugin-fs');
+      for (const p of event.paths) {
+        if (await exists(p)) continue; // file still exists — sidebar rename already updated tab path
+        const affected = tabs.filter(
+          (t) => t.path === p || t.path.startsWith(p + '/') || t.path.startsWith(p + '\\')
+        );
+        for (const tab of affected) {
+          notify(`"${tab.name}" was deleted externally`);
+          tabs = tabs.filter((t) => t.id !== tab.id);
+          if (activeTabId === tab.id) {
+            const next = tabs[0] ?? null;
+            if (next) {
+              activeTabId = next.id;
+              updateCode(next.code, { updateDiagram: true });
+            } else {
+              const draft = makeDraftTab();
+              tabs = [draft];
+              activeTabId = DRAFT_TAB_ID;
+              updateCode('', { updateDiagram: true });
+            }
+          }
+        }
+        thumbnailCache.invalidate(p);
+      }
+      return;
+    }
     // File content changed externally
     for (const p of event.paths) {
       const tab = tabs.find((t) => t.path === p);
