@@ -1061,7 +1061,7 @@ pub async fn load_session_history(
 }
 
 #[tauri::command]
-pub async fn check_agent_cli(_app: AppHandle, agent_type: String) -> bool {
+pub async fn check_agent_cli(app: AppHandle, agent_type: String) -> bool {
     let cmd_name = match agent_type.as_str() {
         "claude-code" => "claude",
         _ => return false,
