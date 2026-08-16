@@ -97,7 +97,6 @@ impl AgentDriver for ClaudeCodeDriver {
         }
         #[cfg(target_os = "windows")]
         let mut cmd = {
-            use std::os::windows::process::CommandExt;
             const CREATE_NO_WINDOW: u32 = 0x08000000;
             let mut c = Command::new("cmd");
             c.args(["/c", "claude"]);
@@ -1062,14 +1061,13 @@ pub async fn load_session_history(
 }
 
 #[tauri::command]
-pub async fn check_agent_cli(app: AppHandle, agent_type: String) -> bool {
+pub async fn check_agent_cli(_app: AppHandle, agent_type: String) -> bool {
     let cmd_name = match agent_type.as_str() {
         "claude-code" => "claude",
         _ => return false,
     };
     #[cfg(target_os = "windows")]
     {
-        use std::os::windows::process::CommandExt;
         const CREATE_NO_WINDOW: u32 = 0x08000000;
         tokio::process::Command::new("where")
             .arg(cmd_name)
