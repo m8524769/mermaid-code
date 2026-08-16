@@ -83,6 +83,10 @@ Bun.serve({
   hostname: '127.0.0.1',
   port: MCP_HTTP_PORT,
   async fetch(req: Request): Promise<Response> {
+    // Reject browser-originated requests to prevent CSRF
+    if (req.headers.get('origin')) {
+      return new Response('Forbidden', { status: 403 });
+    }
     const url = new URL(req.url);
     if (url.pathname === '/mcp') {
       const transport = new WebStandardStreamableHTTPServerTransport({
