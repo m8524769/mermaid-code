@@ -31,7 +31,14 @@ export default defineConfig({
     devtoolsJson()
   ],
   envPrefix: 'MERMAID_',
-  server: { port: 3000, host: true },
+  server: {
+    port: 3000,
+    host: true,
+    watch: {
+      // Cargo locks loaded DLLs on Windows; Tauri handles Rust rebuilds itself.
+      ignored: ['**/src-tauri/target/**']
+    }
+  },
   preview: { port: 3000, host: true },
   // Vitest otherwise resolves Svelte's server build, where $effect is a no-op.
   resolve: process.env.VITEST ? { conditions: ['browser'] } : undefined,
