@@ -133,10 +133,10 @@ impl McpServer {
             cmd.spawn().ok()
         });
 
-        // Verify sidecar is listening, retrying up to 3 seconds
+        // Verify sidecar is listening, retrying up to 5 seconds
         if mcp_process.is_some() {
             let mut reachable = false;
-            for _ in 0..12 {
+            for _ in 0..20 {
                 tokio::time::sleep(std::time::Duration::from_millis(250)).await;
                 if tokio::net::TcpStream::connect(format!("127.0.0.1:{MCP_SERVER_PORT}"))
                     .await
