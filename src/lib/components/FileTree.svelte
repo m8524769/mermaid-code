@@ -62,11 +62,11 @@
   const isActive = (path: string) =>
     fileState.tabs.find((t) => t.id === fileState.activeTabId)?.path === path;
 
-  const focus = (el: HTMLElement) => {
+  const focus = (el: HTMLElement, isDir: boolean) => {
     const input = el as HTMLInputElement;
     input.focus();
     const value = input.value;
-    const dotIndex = value.lastIndexOf('.');
+    const dotIndex = !isDir ? value.lastIndexOf('.') : -1;
     const end = dotIndex > 0 ? dotIndex : value.length;
     input.setSelectionRange(0, end);
   };
@@ -124,7 +124,7 @@
             if (e.key === 'Escape') renamingPath = null;
             e.stopPropagation();
           }}
-          use:focus />
+          use:focus={node.isDir} />
       {:else}
         <span class="min-w-0 flex-1 truncate">{node.name}</span>
         {#if !node.isDir && fileState.tabs.find((t) => t.path === node.path)?.isDirty}
