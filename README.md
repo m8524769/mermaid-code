@@ -131,6 +131,8 @@ claude mcp add --transport http mermaid-code-mcp http://localhost:37079/mcp
 → The diagram appears instantly in Mermaid Code's Draft tab
 ```
 
+> If your prompt triggers tools from other MCP servers (such as Figma MCP), that is expected — Mermaid Code MCP does not enforce its use. If you encounter tool conflicts, try phrasing your prompt as "Generate the mmd diagram within Mermaid Code app".
+
 ---
 
 ## Development Requirements

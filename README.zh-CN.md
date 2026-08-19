@@ -114,6 +114,16 @@ claude mcp add --transport http mermaid-code-mcp http://localhost:37079/mcp
 → Mermaid Code 检测到文件内容变更，自动刷新当前图表
 ```
 
+**使用样例 —— 预览生成的图表（不保存到文件）：**
+
+```
+"生成一个关于用户注册流程的图表"
+→ Agent 生成 Mermaid 代码并调用 preview_diagram
+→ Mermaid Code 直接展示生成的图表（Mermaid 代码位于 Draft 标签页中，用户可自行选择是否需要将其保存到文件）
+```
+
+> 若您的提示词触发了其他 MCP 的工具（例如 Figma MCP），这是正常现象 —— Mermaid Code MCP 不会强制要求 AI Agent 使用它，如果遇到工具冲突，可以尝试将提示词强调为：“在 Mermaid Code 中生成 mmd 图表”。
+
 ---
 
 ## 开发环境要求
