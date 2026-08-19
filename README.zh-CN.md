@@ -76,7 +76,7 @@ brew install --cask mermaid-code
 Mermaid Code 内置了一个完整的 [MCP](https://modelcontextprotocol.io) 服务器，这意味着 AI Agent 可直接与 Mermaid Code 进行交互。
 
 **如何启用 MCP 服务器：**
-打开 Mermaid Code → 点击左上角的菜单按钮 → 切换 **MCP Server** 状态为打开，随后 MCP 服务器将启动并监听 `http://localhost:37079/mcp`。
+打开 Mermaid Code → 点击左上角的菜单按钮 → 切换 **MCP Server** 状态为打开，随后 MCP 服务器将启动并监听 `http://localhost:37079/mcp`。（无需在您的机器上安装 Node.js 或 Python 环境）
 
 **配置 MCP 客户端**（例如 Claude Code，Cursor，Windsurf）：
 

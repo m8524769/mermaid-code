@@ -85,7 +85,7 @@ brew install --cask mermaid-code
 Mermaid Code includes a built-in [MCP](https://modelcontextprotocol.io) server that lets AI agents interact with the app directly.
 
 **Enable the MCP server:**
-Open Mermaid Code → click the menu icon → toggle **MCP Server** on. The server starts on `http://localhost:37079/mcp`.
+Open Mermaid Code → click the menu icon → toggle **MCP Server** on. The server starts on `http://localhost:37079/mcp`. (No need to install Node.js or Python environment on your machine)
 
 **Configure your MCP client** (e.g. Claude Code, Cursor, Windsurf):
 
