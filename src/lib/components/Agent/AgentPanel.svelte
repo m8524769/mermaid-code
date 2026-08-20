@@ -12,6 +12,7 @@
   import { renderMarkdown, renderMarkdownSync } from '$lib/util/markdown';
   import { untrack } from 'svelte';
   import ClaudeIcon from '~icons/logos/claude-icon';
+  import OpenAIIcon from '~icons/logos/openai-icon';
   import SyncAltIcon from '~icons/material-symbols/sync-alt-rounded';
   import CheckIcon from '~icons/material-symbols/check-rounded';
   import HistoryIcon from '~icons/material-symbols/history-rounded';
@@ -34,8 +35,8 @@
   }
 
   const agents: AgentOption[] = [
-    { id: 'claude-code', label: 'Claude Code', icon: ClaudeIcon }
-    // { id: 'codex', label: 'Codex', icon: OpenAIIcon }
+    { id: 'claude-code', label: 'Claude Code', icon: ClaudeIcon },
+    { id: 'codex', label: 'Codex', icon: OpenAIIcon }
   ];
 
   // Start event listener for agent events
@@ -795,15 +796,19 @@
         class="flex items-center gap-3 border-t border-red-400/40 bg-red-50/80 px-3 py-2.5 dark:bg-red-950/30">
         <div class="flex min-w-0 flex-1 flex-col gap-0.5">
           <span class="text-xs font-medium text-red-800 dark:text-red-300"
-            >Claude Code CLI not installed</span>
+            >{selectedAgent.label} CLI not installed</span>
           <span class="text-xs text-red-700/70 dark:text-red-400/70">
             <button
               class="underline underline-offset-2 hover:text-red-800 dark:hover:text-red-300"
               onclick={async () => {
                 const { open } = await import('@tauri-apps/plugin-shell');
-                await open('https://docs.anthropic.com/en/docs/claude-code/getting-started');
+                const url =
+                  selectedAgentId === 'codex'
+                    ? 'https://github.com/openai/codex'
+                    : 'https://docs.anthropic.com/en/docs/claude-code/getting-started';
+                await open(url);
               }}>
-              Get started with Claude Code →
+              Get started with {selectedAgent.label} →
             </button>
           </span>
         </div>

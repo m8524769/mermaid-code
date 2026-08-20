@@ -26,14 +26,33 @@ pub enum DriverEvent {
 
 // ── Driver trait ──────────────────────────────────────────────────────────────
 
+/// Result of parsing one line from the agent's stdout: events for the frontend
+/// plus any messages the driver needs to write back to the agent's stdin
+/// (used by bidirectional protocols like Codex's JSON-RPC handshake).
+#[derive(Default)]
+pub struct DriverOutput {
+    pub events: Vec<DriverEvent>,
+    pub stdin_writes: Vec<String>,
+}
+
+impl DriverOutput {
+    fn events(events: Vec<DriverEvent>) -> Self {
+        Self { events, stdin_writes: vec![] }
+    }
+}
+
 pub trait AgentDriver: Send {
     /// Returns a configured Command ready to spawn, or None for HTTP-based drivers.
-    fn spawn_command(&self, config: &SessionConfig) -> Option<Command>;
-    /// Encodes a user turn as a stdin/HTTP payload. Returns None if multi-turn is unsupported.
-    fn build_user_message(&self, _content: &str) -> Option<String> { None }
+    /// Takes `&mut self` so drivers can capture spawn config (cwd, permission mode,
+    /// resume id) for use during the protocol handshake in parse_line.
+    fn spawn_command(&mut self, config: &SessionConfig) -> Option<Command>;
+    /// Encodes a user turn as a stdin/HTTP payload. `session_id` is the known
+    /// session/thread id for follow-up turns (None on the first turn). Returns
+    /// None if multi-turn is unsupported.
+    fn build_user_message(&mut self, _content: &str, _session_id: Option<&str>) -> Option<String> { None }
     /// Encodes an interrupt signal. Returns None if unsupported.
     fn build_interrupt(&self) -> Option<String> { None }
-    fn parse_line(&mut self, line: &str) -> Vec<DriverEvent>;
+    fn parse_line(&mut self, line: &str) -> DriverOutput;
     /// Encodes a permission response payload. Returns None if unsupported.
     fn build_permission_response(&self, request_id: &str, approved: bool, tool_input: Option<&Value>, deny_message: Option<&str>) -> Option<String>;
     /// Encodes a set_permission_mode request. Returns None if unsupported.
@@ -43,6 +62,7 @@ pub trait AgentDriver: Send {
 fn make_driver(agent_type: &str) -> Option<Box<dyn AgentDriver>> {
     match agent_type {
         "claude-code" => Some(Box::new(ClaudeCodeDriver::new())),
+        "codex" => Some(Box::new(CodexDriver::new())),
         _ => None,
     }
 }
@@ -69,7 +89,7 @@ impl ClaudeCodeDriver {
 }
 
 impl AgentDriver for ClaudeCodeDriver {
-    fn spawn_command(&self, config: &SessionConfig) -> Option<Command> {
+    fn spawn_command(&mut self, config: &SessionConfig) -> Option<Command> {
         let mut args = vec![
             "--output-format".to_string(),
             "stream-json".to_string(),
@@ -117,7 +137,7 @@ impl AgentDriver for ClaudeCodeDriver {
         Some(cmd)
     }
 
-    fn build_user_message(&self, content: &str) -> Option<String> {
+    fn build_user_message(&mut self, content: &str, _session_id: Option<&str>) -> Option<String> {
         let msg = serde_json::json!({
             "type": "user",
             "message": {
@@ -137,9 +157,9 @@ impl AgentDriver for ClaudeCodeDriver {
         Some(serde_json::to_string(&msg).unwrap())
     }
 
-    fn parse_line(&mut self, line: &str) -> Vec<DriverEvent> {
+    fn parse_line(&mut self, line: &str) -> DriverOutput {
         let Ok(val) = serde_json::from_str::<Value>(line) else {
-            return vec![];
+            return DriverOutput::default();
         };
         let mut events = vec![];
         match val["type"].as_str() {
@@ -258,16 +278,20 @@ impl AgentDriver for ClaudeCodeDriver {
                 self.current_msg_id = None;
                 self.streaming_text.clear();
                 self.streamed_ids.clear();
+                let is_error = val["is_error"].as_bool().unwrap_or(false);
                 events.push(DriverEvent::Exit {
-                    is_error: val["is_error"].as_bool().unwrap_or(false),
+                    is_error,
                     cost_usd: val["total_cost_usd"].as_f64(),
                     error: val["error"].as_str().map(str::to_string),
-                    is_final: false, // driver always yields turn-complete; read_loop decides finality
+                    // Claude's exit event means the process is ending; is_final
+                    // mirrors is_error so the read_loop can break on errors
+                    // without needing to rewrite the event.
+                    is_final: is_error,
                 });
             }
             _ => {}
         }
-        events
+        DriverOutput::events(events)
     }
 
     fn build_permission_response(&self, request_id: &str, approved: bool, tool_input: Option<&Value>, deny_message: Option<&str>) -> Option<String> {
@@ -307,6 +331,396 @@ impl AgentDriver for ClaudeCodeDriver {
     }
 }
 
+// ── CodexDriver ───────────────────────────────────────────────────────────────
+// Drives `codex app-server --stdio`, a JSON-RPC-style protocol (no `jsonrpc`
+// field, newline-delimited). Handshake: initialize → initialized → thread/start
+// → turn/start. Follow-up turns and approval responses reuse the same instance,
+// so thread/turn ids and the approval-id map stay consistent.
+
+#[derive(PartialEq)]
+enum CodexState {
+    Uninitialized,
+    Initializing,
+    Starting,
+    Ready,
+}
+
+pub struct CodexDriver {
+    state: CodexState,
+    next_id: i64,
+    thread_id: Option<String>,
+    current_turn_id: Option<String>,
+    resume_id: Option<String>,
+    permission_mode: Option<String>,
+    pending_prompt: Option<String>,
+    // request id (int) we assigned to initialize / thread-start, to route responses
+    init_id: Option<i64>,
+    start_id: Option<i64>,
+    // frontend request_id (itemId) → codex server request id (int)
+    approval_ids: HashMap<String, i64>,
+    // itemId → accumulated streaming text
+    streaming: HashMap<String, String>,
+}
+
+impl CodexDriver {
+    fn new() -> Self {
+        Self {
+            state: CodexState::Uninitialized,
+            next_id: 1,
+            thread_id: None,
+            current_turn_id: None,
+            resume_id: None,
+            permission_mode: None,
+            pending_prompt: None,
+            init_id: None,
+            start_id: None,
+            approval_ids: HashMap::new(),
+            streaming: HashMap::new(),
+        }
+    }
+
+    fn take_id(&mut self) -> i64 {
+        let id = self.next_id;
+        self.next_id += 1;
+        id
+    }
+
+    /// Map the UI permission mode to codex (approvalPolicy, sandbox) — both
+    /// kebab-case strings on the request side.
+    /// Note: only `untrusted` reliably fires approval prompts; `on-request`
+    /// lets the model decide and silently sandbox-denies out-of-workspace writes.
+    fn policy_and_sandbox(&self) -> (&'static str, &'static str) {
+        match self.permission_mode.as_deref() {
+            Some("auto") => ("never", "danger-full-access"),
+            Some("acceptEdits") => ("on-request", "workspace-write"),
+            Some("plan") => ("on-request", "read-only"),
+            // manual (frontend sends null) / default → ask before every command;
+            // approved commands run unsandboxed so the write actually succeeds.
+            _ => ("untrusted", "read-only"),
+        }
+    }
+
+    fn turn_start_json(&self, thread_id: &str, prompt: &str) -> String {
+        // Note: id here is not tracked; the turn is observed via notifications.
+        serde_json::json!({
+            "id": format!("turn-{}", thread_id),
+            "method": "turn/start",
+            "params": {
+                "threadId": thread_id,
+                "input": [{ "type": "text", "text": prompt }]
+            }
+        })
+        .to_string()
+    }
+}
+
+impl AgentDriver for CodexDriver {
+    fn spawn_command(&mut self, config: &SessionConfig) -> Option<Command> {
+        // Capture spawn config for use during the handshake (parse_line builds
+        // thread/start from these).
+        self.permission_mode = config.permission_mode.clone();
+        self.resume_id = config.resume_session_id.clone();
+
+        #[cfg(target_os = "windows")]
+        let mut cmd = {
+            const CREATE_NO_WINDOW: u32 = 0x08000000;
+            let mut c = Command::new("cmd");
+            c.args(["/c", "codex", "app-server", "--stdio"]);
+            c.creation_flags(CREATE_NO_WINDOW);
+            c
+        };
+        #[cfg(not(target_os = "windows"))]
+        let mut cmd = {
+            let mut c = Command::new("codex");
+            c.args(["app-server", "--stdio"]);
+            c
+        };
+        if let Some(ref path) = config.shell_path {
+            cmd.env("PATH", path);
+        }
+        // Inject mermaid-code MCP server if MCP is running — codex accepts
+        // per-run -c overrides in dotted TOML path=value format, no temp file needed.
+        if let Some(ref mcp_path) = config.mcp_config_path {
+            if let Ok(content) = std::fs::read_to_string(mcp_path) {
+                if let Ok(json) = serde_json::from_str::<Value>(&content) {
+                    let srv = &json["mcpServers"]["mermaid-code-mcp"];
+                    if let (Some(url), Some(auth)) = (
+                        srv["url"].as_str(),
+                        srv["headers"]["Authorization"].as_str(),
+                    ) {
+                        let token = auth.strip_prefix("Bearer ").unwrap_or(auth);
+                        cmd.args([
+                            "-c", &format!("mcp_servers.mermaid-code-mcp.url={url:?}"),
+                            "-c", &format!("mcp_servers.mermaid-code-mcp.http_headers.Authorization=\"Bearer {token}\""),
+                        ]);
+                    }
+                }
+            }
+        }
+        Some(cmd)
+    }
+
+    fn build_user_message(&mut self, content: &str, _session_id: Option<&str>) -> Option<String> {
+        match self.state {
+            CodexState::Ready => {
+                // Follow-up turn — process already initialized.
+                let tid = self.thread_id.clone()?;
+                Some(self.turn_start_json(&tid, content))
+            }
+            CodexState::Uninitialized => {
+                // First turn: kick off the handshake, queue the prompt.
+                self.pending_prompt = Some(content.to_string());
+                let id = self.take_id();
+                self.init_id = Some(id);
+                self.state = CodexState::Initializing;
+                Some(
+                    serde_json::json!({
+                        "id": id,
+                        "method": "initialize",
+                        "params": {
+                            "clientInfo": { "name": "mermaid-code", "version": "1.0.0" },
+                            "capabilities": { "experimentalApi": true }
+                        }
+                    })
+                    .to_string(),
+                )
+            }
+            // Handshake in progress — queue; flushed by parse_line once Ready.
+            _ => {
+                self.pending_prompt = Some(content.to_string());
+                None
+            }
+        }
+    }
+
+    fn build_interrupt(&self) -> Option<String> {
+        let tid = self.thread_id.as_ref()?;
+        let turn = self.current_turn_id.as_ref()?;
+        Some(
+            serde_json::json!({
+                "id": "interrupt",
+                "method": "turn/interrupt",
+                "params": { "threadId": tid, "turnId": turn }
+            })
+            .to_string(),
+        )
+    }
+
+    fn parse_line(&mut self, line: &str) -> DriverOutput {
+        let Ok(val) = serde_json::from_str::<Value>(line) else {
+            return DriverOutput::default();
+        };
+        let mut out = DriverOutput::default();
+
+        let method = val["method"].as_str();
+        let has_id = !val["id"].is_null();
+
+        // ── Server→client request (approval) ──
+        if let (Some(method), true) = (method, has_id) {
+            if method == "item/commandExecution/requestApproval"
+                || method == "item/fileChange/requestApproval"
+            {
+                let codex_id = val["id"].as_i64().unwrap_or(0);
+                let p = &val["params"];
+                let item_id = p["itemId"].as_str().unwrap_or("").to_string();
+                self.approval_ids.insert(item_id.clone(), codex_id);
+                let (tool_name, tool_input) = if method.contains("commandExecution") {
+                    ("Bash".to_string(), serde_json::json!({ "command": p["command"].as_str().unwrap_or("") }))
+                } else {
+                    let path = p["changes"][0]["path"].as_str().unwrap_or("");
+                    ("Edit".to_string(), serde_json::json!({ "file_path": path }))
+                };
+                out.events.push(DriverEvent::PermissionRequest {
+                    request_id: item_id,
+                    tool_name,
+                    tool_input,
+                });
+            }
+            return out;
+        }
+
+        // ── Response to one of our requests ──
+        if has_id && !val["result"].is_null() {
+            let id = val["id"].as_i64();
+            if id == self.init_id && self.state == CodexState::Initializing {
+                self.init_id = None;
+                // Send `initialized` then thread/start (or thread/resume).
+                out.stdin_writes.push(serde_json::json!({ "method": "initialized" }).to_string());
+                let start_id = self.take_id();
+                self.start_id = Some(start_id);
+                self.state = CodexState::Starting;
+                if let Some(ref rid) = self.resume_id {
+                    out.stdin_writes.push(
+                        serde_json::json!({
+                            "id": start_id,
+                            "method": "thread/resume",
+                            "params": { "threadId": rid }
+                        })
+                        .to_string(),
+                    );
+                } else {
+                    let (policy, sandbox) = self.policy_and_sandbox();
+                    out.stdin_writes.push(
+                        serde_json::json!({
+                            "id": start_id,
+                            "method": "thread/start",
+                            "params": { "approvalPolicy": policy, "sandbox": sandbox }
+                        })
+                        .to_string(),
+                    );
+                }
+                return out;
+            }
+            if id == self.start_id && self.state == CodexState::Starting {
+                self.start_id = None;
+                if let Some(tid) = val["result"]["thread"]["id"].as_str() {
+                    self.thread_id = Some(tid.to_string());
+                    self.state = CodexState::Ready;
+                    out.events.push(DriverEvent::SessionReady { session_id: tid.to_string() });
+                    if let Some(prompt) = self.pending_prompt.take() {
+                        out.stdin_writes.push(self.turn_start_json(tid, &prompt));
+                    }
+                }
+                return out;
+            }
+            return out;
+        }
+
+        // ── Error response ──
+        if has_id && !val["error"].is_null() {
+            let msg = val["error"]["message"].as_str().unwrap_or("Codex error").to_string();
+            out.events.push(DriverEvent::Exit { is_error: true, cost_usd: None, error: Some(msg), is_final: false });
+            return out;
+        }
+
+        // ── Notification ──
+        let Some(method) = method else { return out; };
+        let p = &val["params"];
+        match method {
+            "turn/started" => {
+                if let Some(tid) = p["turn"]["id"].as_str() {
+                    self.current_turn_id = Some(tid.to_string());
+                }
+            }
+            "item/agentMessage/delta" => {
+                let item_id = p["itemId"].as_str().unwrap_or("").to_string();
+                let delta = p["delta"].as_str().unwrap_or("");
+                let acc = self.streaming.entry(item_id.clone()).or_default();
+                acc.push_str(delta);
+                out.events.push(DriverEvent::Message {
+                    id: item_id,
+                    text: acc.clone(),
+                    thinking: None,
+                    is_streaming: true,
+                });
+            }
+            "item/started" => {
+                let item = &p["item"];
+                let item_id = item["id"].as_str().unwrap_or("").to_string();
+                match item["type"].as_str() {
+                    Some("commandExecution") => {
+                        out.events.push(DriverEvent::ToolUse {
+                            id: item_id,
+                            name: "Bash".to_string(),
+                            input: serde_json::json!({ "command": item["command"].as_str().unwrap_or("") }),
+                        });
+                    }
+                    Some("fileChange") => {
+                        let path = item["changes"][0]["path"].as_str().unwrap_or("");
+                        out.events.push(DriverEvent::ToolUse {
+                            id: item_id,
+                            name: "Edit".to_string(),
+                            input: serde_json::json!({ "file_path": path }),
+                        });
+                    }
+                    _ => {}
+                }
+            }
+            "item/completed" => {
+                let item = &p["item"];
+                let item_id = item["id"].as_str().unwrap_or("").to_string();
+                match item["type"].as_str() {
+                    Some("agentMessage") => {
+                        let text = item["text"].as_str().unwrap_or("").to_string();
+                        self.streaming.remove(&item_id);
+                        out.events.push(DriverEvent::Message {
+                            id: item_id,
+                            text,
+                            thinking: None,
+                            is_streaming: false,
+                        });
+                    }
+                    Some("commandExecution") => {
+                        let output = item["aggregatedOutput"].as_str().unwrap_or("").to_string();
+                        out.events.push(DriverEvent::ToolResult { tool_use_id: item_id, content: output });
+                    }
+                    Some("fileChange") => {
+                        out.events.push(DriverEvent::ToolResult { tool_use_id: item_id, content: "File updated".to_string() });
+                    }
+                    _ => {}
+                }
+            }
+            "thread/tokenUsage/updated" => {
+                // `last` is the most-recent response's breakdown, matching the
+                // frontend's per-turn live counter (reset to 0 on turn exit).
+                if let Some(t) = p["tokenUsage"]["last"]["outputTokens"].as_u64() {
+                    out.events.push(DriverEvent::Usage { output_tokens: t });
+                }
+            }
+            "turn/completed" => {
+                self.current_turn_id = None;
+                match p["turn"]["status"].as_str() {
+                    Some("failed") => {
+                        let msg = p["turn"]["error"]["message"].as_str().unwrap_or("Turn failed").to_string();
+                        out.events.push(DriverEvent::Exit { is_error: true, cost_usd: None, error: Some(msg), is_final: false });
+                    }
+                    _ => {
+                        // completed or interrupted — turn is done, process stays alive
+                        out.events.push(DriverEvent::Exit { is_error: false, cost_usd: None, error: None, is_final: false });
+                    }
+                }
+            }
+            _ => {}
+        }
+        out
+    }
+
+    fn build_permission_response(&self, request_id: &str, approved: bool, _tool_input: Option<&Value>, _deny_message: Option<&str>) -> Option<String> {
+        let codex_id = self.approval_ids.get(request_id)?;
+        Some(
+            serde_json::json!({
+                "id": codex_id,
+                "result": { "decision": if approved { "accept" } else { "decline" } }
+            })
+            .to_string(),
+        )
+    }
+
+    fn build_set_permission_mode(&self, mode: &str) -> Option<String> {
+        let tid = self.thread_id.as_ref()?;
+        // sandboxPolicy is an object (tagged union) on thread/settings/update,
+        // unlike the kebab string used on thread/start.
+        let (approval_policy, sandbox_policy) = match mode {
+            "auto"         => ("never",    serde_json::json!({ "type": "dangerFullAccess" })),
+            "acceptEdits"  => ("on-request", serde_json::json!({ "type": "workspaceWrite" })),
+            "plan"         => ("on-request", serde_json::json!({ "type": "readOnly" })),
+            _              => ("untrusted", serde_json::json!({ "type": "readOnly" })),
+        };
+        Some(
+            serde_json::json!({
+                "id": "settings-update",
+                "method": "thread/settings/update",
+                "params": {
+                    "threadId": tid,
+                    "approvalPolicy": approval_policy,
+                    "sandboxPolicy": sandbox_policy
+                }
+            })
+            .to_string(),
+        )
+    }
+}
+
 // ── Session config ────────────────────────────────────────────────────────────
 
 pub struct SessionConfig {
@@ -325,7 +739,7 @@ pub struct AgentRun {
     pub folder_path: String,
     pub session_id: Option<String>,
     pub stdin_tx: mpsc::Sender<String>,
-    pub driver: Box<dyn AgentDriver>,
+    pub driver: std::sync::Arc<Mutex<Box<dyn AgentDriver>>>,
     #[allow(dead_code)] // drop triggers kill_rx in the read loop's select!
     pub kill_tx: tokio::sync::oneshot::Sender<()>,
 }
@@ -399,11 +813,13 @@ pub async fn start_agent_session(
 
     let run_id = uuid::Uuid::new_v4().to_string();
 
-    // Build driver (two instances: one for read_loop, one stored in AgentRun for permission responses)
+    // Build the driver — a single shared instance used by both the read loop
+    // (parse_line) and the command handlers (build_* methods), so protocol
+    // state (Codex thread/turn ids, approval-id map) stays consistent.
     let agent_type = params.agent_type.as_str();
     let driver: Box<dyn AgentDriver> = make_driver(agent_type)
         .ok_or_else(|| format!("Unknown agent type: {}", params.agent_type))?;
-    let driver_for_run: Box<dyn AgentDriver> = make_driver(agent_type).unwrap();
+    let driver = std::sync::Arc::new(Mutex::new(driver));
 
     let shell_path = {
         let state = app.state::<AgentManagerState>();
@@ -426,6 +842,8 @@ pub async fn start_agent_session(
 
     // Spawn process
     let mut cmd = driver
+        .lock()
+        .await
         .spawn_command(&config)
         .ok_or_else(|| format!("Agent type '{}' uses HTTP mode, not yet implemented", params.agent_type))?;
     let mut child = cmd
@@ -444,7 +862,7 @@ pub async fn start_agent_session(
     let (stdin_tx, mut stdin_rx) = mpsc::channel::<String>(32);
 
     // Send initial prompt message
-    if let Some(initial) = driver.build_user_message(&config.prompt) {
+    if let Some(initial) = driver.lock().await.build_user_message(&config.prompt, config.resume_session_id.as_deref()) {
         let _ = stdin_tx.send(initial).await;
     }
 
@@ -462,6 +880,8 @@ pub async fn start_agent_session(
     // Spawn read loop; child is moved in to keep the process alive
     let rid = run_id.clone();
     let app2 = app.clone();
+    let stdin_tx_for_loop = stdin_tx.clone();
+    let driver_for_loop = driver.clone();
     let (kill_tx, kill_rx) = tokio::sync::oneshot::channel::<()>();
 
     // Register run
@@ -474,14 +894,14 @@ pub async fn start_agent_session(
             folder_path: params.folder_path,
             session_id: None,
             stdin_tx,
-            driver: driver_for_run,
+            driver,
             kill_tx,
         });
     }
     let mcp_path_for_kill = mcp_config_path.clone();
     tokio::spawn(async move {
         tokio::select! {
-            _ = read_loop(app2.clone(), rid.clone(), stdout, driver, mcp_config_path) => {}
+            _ = read_loop(app2.clone(), rid.clone(), stdout, driver_for_loop, mcp_config_path, stdin_tx_for_loop) => {}
             _ = kill_rx => {
                 child.kill().await.ok();
                 let _ = app2.emit("agent-event", serde_json::json!({
@@ -504,8 +924,9 @@ async fn read_loop(
     app: AppHandle,
     run_id: String,
     stdout: tokio::process::ChildStdout,
-    mut driver: Box<dyn AgentDriver>,
+    driver: std::sync::Arc<Mutex<Box<dyn AgentDriver>>>,
     mcp_config_path: Option<PathBuf>,
+    stdin_tx: mpsc::Sender<String>,
 ) {
     let mut lines = BufReader::new(stdout).lines();
     let mut in_turn = false;
@@ -516,7 +937,13 @@ async fn read_loop(
         let line = line.trim().to_string();
         if line.is_empty() { continue; }
 
-        for event in driver.parse_line(&line) {
+        let output = driver.lock().await.parse_line(&line);
+        // Pump any protocol replies the driver needs to send back to the agent
+        for msg in output.stdin_writes {
+            let _ = stdin_tx.send(msg).await;
+        }
+
+        for event in output.events {
             had_any_output = true;
             in_turn = true;
 
@@ -529,17 +956,18 @@ async fn read_loop(
                 }
             }
 
-            // Rewrite Exit events: errors are final; normal turn-complete is not final
+            // Let the driver control is_final directly — Claude sets it on
+            // error exits (process ending), Codex keeps it false on turn
+            // failures (process stays alive for the next turn).
             let event = match event {
-                DriverEvent::Exit { is_error, cost_usd, error, .. } => {
+                DriverEvent::Exit { is_error, cost_usd, error, is_final } => {
                     in_turn = false;
-                    let is_final = is_error;
                     DriverEvent::Exit { is_error, cost_usd, error, is_final }
                 }
                 other => other,
             };
 
-            let should_break = matches!(&event, DriverEvent::Exit { is_error: true, .. });
+            let should_break = matches!(&event, DriverEvent::Exit { is_final: true, .. });
             let _ = app.emit("agent-event", serde_json::json!({
                 "run_id": &run_id,
                 "event": &event,
@@ -604,6 +1032,64 @@ fn sanitize_path(folder_path: &str) -> String {
         .collect()
 }
 
+// ── Codex session helpers ──────────────────────────────────────────────────────
+// Codex stores sessions at ~/.codex/sessions/YYYY/MM/DD/rollout-<ts>-<id>.jsonl,
+// organized by date (not by project). Each file's `session_meta` line records
+// the cwd, which we use to filter sessions by working folder.
+
+fn codex_collect_jsonl(dir: &std::path::Path, out: &mut Vec<PathBuf>) {
+    if let Ok(rd) = std::fs::read_dir(dir) {
+        for entry in rd.flatten() {
+            let p = entry.path();
+            if p.is_dir() {
+                codex_collect_jsonl(&p, out);
+            } else if p.extension().map(|x| x == "jsonl").unwrap_or(false) {
+                out.push(p);
+            }
+        }
+    }
+}
+
+/// Read a rollout file's cwd, session_id, and first user prompt.
+fn codex_session_meta(path: &std::path::Path) -> Option<(String, String, Option<String>)> {
+    let content = std::fs::read_to_string(path).ok()?;
+    let mut cwd = None;
+    let mut sid = None;
+    let mut first_prompt = None;
+    for line in content.lines() {
+        let Ok(v) = serde_json::from_str::<Value>(line) else { continue };
+        match v["type"].as_str() {
+            Some("session_meta") => {
+                cwd = v["payload"]["cwd"].as_str().map(str::to_string);
+                sid = v["payload"]["session_id"].as_str().map(str::to_string);
+            }
+            Some("event_msg") if v["payload"]["type"].as_str() == Some("user_message") => {
+                if first_prompt.is_none() {
+                    first_prompt = v["payload"]["message"]
+                        .as_str()
+                        .map(|s| s.trim().to_string())
+                        .filter(|s| !s.is_empty());
+                }
+            }
+            _ => {}
+        }
+    }
+    Some((cwd?, sid?, first_prompt))
+}
+
+/// Locate a codex rollout file by session id (files are named `*-<id>.jsonl`).
+fn codex_find_session_file(root: &std::path::Path, session_id: &str) -> Option<PathBuf> {
+    let mut files = vec![];
+    codex_collect_jsonl(root, &mut files);
+    let suffix = format!("{session_id}.jsonl");
+    files.into_iter().find(|p| {
+        p.file_name()
+            .and_then(|n| n.to_str())
+            .map(|n| n.ends_with(&suffix))
+            .unwrap_or(false)
+    })
+}
+
 fn validate_session_id(session_id: &str) -> Result<(), String> {
     // Session IDs must be UUIDs — reject anything that could cause path traversal
     if session_id.chars().all(|c| c.is_ascii_hexdigit() || c == '-') && !session_id.is_empty() {
@@ -655,6 +1141,29 @@ pub async fn list_folder_sessions(
             // Most recently modified first
             sessions.sort_by(|a, b| b.0.cmp(&a.0));
             Ok(sessions.into_iter().map(|(_, s)| s).collect())
+        }
+        "codex" => {
+            let home = app.path().home_dir().map_err(|e| e.to_string())?;
+            let root = home.join(".codex").join("sessions");
+            let folder = folder_path.clone();
+            tokio::task::spawn_blocking(move || {
+                let mut files = vec![];
+                codex_collect_jsonl(&root, &mut files);
+                let mut sessions: Vec<(std::time::SystemTime, SessionInfo)> = vec![];
+                for path in files {
+                    let Some((cwd, sid, first_prompt)) = codex_session_meta(&path) else { continue };
+                    if cwd != folder { continue; }
+                    let mtime = std::fs::metadata(&path)
+                        .ok()
+                        .and_then(|m| m.modified().ok())
+                        .unwrap_or(std::time::SystemTime::UNIX_EPOCH);
+                    sessions.push((mtime, SessionInfo { session_id: sid, first_prompt }));
+                }
+                sessions.sort_by(|a, b| b.0.cmp(&a.0));
+                Ok(sessions.into_iter().map(|(_, s)| s).collect())
+            })
+            .await
+            .map_err(|e| e.to_string())?
         }
         _ => Err(format!("Agent type '{agent_type}' does not support session listing")),
     }
@@ -1056,6 +1565,109 @@ pub async fn load_session_history(
             }
             Ok(messages)
         }
+        "codex" => {
+            validate_session_id(&session_id)?;
+            let home = app.path().home_dir().map_err(|e| e.to_string())?;
+            let root = home.join(".codex").join("sessions");
+            let sid = session_id.clone();
+            tokio::task::spawn_blocking(move || {
+                let Some(path) = codex_find_session_file(&root, &sid) else {
+                    return Ok(vec![]);
+                };
+                let content = std::fs::read_to_string(&path).map_err(|e| e.to_string())?;
+                let mut messages: Vec<HistoryMessage> = vec![];
+                let mut pending_tool: std::collections::HashMap<String, HistoryMessage> = std::collections::HashMap::new();
+
+                for line in content.lines() {
+                    let Ok(v) = serde_json::from_str::<serde_json::Value>(line) else { continue };
+                    let t = v["type"].as_str().unwrap_or("");
+                    let p = &v["payload"];
+
+                    match t {
+                        "event_msg" => match p["type"].as_str() {
+                            Some("user_message") => {
+                                if let Some(text) = p["message"].as_str() {
+                                    if !text.trim().is_empty() {
+                                        messages.push(HistoryMessage { role: "user".into(), text: text.to_string(), thinking: None, tool_name: None, tool_use_id: None, opened_files: vec![], selected_code: vec![] });
+                                    }
+                                }
+                            }
+                            Some("agent_message") => {
+                                if let Some(text) = p["message"].as_str() {
+                                    if !text.trim().is_empty() {
+                                        messages.push(HistoryMessage { role: "assistant".into(), text: text.to_string(), thinking: None, tool_name: None, tool_use_id: None, opened_files: vec![], selected_code: vec![] });
+                                    }
+                                }
+                            }
+                            Some("mcp_tool_call_end") => {
+                                let call_id = p["call_id"].as_str().unwrap_or("");
+                                if let Some(tool_use) = pending_tool.remove(call_id) {
+                                    let result = if let Some(ok) = p["result"].get("Ok") {
+                                        ok["content"].as_array()
+                                            .and_then(|a| a.first())
+                                            .and_then(|b| b["text"].as_str())
+                                            .unwrap_or("").to_string()
+                                    } else {
+                                        p["result"]["Err"].as_str().unwrap_or("error").to_string()
+                                    };
+                                    let tuid = tool_use.tool_use_id.clone();
+                                    messages.push(tool_use);
+                                    messages.push(HistoryMessage { role: "tool_result".into(), text: result, thinking: None, tool_name: None, tool_use_id: tuid, opened_files: vec![], selected_code: vec![] });
+                                }
+                            }
+                            Some("mcp_tool_call_begin") => {
+                                let call_id = p["call_id"].as_str().unwrap_or("").to_string();
+                                let inv = &p["invocation"];
+                                let tool_name = format!("{}_{}", inv["server"].as_str().unwrap_or("mcp"), inv["tool"].as_str().unwrap_or("tool"));
+                                let input = serde_json::to_string_pretty(&inv["arguments"]).unwrap_or_default();
+                                pending_tool.insert(call_id.clone(), HistoryMessage { role: "tool_use".into(), text: input, thinking: None, tool_name: Some(tool_name), tool_use_id: Some(call_id), opened_files: vec![], selected_code: vec![] });
+                            }
+                            _ => {}
+                        },
+                        "response_item" => match p["type"].as_str() {
+                            // Tool call: parse function name + arguments
+                            Some("function_call") => {
+                                let call_id = p["call_id"].as_str().unwrap_or("").to_string();
+                                let name = p["name"].as_str().unwrap_or("tool").to_string();
+                                let args_str = p["arguments"].as_str().unwrap_or("{}");
+                                // Use raw argument string as the tool input text
+                                let input_text = serde_json::from_str::<serde_json::Value>(args_str)
+                                    .ok()
+                                    .and_then(|v| {
+                                        // For exec_command show the command; others show full args
+                                        v["cmd"].as_str().map(|s| serde_json::json!({"command": s}).to_string())
+                                        .or_else(|| serde_json::to_string_pretty(&v).ok())
+                                    })
+                                    .unwrap_or_else(|| args_str.to_string());
+                                pending_tool.insert(call_id.clone(), HistoryMessage {
+                                    role: "tool_use".into(),
+                                    text: input_text,
+                                    thinking: None,
+                                    tool_name: Some(name),
+                                    tool_use_id: Some(call_id),
+                                    opened_files: vec![], selected_code: vec![],
+                                });
+                            }
+                            // Tool result
+                            Some("function_call_output") => {
+                                let call_id = p["call_id"].as_str().unwrap_or("");
+                                if let Some(tool_use) = pending_tool.remove(call_id) {
+                                    let output = p["output"].as_str().unwrap_or("").to_string();
+                                    let tuid = tool_use.tool_use_id.clone();
+                                    messages.push(tool_use);
+                                    messages.push(HistoryMessage { role: "tool_result".into(), text: output, thinking: None, tool_name: None, tool_use_id: tuid, opened_files: vec![], selected_code: vec![] });
+                                }
+                            }
+                            _ => {}
+                        },
+                        _ => {}
+                    }
+                }
+                Ok(messages)
+            })
+            .await
+            .map_err(|e| e.to_string())?
+        }
         _ => Err(format!("Agent type '{agent_type}' does not support session history")),
     }
 }
@@ -1064,6 +1676,7 @@ pub async fn load_session_history(
 pub async fn check_agent_cli(app: AppHandle, agent_type: String) -> bool {
     let cmd_name = match agent_type.as_str() {
         "claude-code" => "claude",
+        "codex" => "codex",
         _ => return false,
     };
     #[cfg(target_os = "windows")]
@@ -1119,6 +1732,20 @@ pub async fn delete_session(
                 .join(format!("{session_id}.jsonl"));
             tokio::fs::remove_file(&path).await.map_err(|e| e.to_string())
         }
+        "codex" => {
+            validate_session_id(&session_id)?;
+            let home = app.path().home_dir().map_err(|e| e.to_string())?;
+            let root = home.join(".codex").join("sessions");
+            let sid = session_id.clone();
+            tokio::task::spawn_blocking(move || {
+                match codex_find_session_file(&root, &sid) {
+                    Some(path) => std::fs::remove_file(&path).map_err(|e| e.to_string()),
+                    None => Err("Session file not found".to_string()),
+                }
+            })
+            .await
+            .map_err(|e| e.to_string())?
+        }
         _ => Err(format!("Agent type '{agent_type}' does not support session deletion")),
     }
 }
@@ -1142,19 +1769,19 @@ pub async fn send_agent_message(
     content: String,
 ) -> Result<(), String> {
     let state = app.state::<AgentManagerState>();
-    let (line, tx) = {
+    let (driver, session_id, tx) = {
         let mgr = state.0.lock().await;
         let run = mgr.runs.get(&run_id).ok_or("Run not found")?;
-        let line = if content == "\x03" {
-            run.driver
-                .build_interrupt()
-                .ok_or("Driver does not support interrupt")?
+        (run.driver.clone(), run.session_id.clone(), run.stdin_tx.clone())
+    };
+    let line = {
+        let mut d = driver.lock().await;
+        if content == "\x03" {
+            d.build_interrupt().ok_or("Driver does not support interrupt")?
         } else {
-            run.driver
-                .build_user_message(&content)
+            d.build_user_message(&content, session_id.as_deref())
                 .ok_or("Driver does not support multi-turn messages")?
-        };
-        (line, run.stdin_tx.clone())
+        }
     };
     tx.send(line).await.map_err(|e| e.to_string())
 }
@@ -1178,15 +1805,16 @@ pub async fn respond_agent_permission(
     deny_message: Option<String>,
 ) -> Result<(), String> {
     let state = app.state::<AgentManagerState>();
-    let (line, tx) = {
+    let (driver, tx) = {
         let mgr = state.0.lock().await;
         let run = mgr.runs.get(&run_id).ok_or("Run not found")?;
-        let line = run
-            .driver
-            .build_permission_response(&request_id, approved, tool_input.as_ref(), deny_message.as_deref())
-            .ok_or("Driver does not support permission responses")?;
-        (line, run.stdin_tx.clone())
-    }; // lock released here
+        (run.driver.clone(), run.stdin_tx.clone())
+    };
+    let line = driver
+        .lock()
+        .await
+        .build_permission_response(&request_id, approved, tool_input.as_ref(), deny_message.as_deref())
+        .ok_or("Driver does not support permission responses")?;
     tx.send(line).await.map_err(|e| e.to_string())
 }
 
@@ -1197,14 +1825,15 @@ pub async fn set_agent_permission_mode(
     mode: String,
 ) -> Result<(), String> {
     let state = app.state::<AgentManagerState>();
-    let (line, tx) = {
+    let (driver, tx) = {
         let mgr = state.0.lock().await;
         let run = mgr.runs.get(&run_id).ok_or("Run not found")?;
-        let line = run
-            .driver
-            .build_set_permission_mode(&mode)
-            .ok_or("Driver does not support permission mode switching")?;
-        (line, run.stdin_tx.clone())
+        (run.driver.clone(), run.stdin_tx.clone())
     };
+    let line = driver
+        .lock()
+        .await
+        .build_set_permission_mode(&mode)
+        .ok_or("Driver does not support permission mode switching")?;
     tx.send(line).await.map_err(|e| e.to_string())
 }
