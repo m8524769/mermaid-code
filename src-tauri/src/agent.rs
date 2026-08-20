@@ -385,17 +385,13 @@ impl CodexDriver {
         id
     }
 
-    /// Map the UI permission mode to codex (approvalPolicy, sandbox) — both
-    /// kebab-case strings on the request side.
-    /// Note: only `untrusted` reliably fires approval prompts; `on-request`
-    /// lets the model decide and silently sandbox-denies out-of-workspace writes.
+    /// Map the UI permission mode to codex (approvalPolicy, sandbox). Both are
+    /// kebab-case strings on the request side. Aligned with codex's runtime
     fn policy_and_sandbox(&self) -> (&'static str, &'static str) {
         match self.permission_mode.as_deref() {
-            Some("auto") => ("never", "danger-full-access"),
-            Some("acceptEdits") => ("on-request", "workspace-write"),
+            Some("auto") => ("on-request", "workspace-write"),
+            Some("acceptEdits") => ("untrusted", "workspace-write"),
             Some("plan") => ("on-request", "read-only"),
-            // manual (frontend sends null) / default → ask before every command;
-            // approved commands run unsandboxed so the write actually succeeds.
             _ => ("untrusted", "read-only"),
         }
     }
@@ -549,17 +545,17 @@ impl AgentDriver for CodexDriver {
                 let start_id = self.take_id();
                 self.start_id = Some(start_id);
                 self.state = CodexState::Starting;
+                let (policy, sandbox) = self.policy_and_sandbox();
                 if let Some(ref rid) = self.resume_id {
                     out.stdin_writes.push(
                         serde_json::json!({
                             "id": start_id,
                             "method": "thread/resume",
-                            "params": { "threadId": rid }
+                            "params": { "threadId": rid, "approvalPolicy": policy, "sandbox": sandbox }
                         })
                         .to_string(),
                     );
                 } else {
-                    let (policy, sandbox) = self.policy_and_sandbox();
                     out.stdin_writes.push(
                         serde_json::json!({
                             "id": start_id,
@@ -633,6 +629,14 @@ impl AgentDriver for CodexDriver {
                             input: serde_json::json!({ "file_path": path }),
                         });
                     }
+                    Some("mcpToolCall") => {
+                        let name = format!("{}_{}", item["server"].as_str().unwrap_or("mcp"), item["tool"].as_str().unwrap_or("tool"));
+                        out.events.push(DriverEvent::ToolUse {
+                            id: item_id,
+                            name,
+                            input: item["arguments"].clone(),
+                        });
+                    }
                     _ => {}
                 }
             }
@@ -656,6 +660,15 @@ impl AgentDriver for CodexDriver {
                     }
                     Some("fileChange") => {
                         out.events.push(DriverEvent::ToolResult { tool_use_id: item_id, content: "File updated".to_string() });
+                    }
+                    Some("mcpToolCall") => {
+                        // Extract text from result.content, or fall back to error
+                        let content = item["result"]["Ok"]["content"][0]["text"].as_str()
+                            .or_else(|| item["result"]["content"][0]["text"].as_str())
+                            .map(|s| s.to_string())
+                            .or_else(|| item["result"]["Err"].as_str().map(|s| s.to_string()))
+                            .unwrap_or_default();
+                        out.events.push(DriverEvent::ToolResult { tool_use_id: item_id, content });
                     }
                     _ => {}
                 }
@@ -701,10 +714,10 @@ impl AgentDriver for CodexDriver {
         // sandboxPolicy is an object (tagged union) on thread/settings/update,
         // unlike the kebab string used on thread/start.
         let (approval_policy, sandbox_policy) = match mode {
-            "auto"         => ("never",    serde_json::json!({ "type": "dangerFullAccess" })),
-            "acceptEdits"  => ("on-request", serde_json::json!({ "type": "workspaceWrite" })),
+            "auto"         => ("on-request", serde_json::json!({ "type": "workspaceWrite" })),
+            "acceptEdits"  => ("untrusted",  serde_json::json!({ "type": "workspaceWrite" })),
             "plan"         => ("on-request", serde_json::json!({ "type": "readOnly" })),
-            _              => ("untrusted", serde_json::json!({ "type": "readOnly" })),
+            _              => ("untrusted",  serde_json::json!({ "type": "readOnly" })),
         };
         Some(
             serde_json::json!({
