@@ -411,7 +411,11 @@
   }
 </script>
 
-<Card title={selectedAgent.label} isOpen isClosable={false} icon={{ component: selectedAgentIcon }}>
+<Card
+  title={selectedAgent.label}
+  isOpen
+  isClosable={false}
+  icon={{ component: selectedAgentIcon, class: 'ml-1' }}>
   {#snippet actions()}
     <div class="flex items-center gap-1">
       <Popover.Root bind:open={agentPopoverOpen}>
