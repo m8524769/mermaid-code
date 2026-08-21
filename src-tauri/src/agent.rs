@@ -387,6 +387,11 @@ impl CodexDriver {
 
     /// Map the UI permission mode to codex (approvalPolicy, sandbox). Both are
     /// kebab-case strings on the request side. Aligned with codex's runtime
+    /// approval modes:
+    /// - manual  → untrusted   + read-only      (ask before every action)
+    /// - auto    → on-request  + workspace-write (auto in workspace, ask for outside/network)
+    /// - acceptEdits → untrusted + workspace-write (edit workspace freely, ask for the rest)
+    /// - plan    → on-request  + read-only       (read-only exploration)
     fn policy_and_sandbox(&self) -> (&'static str, &'static str) {
         match self.permission_mode.as_deref() {
             Some("auto") => ("on-request", "workspace-write"),
