@@ -1666,11 +1666,60 @@ pub async fn load_session_history(
                                     opened_files: vec![], selected_code: vec![],
                                 });
                             }
-                            // Tool result
+                            // Tool result — output is a string OR an array of content blocks
                             Some("function_call_output") => {
                                 let call_id = p["call_id"].as_str().unwrap_or("");
                                 if let Some(tool_use) = pending_tool.remove(call_id) {
-                                    let output = p["output"].as_str().unwrap_or("").to_string();
+                                    let output = match &p["output"] {
+                                        v if v.is_string() => v.as_str().unwrap_or("").to_string(),
+                                        v if v.is_array() => v.as_array().unwrap()
+                                            .iter()
+                                            .filter_map(|b| b["text"].as_str())
+                                            .collect::<Vec<_>>()
+                                            .join("\n"),
+                                        _ => String::new(),
+                                    };
+                                    let tuid = tool_use.tool_use_id.clone();
+                                    messages.push(tool_use);
+                                    messages.push(HistoryMessage { role: "tool_result".into(), text: output, thinking: None, tool_name: None, tool_use_id: tuid, opened_files: vec![], selected_code: vec![] });
+                                }
+                            }
+                            // Custom tool call (Windows/newer codex encodes exec as a custom tool
+                            // whose `input` is a freeform JS string rather than JSON args).
+                            Some("custom_tool_call") => {
+                                let call_id = p["call_id"].as_str().unwrap_or("").to_string();
+                                let name = p["name"].as_str().unwrap_or("tool").to_string();
+                                let raw = p["input"].as_str().unwrap_or("");
+                                // Try to pull a "cmd" out of an embedded {...} JSON object for a
+                                // clean command label; otherwise fall back to the raw input.
+                                let input_text = raw
+                                    .find('{')
+                                    .and_then(|s| raw[s..].rfind('}').map(|e| &raw[s..s + e + 1]))
+                                    .and_then(|obj| serde_json::from_str::<serde_json::Value>(obj).ok())
+                                    .and_then(|v| v["cmd"].as_str().map(|c| serde_json::json!({ "command": c }).to_string()))
+                                    .unwrap_or_else(|| raw.to_string());
+                                pending_tool.insert(call_id.clone(), HistoryMessage {
+                                    role: "tool_use".into(),
+                                    text: input_text,
+                                    thinking: None,
+                                    tool_name: Some(name),
+                                    tool_use_id: Some(call_id),
+                                    opened_files: vec![], selected_code: vec![],
+                                });
+                            }
+                            Some("custom_tool_call_output") => {
+                                let call_id = p["call_id"].as_str().unwrap_or("");
+                                if let Some(tool_use) = pending_tool.remove(call_id) {
+                                    // output is either a plain string or an array of {text} parts
+                                    let output = match &p["output"] {
+                                        v if v.is_string() => v.as_str().unwrap_or("").to_string(),
+                                        v if v.is_array() => v.as_array().unwrap()
+                                            .iter()
+                                            .filter_map(|b| b["text"].as_str())
+                                            .collect::<Vec<_>>()
+                                            .join("\n"),
+                                        _ => String::new(),
+                                    };
                                     let tuid = tool_use.tool_use_id.clone();
                                     messages.push(tool_use);
                                     messages.push(HistoryMessage { role: "tool_result".into(), text: output, thinking: None, tool_name: None, tool_use_id: tuid, opened_files: vec![], selected_code: vec![] });
