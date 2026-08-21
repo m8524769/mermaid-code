@@ -869,12 +869,14 @@
               2
             )}</pre>
         {/if}
-        <textarea
-          bind:value={denyMessage}
-          placeholder="Tell Claude what to do instead"
-          rows="1"
-          class="mb-2 w-full resize-none rounded-md bg-muted px-2 py-1.5 text-xs outline-none placeholder:text-muted-foreground/60"
-        ></textarea>
+        {#if selectedAgentId !== 'codex'}
+          <textarea
+            bind:value={denyMessage}
+            placeholder="Tell Claude what to do instead"
+            rows="1"
+            class="mb-2 w-full resize-none rounded-md bg-muted px-2 py-1.5 text-xs outline-none placeholder:text-muted-foreground/60"
+          ></textarea>
+        {/if}
         <div class="flex gap-2">
           <button
             onclick={allowPermission}
