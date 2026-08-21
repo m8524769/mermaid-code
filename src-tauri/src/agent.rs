@@ -1753,13 +1753,21 @@ pub async fn delete_session(
         "codex" => {
             validate_session_id(&session_id)?;
             let home = app.path().home_dir().map_err(|e| e.to_string())?;
-            let root = home.join(".codex").join("sessions");
+            let sessions_root = home.join(".codex").join("sessions");
+            let archived_root = home.join(".codex").join("archived_sessions");
             let sid = session_id.clone();
             tokio::task::spawn_blocking(move || {
-                match codex_find_session_file(&root, &sid) {
-                    Some(path) => std::fs::remove_file(&path).map_err(|e| e.to_string()),
-                    None => Err("Session file not found".to_string()),
-                }
+                let Some(path) = codex_find_session_file(&sessions_root, &sid) else {
+                    return Err("Session file not found".to_string());
+                };
+                // Archive rather than delete: move to archived_sessions (flat, no
+                // date subpath — matching codex's own archive layout). Since
+                // list_folder_sessions only scans sessions/, archived sessions
+                // drop off the list.
+                let file_name = path.file_name().ok_or("Invalid session path")?;
+                std::fs::create_dir_all(&archived_root).map_err(|e| e.to_string())?;
+                let dest = archived_root.join(file_name);
+                std::fs::rename(&path, &dest).map_err(|e| e.to_string())
             })
             .await
             .map_err(|e| e.to_string())?
