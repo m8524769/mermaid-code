@@ -13,7 +13,7 @@
   import { untrack } from 'svelte';
   import ClaudeIcon from '~icons/logos/claude-icon';
   import OpenAIIcon from '~icons/logos/openai-icon';
-  import SyncAltIcon from '~icons/material-symbols/sync-alt-rounded';
+  import SelectAgentIcon from '~icons/material-symbols/expand-more-rounded';
   import CheckIcon from '~icons/material-symbols/check-rounded';
   import HistoryIcon from '~icons/material-symbols/history-rounded';
   import AddIcon from '~icons/material-symbols/add-rounded';
@@ -416,8 +416,9 @@
     <div class="flex items-center gap-1">
       <Popover.Root bind:open={agentPopoverOpen}>
         <Popover.Trigger>
-          <Button size="icon" variant="ghost" title="Switch agent">
-            <SyncAltIcon />
+          <Button size="icon" variant="ghost" title="Select agent">
+            <SelectAgentIcon
+              class="transition-transform duration-150 {agentPopoverOpen ? 'rotate-180' : ''}" />
           </Button>
         </Popover.Trigger>
         <Popover.Content align="end" class="flex w-44 flex-col gap-0.5 p-1">
