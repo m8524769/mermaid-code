@@ -12,9 +12,9 @@ A local-first Mermaid diagram editor built on [Mermaid Live Editor](https://gith
 
 Mermaid Code is designed around AI-native diagram workflows.
 
-**Built-in AI Agent panel** — chat with Claude Code directly inside the app. Ask it to create, modify, or explain diagrams in your project folder. The agent has full access to your local files and the MCP server, so it can read your codebase, write `.mmd` files, and see the live preview — all without leaving Mermaid Code.
+**Built-in AI Agent panel** — chat with Claude Code or Codex directly inside the app. Ask it to create, modify, or explain diagrams in your project folder. The agent has full access to your local files and the MCP server, so it can read your codebase, write `.mmd` files, and see the live preview — all without leaving Mermaid Code.
 
-External AI agents (Codex, OpenCode, etc.) can also connect via the built-in MCP server to interact with the app, read your codebase, and write diagrams directly — no copy-pasting, no browser automation required.
+Other AI agents (OpenCode, Cursor, etc.) can also connect via the built-in MCP server to interact with the app, read your codebase, and write diagrams directly — no copy-pasting, no browser automation required.
 
 ```
 # Example: ask your AI agent to generate a diagram from code
@@ -48,7 +48,7 @@ brew install --cask mermaid-code
 
 ### AI Agent Panel
 
-- **Built-in Claude Code integration** — chat with Claude Code directly inside the app without switching windows
+- **Built-in Claude Code and Codex integration** — chat with either agent directly inside the app without switching windows
 - Multi-turn conversations with session history — resume previous sessions per folder
 - **Built-in MCP server** — lets AI agents interact with the app directly (see [MCP Server Integration](#mcp-server-integration-experimental))
 
