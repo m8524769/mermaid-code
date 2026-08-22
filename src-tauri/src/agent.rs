@@ -466,6 +466,37 @@ impl CodexDriver {
         Some(msg.to_string())
     }
 
+    /// When switching away from the currently-active thread, unsubscribe it so
+    /// codex can unload it. We hold one persistent connection and thread/resume
+    /// is additive — without this, every session switch leaves the prior thread
+    /// loaded in the codex process (visible via thread/loaded/list), accumulating
+    /// memory/background tasks over an app session. No-op when there's no active
+    /// thread or we're resuming the same one. The string id is ignored by the
+    /// response router (it matches only numeric ids).
+    fn build_unsubscribe_active(&self, next_resume_id: Option<&str>) -> Option<String> {
+        let cur = self.active_thread_id.as_deref()?;
+        if Some(cur) == next_resume_id {
+            return None;
+        }
+        Some(
+            serde_json::json!({
+                "id": "unsubscribe",
+                "method": "thread/unsubscribe",
+                "params": { "threadId": cur }
+            })
+            .to_string(),
+        )
+    }
+    /// Forget the active thread/run after it's been dropped (kill_agent_run).
+    /// Leaves the persistent process handshaked and ready for the next thread.
+    fn clear_active(&mut self) {
+        self.active_thread_id = None;
+        self.active_run_id = None;
+        self.current_turn_id = None;
+        self.pending_prompt = None;
+        self.pending_run_id = None;
+    }
+
     /// Map the UI permission mode to codex (approvalPolicy, sandbox). Both are
     /// kebab-case strings on the request side. Aligned with codex's runtime
     /// approval modes:
@@ -1096,6 +1127,11 @@ pub async fn start_agent_session(
             // Interrupt any in-flight turn before switching threads.
             if let Some(interrupt) = codex.build_interrupt() {
                 msgs.push(interrupt);
+            }
+            // Unsubscribe the thread we're leaving so codex can unload it
+            // (no-op when starting fresh or resuming the same thread).
+            if let Some(unsub) = codex.build_unsubscribe_active(params.resume_session_id.as_deref()) {
+                msgs.push(unsub);
             }
             let start = codex
                 .start_thread(
@@ -2208,11 +2244,23 @@ pub async fn kill_agent_run(app: AppHandle, run_id: String) -> Result<(), String
     // just drop the run mapping and interrupt any in-flight turn.
     if let Some(codex) = mgr.codex.as_mut() {
         if codex.run_ids.remove(&run_id) {
-            let interrupt = {
-                let d = codex.driver.lock().await;
-                d.build_interrupt()
+            // Interrupt the in-flight turn and unsubscribe the thread so codex
+            // can unload it (mirrors the switch path); then forget it locally.
+            let msgs = {
+                let mut d = codex.driver.lock().await;
+                let mut msgs: Vec<String> = vec![];
+                if let Some(interrupt) = d.build_interrupt() {
+                    msgs.push(interrupt);
+                }
+                if let Some(cx) = d.as_any_mut().downcast_mut::<CodexDriver>() {
+                    if let Some(unsub) = cx.build_unsubscribe_active(None) {
+                        msgs.push(unsub);
+                    }
+                    cx.clear_active();
+                }
+                msgs
             };
-            if let Some(msg) = interrupt {
+            for msg in msgs {
                 let _ = codex.stdin_tx.send(msg).await;
             }
             return Ok(());
