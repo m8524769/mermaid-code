@@ -248,6 +248,7 @@ pub fn run() {
             agent::load_session_history,
             agent::delete_session,
             agent::check_agent_cli,
+            agent::ensure_agent_ready,
         ])
         .setup(|app| {
             // macOS App menu (always first on macOS)

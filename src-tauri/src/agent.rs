@@ -33,11 +33,15 @@ pub enum DriverEvent {
 pub struct DriverOutput {
     pub events: Vec<DriverEvent>,
     pub stdin_writes: Vec<String>,
+    /// When set, the read loop emits these events under this run_id instead of
+    /// its own. The persistent Codex process uses this to route events to the
+    /// client run_id that currently owns the active thread.
+    pub run_id: Option<String>,
 }
 
 impl DriverOutput {
     fn events(events: Vec<DriverEvent>) -> Self {
-        Self { events, stdin_writes: vec![] }
+        Self { events, stdin_writes: vec![], run_id: None }
     }
 }
 
@@ -57,6 +61,8 @@ pub trait AgentDriver: Send {
     fn build_permission_response(&self, request_id: &str, approved: bool, tool_input: Option<&Value>, deny_message: Option<&str>) -> Option<String>;
     /// Encodes a set_permission_mode request. Returns None if unsupported.
     fn build_set_permission_mode(&self, _mode: &str) -> Option<String> { None }
+    /// Downcast hook so callers can reach driver-specific methods (Codex).
+    fn as_any_mut(&mut self) -> &mut dyn std::any::Any;
 }
 
 fn make_driver(agent_type: &str) -> Option<Box<dyn AgentDriver>> {
@@ -329,6 +335,8 @@ impl AgentDriver for ClaudeCodeDriver {
         });
         Some(serde_json::to_string(&msg).unwrap())
     }
+
+    fn as_any_mut(&mut self) -> &mut dyn std::any::Any { self }
 }
 
 // ── CodexDriver ───────────────────────────────────────────────────────────────
@@ -341,18 +349,20 @@ impl AgentDriver for ClaudeCodeDriver {
 enum CodexState {
     Uninitialized,
     Initializing,
-    Starting,
-    Ready,
+    Ready, // handshake done; can start/resume threads
 }
 
 pub struct CodexDriver {
     state: CodexState,
     next_id: i64,
-    thread_id: Option<String>,
+    // The currently-active conversation thread and the client run_id that owns it.
+    active_thread_id: Option<String>,
+    active_run_id: Option<String>,
     current_turn_id: Option<String>,
-    resume_id: Option<String>,
+    // Set while a thread/start|resume is in flight (for the active run).
     permission_mode: Option<String>,
     pending_prompt: Option<String>,
+    pending_run_id: Option<String>,
     // request id (int) we assigned to initialize / thread-start, to route responses
     init_id: Option<i64>,
     start_id: Option<i64>,
@@ -360,6 +370,8 @@ pub struct CodexDriver {
     approval_ids: HashMap<String, i64>,
     // itemId → accumulated streaming text
     streaming: HashMap<String, String>,
+    // management RPCs (thread/list, thread/archive): request id → response channel
+    pending_rpc: HashMap<i64, tokio::sync::oneshot::Sender<Value>>,
 }
 
 impl CodexDriver {
@@ -367,22 +379,91 @@ impl CodexDriver {
         Self {
             state: CodexState::Uninitialized,
             next_id: 1,
-            thread_id: None,
+            active_thread_id: None,
+            active_run_id: None,
             current_turn_id: None,
-            resume_id: None,
             permission_mode: None,
             pending_prompt: None,
+            pending_run_id: None,
             init_id: None,
             start_id: None,
             approval_ids: HashMap::new(),
             streaming: HashMap::new(),
+            pending_rpc: HashMap::new(),
         }
+    }
+
+    /// Register a management RPC: allocate an id + response channel. The caller
+    /// builds the request with this id, sends it, and awaits the receiver.
+    fn register_rpc(&mut self) -> (i64, tokio::sync::oneshot::Receiver<Value>) {
+        let id = self.take_id();
+        let (tx, rx) = tokio::sync::oneshot::channel();
+        self.pending_rpc.insert(id, tx);
+        (id, rx)
     }
 
     fn take_id(&mut self) -> i64 {
         let id = self.next_id;
         self.next_id += 1;
         id
+    }
+
+    fn is_ready(&self) -> bool {
+        self.state == CodexState::Ready
+    }
+
+    /// Kick off the one-time handshake (initialize). Sent at process spawn,
+    /// before any thread exists.
+    fn build_handshake(&mut self) -> String {
+        let id = self.take_id();
+        self.init_id = Some(id);
+        self.state = CodexState::Initializing;
+        serde_json::json!({
+            "id": id,
+            "method": "initialize",
+            "params": {
+                "clientInfo": { "name": "mermaid-code", "version": "1.0.0" },
+                "capabilities": { "experimentalApi": true }
+            }
+        })
+        .to_string()
+    }
+
+    /// Start (or resume) a thread on the persistent process and queue the first
+    /// turn. `run_id` is the client run_id that will own this thread's events.
+    /// Returns the thread/start|resume message to send, or None if not ready.
+    fn start_thread(
+        &mut self,
+        run_id: &str,
+        cwd: &str,
+        resume_id: Option<&str>,
+        permission_mode: Option<String>,
+        prompt: &str,
+    ) -> Option<String> {
+        if self.state != CodexState::Ready {
+            return None;
+        }
+        self.permission_mode = permission_mode;
+        self.pending_prompt = Some(prompt.to_string());
+        self.pending_run_id = Some(run_id.to_string());
+        self.active_run_id = Some(run_id.to_string());
+        let start_id = self.take_id();
+        self.start_id = Some(start_id);
+        let (policy, sandbox) = self.policy_and_sandbox();
+        let msg = if let Some(rid) = resume_id {
+            serde_json::json!({
+                "id": start_id,
+                "method": "thread/resume",
+                "params": { "threadId": rid, "cwd": cwd, "approvalPolicy": policy, "sandbox": sandbox }
+            })
+        } else {
+            serde_json::json!({
+                "id": start_id,
+                "method": "thread/start",
+                "params": { "cwd": cwd, "approvalPolicy": policy, "sandbox": sandbox }
+            })
+        };
+        Some(msg.to_string())
     }
 
     /// Map the UI permission mode to codex (approvalPolicy, sandbox). Both are
@@ -417,11 +498,8 @@ impl CodexDriver {
 
 impl AgentDriver for CodexDriver {
     fn spawn_command(&mut self, config: &SessionConfig) -> Option<Command> {
-        // Capture spawn config for use during the handshake (parse_line builds
-        // thread/start from these).
-        self.permission_mode = config.permission_mode.clone();
-        self.resume_id = config.resume_session_id.clone();
-
+        // The persistent process is spawned once; per-thread params (cwd,
+        // permission mode, resume id) are supplied later via start_thread.
         #[cfg(target_os = "windows")]
         let mut cmd = {
             const CREATE_NO_WINDOW: u32 = 0x08000000;
@@ -462,40 +540,14 @@ impl AgentDriver for CodexDriver {
     }
 
     fn build_user_message(&mut self, content: &str, _session_id: Option<&str>) -> Option<String> {
-        match self.state {
-            CodexState::Ready => {
-                // Follow-up turn — process already initialized.
-                let tid = self.thread_id.clone()?;
-                Some(self.turn_start_json(&tid, content))
-            }
-            CodexState::Uninitialized => {
-                // First turn: kick off the handshake, queue the prompt.
-                self.pending_prompt = Some(content.to_string());
-                let id = self.take_id();
-                self.init_id = Some(id);
-                self.state = CodexState::Initializing;
-                Some(
-                    serde_json::json!({
-                        "id": id,
-                        "method": "initialize",
-                        "params": {
-                            "clientInfo": { "name": "mermaid-code", "version": "1.0.0" },
-                            "capabilities": { "experimentalApi": true }
-                        }
-                    })
-                    .to_string(),
-                )
-            }
-            // Handshake in progress — queue; flushed by parse_line once Ready.
-            _ => {
-                self.pending_prompt = Some(content.to_string());
-                None
-            }
-        }
+        // Follow-up turn on the active thread (the persistent process is always
+        // handshaked and has an active thread before this is called).
+        let tid = self.active_thread_id.clone()?;
+        Some(self.turn_start_json(&tid, content))
     }
 
     fn build_interrupt(&self) -> Option<String> {
-        let tid = self.thread_id.as_ref()?;
+        let tid = self.active_thread_id.as_ref()?;
         let turn = self.current_turn_id.as_ref()?;
         Some(
             serde_json::json!({
@@ -512,6 +564,8 @@ impl AgentDriver for CodexDriver {
             return DriverOutput::default();
         };
         let mut out = DriverOutput::default();
+        // Route this line's events to the run_id that owns the active thread.
+        out.run_id = self.active_run_id.clone();
 
         let method = val["method"].as_str();
         let has_id = !val["id"].is_null();
@@ -543,40 +597,26 @@ impl AgentDriver for CodexDriver {
         // ── Response to one of our requests ──
         if has_id && !val["result"].is_null() {
             let id = val["id"].as_i64();
+            // Management RPC (thread/list, thread/archive) → route to its waiter.
+            if let Some(rpc_id) = id {
+                if let Some(tx) = self.pending_rpc.remove(&rpc_id) {
+                    let _ = tx.send(val["result"].clone());
+                    return DriverOutput::default();
+                }
+            }
+            // initialize response → send `initialized`, become Ready (no auto
+            // thread start; start_thread drives thread creation on demand).
             if id == self.init_id && self.state == CodexState::Initializing {
                 self.init_id = None;
-                // Send `initialized` then thread/start (or thread/resume).
+                self.state = CodexState::Ready;
                 out.stdin_writes.push(serde_json::json!({ "method": "initialized" }).to_string());
-                let start_id = self.take_id();
-                self.start_id = Some(start_id);
-                self.state = CodexState::Starting;
-                let (policy, sandbox) = self.policy_and_sandbox();
-                if let Some(ref rid) = self.resume_id {
-                    out.stdin_writes.push(
-                        serde_json::json!({
-                            "id": start_id,
-                            "method": "thread/resume",
-                            "params": { "threadId": rid, "approvalPolicy": policy, "sandbox": sandbox }
-                        })
-                        .to_string(),
-                    );
-                } else {
-                    out.stdin_writes.push(
-                        serde_json::json!({
-                            "id": start_id,
-                            "method": "thread/start",
-                            "params": { "approvalPolicy": policy, "sandbox": sandbox }
-                        })
-                        .to_string(),
-                    );
-                }
                 return out;
             }
-            if id == self.start_id && self.state == CodexState::Starting {
+            // thread/start|resume response → active thread ready; fire the queued turn.
+            if id == self.start_id {
                 self.start_id = None;
                 if let Some(tid) = val["result"]["thread"]["id"].as_str() {
-                    self.thread_id = Some(tid.to_string());
-                    self.state = CodexState::Ready;
+                    self.active_thread_id = Some(tid.to_string());
                     out.events.push(DriverEvent::SessionReady { session_id: tid.to_string() });
                     if let Some(prompt) = self.pending_prompt.take() {
                         out.stdin_writes.push(self.turn_start_json(tid, &prompt));
@@ -589,6 +629,13 @@ impl AgentDriver for CodexDriver {
 
         // ── Error response ──
         if has_id && !val["error"].is_null() {
+            // If it's a pending management RPC, unblock its waiter with null.
+            if let Some(rpc_id) = val["id"].as_i64() {
+                if let Some(tx) = self.pending_rpc.remove(&rpc_id) {
+                    let _ = tx.send(Value::Null);
+                    return DriverOutput::default();
+                }
+            }
             let msg = val["error"]["message"].as_str().unwrap_or("Codex error").to_string();
             out.events.push(DriverEvent::Exit { is_error: true, cost_usd: None, error: Some(msg), is_final: false });
             return out;
@@ -597,6 +644,13 @@ impl AgentDriver for CodexDriver {
         // ── Notification ──
         let Some(method) = method else { return out; };
         let p = &val["params"];
+        // Only surface events for the active thread (decision: single active
+        // thread at a time; stale/background thread events are dropped).
+        if let Some(tid) = p["threadId"].as_str() {
+            if self.active_thread_id.as_deref() != Some(tid) {
+                return DriverOutput::default();
+            }
+        }
         match method {
             "turn/started" => {
                 if let Some(tid) = p["turn"]["id"].as_str() {
@@ -667,11 +721,12 @@ impl AgentDriver for CodexDriver {
                         out.events.push(DriverEvent::ToolResult { tool_use_id: item_id, content: "File updated".to_string() });
                     }
                     Some("mcpToolCall") => {
-                        // Extract text from result.content, or fall back to error
-                        let content = item["result"]["Ok"]["content"][0]["text"].as_str()
-                            .or_else(|| item["result"]["content"][0]["text"].as_str())
+                        // v2 item: success payload in `result.content[]`, failure in
+                        // `error` (separate fields — not a Rust Result Ok/Err wrapper).
+                        let content = item["result"]["content"][0]["text"].as_str()
                             .map(|s| s.to_string())
-                            .or_else(|| item["result"]["Err"].as_str().map(|s| s.to_string()))
+                            .or_else(|| item["error"]["message"].as_str().map(|s| s.to_string()))
+                            .or_else(|| item["error"].as_str().map(|s| s.to_string()))
                             .unwrap_or_default();
                         out.events.push(DriverEvent::ToolResult { tool_use_id: item_id, content });
                     }
@@ -715,7 +770,7 @@ impl AgentDriver for CodexDriver {
     }
 
     fn build_set_permission_mode(&self, mode: &str) -> Option<String> {
-        let tid = self.thread_id.as_ref()?;
+        let tid = self.active_thread_id.as_ref()?;
         // sandboxPolicy is an object (tagged union) on thread/settings/update,
         // unlike the kebab string used on thread/start.
         let (approval_policy, sandbox_policy) = match mode {
@@ -737,6 +792,8 @@ impl AgentDriver for CodexDriver {
             .to_string(),
         )
     }
+
+    fn as_any_mut(&mut self) -> &mut dyn std::any::Any { self }
 }
 
 // ── Session config ────────────────────────────────────────────────────────────
@@ -762,8 +819,28 @@ pub struct AgentRun {
     pub kill_tx: tokio::sync::oneshot::Sender<()>,
 }
 
+/// The single persistent Codex `app-server` process. Started when Codex is
+/// first used, alive until app exit. Handles all Codex conversations (each is a
+/// thread) — new/resume reuse this process rather than spawning.
+pub struct CodexHandle {
+    pub stdin_tx: mpsc::Sender<String>,
+    pub driver: std::sync::Arc<Mutex<Box<dyn AgentDriver>>>,
+    /// Client run_ids routed to this process (one per session started here).
+    pub run_ids: std::collections::HashSet<String>,
+    #[allow(dead_code)]
+    pub kill_tx: tokio::sync::oneshot::Sender<()>,
+}
+
 pub struct AgentManager {
     runs: HashMap<String, AgentRun>,
+    /// Persistent Codex process (None until first Codex use / after crash).
+    codex: Option<CodexHandle>,
+    /// Serializes `ensure_codex_process` so two concurrent callers (e.g. the
+    /// CLI-check effect and the session-list effect firing on the same agent
+    /// switch) can't both pass the `codex.is_none()` check and spawn duplicate
+    /// processes — the loser's handle would get dropped, and its read-loop
+    /// cleanup would then wipe `codex = None`, breaking the survivor.
+    codex_starting: std::sync::Arc<Mutex<()>>,
     /// PATH captured from the user's login+interactive shell at startup.
     /// Used to ensure `claude` is findable even in packaged .app bundles
     /// that inherit only launchd's minimal PATH.
@@ -772,13 +849,193 @@ pub struct AgentManager {
 
 impl Default for AgentManager {
     fn default() -> Self {
-        Self { runs: HashMap::new(), shell_path: None }
+        Self {
+            runs: HashMap::new(),
+            codex: None,
+            codex_starting: std::sync::Arc::new(Mutex::new(())),
+            shell_path: None,
+        }
+    }
+}
+
+impl AgentManager {
+    /// Resolve (driver, stdin_tx, session_id) for a run_id — either a per-run
+    /// Claude process or the shared persistent Codex process.
+    fn resolve(
+        &self,
+        run_id: &str,
+    ) -> Option<(std::sync::Arc<Mutex<Box<dyn AgentDriver>>>, mpsc::Sender<String>, Option<String>)> {
+        if let Some(run) = self.runs.get(run_id) {
+            return Some((run.driver.clone(), run.stdin_tx.clone(), run.session_id.clone()));
+        }
+        if let Some(codex) = &self.codex {
+            if codex.run_ids.contains(run_id) {
+                return Some((codex.driver.clone(), codex.stdin_tx.clone(), None));
+            }
+        }
+        None
     }
 }
 
 pub struct AgentManagerState(pub Mutex<AgentManager>);
 
 // ── Tauri commands ────────────────────────────────────────────────────────────
+
+/// Write a temp mcp.json for the running MCP server, or None if MCP isn't up.
+async fn build_mcp_config(app: &AppHandle) -> Option<PathBuf> {
+    tokio::net::TcpStream::connect(format!("127.0.0.1:{MCP_SERVER_PORT}")).await.ok()?;
+    let token = {
+        let mcp_state = app.state::<McpServerState>();
+        let guard = mcp_state.0.lock().await;
+        guard.as_ref()?.token.clone()
+    };
+    let data_dir = app.path().app_data_dir().ok()?;
+    let run_dir = data_dir.join("agent-runs").join(uuid::Uuid::new_v4().to_string());
+    tokio::fs::create_dir_all(&run_dir).await.ok()?;
+    let path = run_dir.join("mcp.json");
+    let mcp_json = serde_json::json!({
+        "mcpServers": {
+            "mermaid-code-mcp": {
+                "type": "http",
+                "url": format!("http://127.0.0.1:{MCP_SERVER_PORT}/mcp"),
+                "headers": { "Authorization": format!("Bearer {token}") }
+            }
+        }
+    });
+    tokio::fs::write(&path, serde_json::to_string_pretty(&mcp_json).unwrap()).await.ok()?;
+    Some(path)
+}
+
+/// Poll for the shell PATH captured at startup (up to ~3s).
+async fn wait_shell_path(app: &AppHandle) -> Option<String> {
+    let state = app.state::<AgentManagerState>();
+    let mut path = None;
+    for _ in 0..15 {
+        path = state.0.lock().await.shell_path.clone();
+        if path.is_some() { break; }
+        tokio::time::sleep(std::time::Duration::from_millis(200)).await;
+    }
+    path
+}
+
+/// Ensure the persistent Codex process exists and is handshaked (Ready).
+/// Idempotent; blocks until the handshake completes (or times out).
+async fn ensure_codex_process(app: &AppHandle) -> Result<(), String> {
+    // Serialize concurrent starts: clone the startup lock (brief manager-lock
+    // hold), then hold it for the whole check-and-spawn so a second caller waits
+    // and then sees the process already exists instead of spawning a duplicate.
+    let startup_lock = {
+        let state = app.state::<AgentManagerState>();
+        let mgr = state.0.lock().await;
+        mgr.codex_starting.clone()
+    };
+    let _startup_guard = startup_lock.lock().await;
+
+    let already = {
+        let state = app.state::<AgentManagerState>();
+        let mgr = state.0.lock().await;
+        mgr.codex.is_some()
+    };
+    if already {
+        return wait_codex_ready(app).await;
+    }
+    let mcp_config_path = build_mcp_config(app).await;
+    let shell_path = wait_shell_path(app).await;
+
+    let mut driver: Box<dyn AgentDriver> = Box::new(CodexDriver::new());
+    let config = SessionConfig {
+        prompt: String::new(),
+        mcp_config_path,
+        resume_session_id: None,
+        shell_path,
+        permission_mode: None,
+    };
+    let mut cmd = driver.spawn_command(&config).ok_or("Failed to build codex command")?;
+    let mut child = cmd
+        .stdout(std::process::Stdio::piped())
+        .stdin(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::null())
+        .kill_on_drop(true)
+        .spawn()
+        .map_err(|e| format!("Failed to spawn codex: {e}"))?;
+
+    let stdout = child.stdout.take().unwrap();
+    let stdin = child.stdin.take().unwrap();
+    let (stdin_tx, mut stdin_rx) = mpsc::channel::<String>(32);
+
+    // Kick off the handshake (initialize).
+    if let Some(codex) = driver.as_any_mut().downcast_mut::<CodexDriver>() {
+        let _ = stdin_tx.send(codex.build_handshake()).await;
+    }
+
+    let driver = std::sync::Arc::new(Mutex::new(driver));
+
+    // Pump stdin
+    tokio::spawn(async move {
+        let mut stdin = stdin;
+        while let Some(msg) = stdin_rx.recv().await {
+            let line = if msg.ends_with('\n') { msg } else { msg + "\n" };
+            if stdin.write_all(line.as_bytes()).await.is_err() {
+                break;
+            }
+        }
+    });
+
+    // read loop with a sentinel run_id (real events carry per-thread run_id via
+    // DriverOutput.run_id). On exit, drop the handle so the next use re-spawns.
+    let app2 = app.clone();
+    let driver_for_loop = driver.clone();
+    let stdin_tx_for_loop = stdin_tx.clone();
+    let (kill_tx, kill_rx) = tokio::sync::oneshot::channel::<()>();
+
+    {
+        let mgr_state = app.state::<AgentManagerState>();
+        let mut mgr = mgr_state.0.lock().await;
+        mgr.codex = Some(CodexHandle {
+            stdin_tx,
+            driver,
+            run_ids: std::collections::HashSet::new(),
+            kill_tx,
+        });
+    }
+
+    tokio::spawn(async move {
+        tokio::select! {
+            _ = read_loop(app2.clone(), "codex-persistent".to_string(), stdout, driver_for_loop, None, stdin_tx_for_loop) => {}
+            _ = kill_rx => { child.kill().await.ok(); }
+        }
+        // Process ended (crash or shutdown): clear so it can be re-spawned.
+        let mgr_state = app2.state::<AgentManagerState>();
+        mgr_state.0.lock().await.codex = None;
+    });
+
+    wait_codex_ready(app).await
+}
+
+/// Poll until the persistent Codex driver finishes its handshake (Ready).
+async fn wait_codex_ready(app: &AppHandle) -> Result<(), String> {
+    let state = app.state::<AgentManagerState>();
+    for _ in 0..100 {
+        let ready = {
+            let mgr = state.0.lock().await;
+            match &mgr.codex {
+                Some(c) => {
+                    let mut d = c.driver.lock().await;
+                    d.as_any_mut()
+                        .downcast_mut::<CodexDriver>()
+                        .map(|cd| cd.is_ready())
+                        .unwrap_or(false)
+                }
+                None => return Err("Codex process exited during startup".into()),
+            }
+        };
+        if ready {
+            return Ok(());
+        }
+        tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+    }
+    Err("Codex handshake timed out".into())
+}
 
 #[derive(Deserialize)]
 pub struct StartAgentParams {
@@ -787,6 +1044,10 @@ pub struct StartAgentParams {
     pub agent_type: String,
     pub resume_session_id: Option<String>,
     pub permission_mode: Option<String>,
+    // Client-supplied run id. The frontend generates it and registers its event
+    // listener *before* invoking, so the persistent Codex process can't emit
+    // session_ready before runOwner is set (a race that dropped the event).
+    pub run_id: Option<String>,
 }
 
 #[derive(Serialize)]
@@ -802,6 +1063,46 @@ pub async fn start_agent_session(
     app: AppHandle,
     params: StartAgentParams,
 ) -> Result<String, String> {
+    // ── Codex: reuse the persistent process (start/resume a thread on it) ──
+    if params.agent_type == "codex" {
+        ensure_codex_process(&app).await?;
+        let run_id = params
+            .run_id
+            .clone()
+            .unwrap_or_else(|| uuid::Uuid::new_v4().to_string());
+        let state = app.state::<AgentManagerState>();
+        let (stdin_tx, msgs) = {
+            let mut mgr = state.0.lock().await;
+            let handle = mgr.codex.as_mut().ok_or("Codex process not available")?;
+            handle.run_ids.insert(run_id.clone());
+            let stdin_tx = handle.stdin_tx.clone();
+            let mut d = handle.driver.lock().await;
+            let codex = d.as_any_mut().downcast_mut::<CodexDriver>()
+                .ok_or("Codex driver missing")?;
+            let mut msgs: Vec<String> = vec![];
+            // Interrupt any in-flight turn before switching threads.
+            if let Some(interrupt) = codex.build_interrupt() {
+                msgs.push(interrupt);
+            }
+            let start = codex
+                .start_thread(
+                    &run_id,
+                    &params.folder_path,
+                    params.resume_session_id.as_deref(),
+                    params.permission_mode.clone(),
+                    &params.prompt,
+                )
+                .ok_or("Codex not ready")?;
+            msgs.push(start);
+            (stdin_tx, msgs)
+        };
+        for m in msgs {
+            stdin_tx.send(m).await.map_err(|e| e.to_string())?;
+        }
+        return Ok(run_id);
+    }
+
+    // ── Claude Code (and other per-run agents): spawn a dedicated process ──
     // If MCP is already running, inject its config; otherwise start without MCP
     let mcp_config_path: Option<PathBuf> = async {
         // Verify MCP server is actually listening before passing config
@@ -829,7 +1130,10 @@ pub async fn start_agent_session(
         Some(path)
     }.await;
 
-    let run_id = uuid::Uuid::new_v4().to_string();
+    let run_id = params
+        .run_id
+        .clone()
+        .unwrap_or_else(|| uuid::Uuid::new_v4().to_string());
 
     // Build the driver — a single shared instance used by both the read loop
     // (parse_line) and the command handlers (build_* methods), so protocol
@@ -961,6 +1265,10 @@ async fn read_loop(
             let _ = stdin_tx.send(msg).await;
         }
 
+        // The persistent Codex process routes events to the client run_id that
+        // owns the active thread; other drivers use this loop's run_id.
+        let emit_run_id = output.run_id.clone().unwrap_or_else(|| run_id.clone());
+
         for event in output.events {
             had_any_output = true;
             in_turn = true;
@@ -987,7 +1295,7 @@ async fn read_loop(
 
             let should_break = matches!(&event, DriverEvent::Exit { is_final: true, .. });
             let _ = app.emit("agent-event", serde_json::json!({
-                "run_id": &run_id,
+                "run_id": &emit_run_id,
                 "event": &event,
             }));
             if should_break {
@@ -1068,33 +1376,6 @@ fn codex_collect_jsonl(dir: &std::path::Path, out: &mut Vec<PathBuf>) {
     }
 }
 
-/// Read a rollout file's cwd, session_id, and first user prompt.
-fn codex_session_meta(path: &std::path::Path) -> Option<(String, String, Option<String>)> {
-    let content = std::fs::read_to_string(path).ok()?;
-    let mut cwd = None;
-    let mut sid = None;
-    let mut first_prompt = None;
-    for line in content.lines() {
-        let Ok(v) = serde_json::from_str::<Value>(line) else { continue };
-        match v["type"].as_str() {
-            Some("session_meta") => {
-                cwd = v["payload"]["cwd"].as_str().map(str::to_string);
-                sid = v["payload"]["session_id"].as_str().map(str::to_string);
-            }
-            Some("event_msg") if v["payload"]["type"].as_str() == Some("user_message") => {
-                if first_prompt.is_none() {
-                    first_prompt = v["payload"]["message"]
-                        .as_str()
-                        .map(|s| s.trim().to_string())
-                        .filter(|s| !s.is_empty());
-                }
-            }
-            _ => {}
-        }
-    }
-    Some((cwd?, sid?, first_prompt))
-}
-
 /// Locate a codex rollout file by session id (files are named `*-<id>.jsonl`).
 fn codex_find_session_file(root: &std::path::Path, session_id: &str) -> Option<PathBuf> {
     let mut files = vec![];
@@ -1161,27 +1442,38 @@ pub async fn list_folder_sessions(
             Ok(sessions.into_iter().map(|(_, s)| s).collect())
         }
         "codex" => {
-            let home = app.path().home_dir().map_err(|e| e.to_string())?;
-            let root = home.join(".codex").join("sessions");
-            let folder = folder_path.clone();
-            tokio::task::spawn_blocking(move || {
-                let mut files = vec![];
-                codex_collect_jsonl(&root, &mut files);
-                let mut sessions: Vec<(std::time::SystemTime, SessionInfo)> = vec![];
-                for path in files {
-                    let Some((cwd, sid, first_prompt)) = codex_session_meta(&path) else { continue };
-                    if cwd != folder { continue; }
-                    let mtime = std::fs::metadata(&path)
-                        .ok()
-                        .and_then(|m| m.modified().ok())
-                        .unwrap_or(std::time::SystemTime::UNIX_EPOCH);
-                    sessions.push((mtime, SessionInfo { session_id: sid, first_prompt }));
+            // Query the persistent process via thread/list (cwd-filtered, state-DB
+            // backed). Falls back to an empty list if the process isn't ready.
+            ensure_codex_process(&app).await?;
+            let state = app.state::<AgentManagerState>();
+            let (rx, req, tx) = {
+                let mut mgr = state.0.lock().await;
+                let handle = mgr.codex.as_mut().ok_or("Codex process not available")?;
+                let stdin_tx = handle.stdin_tx.clone();
+                let mut d = handle.driver.lock().await;
+                let codex = d.as_any_mut().downcast_mut::<CodexDriver>().ok_or("Codex driver missing")?;
+                let (id, rx) = codex.register_rpc();
+                let req = serde_json::json!({
+                    "id": id,
+                    "method": "thread/list",
+                    "params": { "cwd": folder_path, "sourceKinds": ["cli", "vscode", "appServer"] }
+                }).to_string();
+                (rx, req, stdin_tx)
+            };
+            tx.send(req).await.map_err(|e| e.to_string())?;
+            let result = tokio::time::timeout(std::time::Duration::from_secs(10), rx)
+                .await
+                .map_err(|_| "thread/list timed out".to_string())?
+                .map_err(|_| "thread/list channel closed".to_string())?;
+            let mut sessions = vec![];
+            if let Some(data) = result["data"].as_array() {
+                for t in data {
+                    let Some(id) = t["id"].as_str() else { continue };
+                    let preview = t["preview"].as_str().map(|s| s.trim().to_string()).filter(|s| !s.is_empty());
+                    sessions.push(SessionInfo { session_id: id.to_string(), first_prompt: preview });
                 }
-                sessions.sort_by(|a, b| b.0.cmp(&a.0));
-                Ok(sessions.into_iter().map(|(_, s)| s).collect())
-            })
-            .await
-            .map_err(|e| e.to_string())?
+            }
+            Ok(sessions)
         }
         _ => Err(format!("Agent type '{agent_type}' does not support session listing")),
     }
@@ -1739,10 +2031,18 @@ pub async fn load_session_history(
     }
 }
 
+/// Warm up an agent when selected (Codex: start the persistent process).
+#[tauri::command]
+pub async fn ensure_agent_ready(app: AppHandle, agent_type: String) -> Result<(), String> {
+    if agent_type == "codex" {
+        ensure_codex_process(&app).await?;
+    }
+    Ok(())
+}
+
 #[tauri::command]
 pub async fn check_agent_cli(app: AppHandle, agent_type: String) -> bool {
-    let cmd_name = match agent_type.as_str() {
-        "claude-code" => "claude",
+    let cmd_name = match agent_type.as_str() {        "claude-code" => "claude",
         "codex" => "codex",
         _ => return false,
     };
@@ -1801,25 +2101,34 @@ pub async fn delete_session(
         }
         "codex" => {
             validate_session_id(&session_id)?;
-            let home = app.path().home_dir().map_err(|e| e.to_string())?;
-            let sessions_root = home.join(".codex").join("sessions");
-            let archived_root = home.join(".codex").join("archived_sessions");
-            let sid = session_id.clone();
-            tokio::task::spawn_blocking(move || {
-                let Some(path) = codex_find_session_file(&sessions_root, &sid) else {
-                    return Err("Session file not found".to_string());
-                };
-                // Archive rather than delete: move to archived_sessions (flat, no
-                // date subpath — matching codex's own archive layout). Since
-                // list_folder_sessions only scans sessions/, archived sessions
-                // drop off the list.
-                let file_name = path.file_name().ok_or("Invalid session path")?;
-                std::fs::create_dir_all(&archived_root).map_err(|e| e.to_string())?;
-                let dest = archived_root.join(file_name);
-                std::fs::rename(&path, &dest).map_err(|e| e.to_string())
-            })
-            .await
-            .map_err(|e| e.to_string())?
+            // Archive via the persistent process — moves the rollout to
+            // archived_sessions AND updates codex's state DB (so it stays
+            // consistent with codex CLI's own archive listing).
+            ensure_codex_process(&app).await?;
+            let state = app.state::<AgentManagerState>();
+            let (rx, req, tx) = {
+                let mut mgr = state.0.lock().await;
+                let handle = mgr.codex.as_mut().ok_or("Codex process not available")?;
+                let stdin_tx = handle.stdin_tx.clone();
+                let mut d = handle.driver.lock().await;
+                let codex = d.as_any_mut().downcast_mut::<CodexDriver>().ok_or("Codex driver missing")?;
+                let (id, rx) = codex.register_rpc();
+                let req = serde_json::json!({
+                    "id": id,
+                    "method": "thread/archive",
+                    "params": { "threadId": session_id }
+                }).to_string();
+                (rx, req, stdin_tx)
+            };
+            tx.send(req).await.map_err(|e| e.to_string())?;
+            let result = tokio::time::timeout(std::time::Duration::from_secs(10), rx)
+                .await
+                .map_err(|_| "thread/archive timed out".to_string())?
+                .map_err(|_| "thread/archive channel closed".to_string())?;
+            if result.is_null() {
+                return Err("Codex failed to archive the session".into());
+            }
+            Ok(())
         }
         _ => Err(format!("Agent type '{agent_type}' does not support session deletion")),
     }
@@ -1846,8 +2155,8 @@ pub async fn send_agent_message(
     let state = app.state::<AgentManagerState>();
     let (driver, session_id, tx) = {
         let mgr = state.0.lock().await;
-        let run = mgr.runs.get(&run_id).ok_or("Run not found")?;
-        (run.driver.clone(), run.session_id.clone(), run.stdin_tx.clone())
+        let (driver, tx, session_id) = mgr.resolve(&run_id).ok_or("Run not found")?;
+        (driver, session_id, tx)
     };
     let line = {
         let mut d = driver.lock().await;
@@ -1865,9 +2174,25 @@ pub async fn send_agent_message(
 pub async fn kill_agent_run(app: AppHandle, run_id: String) -> Result<(), String> {
     let state = app.state::<AgentManagerState>();
     let mut mgr = state.0.lock().await;
-    mgr.runs.remove(&run_id).ok_or("Run not found")?;
-    // Dropping AgentRun drops stdin_tx → stdin pump exits → process stdin EOF → kill_on_drop fires
-    Ok(())
+    if mgr.runs.remove(&run_id).is_some() {
+        // Dropping AgentRun drops stdin_tx → stdin pump exits → process stdin EOF → kill_on_drop fires
+        return Ok(());
+    }
+    // Codex: a logical session on the shared process — don't kill the process,
+    // just drop the run mapping and interrupt any in-flight turn.
+    if let Some(codex) = mgr.codex.as_mut() {
+        if codex.run_ids.remove(&run_id) {
+            let interrupt = {
+                let d = codex.driver.lock().await;
+                d.build_interrupt()
+            };
+            if let Some(msg) = interrupt {
+                let _ = codex.stdin_tx.send(msg).await;
+            }
+            return Ok(());
+        }
+    }
+    Err("Run not found".into())
 }
 
 #[tauri::command]
@@ -1882,8 +2207,8 @@ pub async fn respond_agent_permission(
     let state = app.state::<AgentManagerState>();
     let (driver, tx) = {
         let mgr = state.0.lock().await;
-        let run = mgr.runs.get(&run_id).ok_or("Run not found")?;
-        (run.driver.clone(), run.stdin_tx.clone())
+        let (driver, tx, _) = mgr.resolve(&run_id).ok_or("Run not found")?;
+        (driver, tx)
     };
     let line = driver
         .lock()
@@ -1902,8 +2227,8 @@ pub async fn set_agent_permission_mode(
     let state = app.state::<AgentManagerState>();
     let (driver, tx) = {
         let mgr = state.0.lock().await;
-        let run = mgr.runs.get(&run_id).ok_or("Run not found")?;
-        (run.driver.clone(), run.stdin_tx.clone())
+        let (driver, tx, _) = mgr.resolve(&run_id).ok_or("Run not found")?;
+        (driver, tx)
     };
     let line = driver
         .lock()

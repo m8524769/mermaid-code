@@ -32,11 +32,14 @@
     id: string;
     label: string;
     icon: Component<any>;
+    // Extra classes for the icon. The OpenAI logo is a fixed black mark (no
+    // currentColor), so it's invisible on the dark theme — invert it to white.
+    iconClass?: string;
   }
 
   const agents: AgentOption[] = [
     { id: 'claude-code', label: 'Claude Code', icon: ClaudeIcon },
-    { id: 'codex', label: 'Codex', icon: OpenAIIcon }
+    { id: 'codex', label: 'Codex', icon: OpenAIIcon, iconClass: 'dark:invert' }
   ];
 
   // Start event listener for agent events
@@ -59,6 +62,7 @@
 
   const selectedAgent = $derived(agents.find((a) => a.id === selectedAgentId) ?? agents[0]);
   const selectedAgentIcon = $derived(selectedAgent.icon);
+  const selectedAgentIconClass = $derived(selectedAgent.iconClass);
 
   // Working folder: restore from localStorage, then fall back to file explorer or home dir
   let workingFolder = $state<string | null>(
@@ -106,6 +110,12 @@
 
   const sessions = $derived<SessionEntry[]>(
     workingFolder ? (slices[selectedAgentId]?.folderSessions[workingFolder] ?? []) : []
+  );
+
+  // True while loadSessions() is fetching (Codex cold start can take a few
+  // seconds) and we have nothing cached yet — drives the popover spinner.
+  const sessionsLoading = $derived(
+    (slices[selectedAgentId]?.sessionsLoading ?? false) && sessions.length === 0
   );
 
   // Load sessions from Tauri whenever agent or folder changes
@@ -246,6 +256,10 @@
     (async () => {
       const { invoke } = await import('@tauri-apps/api/core');
       cliAvailable = await invoke<boolean>('check_agent_cli', { agentType: agentId });
+      // Warm up the persistent Codex process on selection (once CLI is confirmed).
+      if (cliAvailable && agentId === selectedAgentId) {
+        void invoke('ensure_agent_ready', { agentType: agentId }).catch(() => {});
+      }
     })();
   });
 
@@ -254,27 +268,37 @@
     if (!text || !workingFolder || sending) return;
     inputText = '';
     sending = true;
+    let startedRunId: string | null = null;
     try {
       const { invoke } = await import('@tauri-apps/api/core');
       if (!runId) {
         const isResume = !!activeSessionId;
         if (!isResume) pendingFirstMessage = text;
         const existingMessages = isResume ? [...(slices[selectedAgentId]?.messages ?? [])] : [];
-        const id: string = await invoke('start_agent_session', {
+        // Generate the run id and register the event listener BEFORE invoking.
+        // The persistent Codex process answers thread/start instantly and can
+        // emit session_ready before the backend's invoke even returns; if we
+        // registered afterwards that event would be dropped (empty session list
+        // + header stuck on "New session"). Owning the id client-side closes
+        // the race. registerRun resets the slice, so restore messages after it.
+        const newRunId = crypto.randomUUID();
+        startedRunId = newRunId;
+        agentState.registerRun(selectedAgentId, newRunId);
+        if (isResume && activeSessionId) liveSessionId = activeSessionId;
+        agentState.getSlice(selectedAgentId).messages = [
+          ...existingMessages,
+          { id: `user-${newRunId}`, role: 'user', text }
+        ];
+        await invoke('start_agent_session', {
           params: {
             prompt: text,
             folder_path: workingFolder,
             agent_type: selectedAgentId,
             resume_session_id: activeSessionId ?? null,
-            permission_mode: permissionMode === 'manual' ? null : permissionMode
+            permission_mode: permissionMode === 'manual' ? null : permissionMode,
+            run_id: newRunId
           }
         });
-        agentState.registerRun(selectedAgentId, id);
-        if (isResume && activeSessionId) liveSessionId = activeSessionId;
-        agentState.getSlice(selectedAgentId).messages = [
-          ...existingMessages,
-          { id: `user-${id}`, role: 'user', text }
-        ];
       } else {
         // Persistent process alive — send next turn via stdin
         const slice = agentState.getSlice(selectedAgentId);
@@ -287,6 +311,13 @@
       }
     } catch (e) {
       console.error('[agent] sendMessage error:', e);
+      // Roll back the pre-registered run so the UI isn't stuck on a run that
+      // never started.
+      if (startedRunId) {
+        const slice = slices[selectedAgentId];
+        if (slice?.activeRunId === startedRunId) slice.activeRunId = null;
+        agentState.unregisterRun(startedRunId);
+      }
       const s = agentState.getSlice(selectedAgentId);
       s.errorMsg = e instanceof Error ? e.message : String(e);
       s.isProcessing = false;
@@ -308,6 +339,11 @@
       const { invoke } = await import('@tauri-apps/api/core');
       await invoke('kill_agent_run', { runId: id });
     } catch (e) {}
+    // The persistent Codex process emits no exit event for a dropped session,
+    // so clear the active run locally (harmless for Claude — its process dies).
+    const slice = slices[selectedAgentId];
+    if (slice?.activeRunId === id) slice.activeRunId = null;
+    agentState.unregisterRun(id);
   }
 
   const messages = $derived(slices[selectedAgentId]?.messages ?? []);
@@ -415,7 +451,10 @@
   title={selectedAgent.label}
   isOpen
   isClosable={false}
-  icon={{ component: selectedAgentIcon, class: 'ml-1' }}>
+  icon={{
+    component: selectedAgentIcon,
+    class: ['ml-1', selectedAgentIconClass].filter(Boolean).join(' ')
+  }}>
   {#snippet actions()}
     <div class="flex items-center gap-1">
       <Popover.Root bind:open={agentPopoverOpen}>
@@ -432,7 +471,7 @@
               <button
                 class="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-sm hover:bg-muted"
                 onclick={() => (selectedAgentId = agent.id)}>
-                <AgentIcon class="size-4 shrink-0" />
+                <AgentIcon class={['size-4 shrink-0', agent.iconClass]} />
                 <span class="flex-1 text-left">{agent.label}</span>
                 {#if agent.id === selectedAgentId}
                   <CheckIcon class="size-4 text-foreground" />
@@ -525,7 +564,29 @@
               {/if}
             </button>
           </Popover.Close>
-          {#if sessions.length > 0}
+          {#if sessionsLoading}
+            <div class="my-0.5 border-t border-muted"></div>
+            <div
+              class="flex items-center gap-2 px-2 py-1.5 text-sm text-muted-foreground"
+              role="status">
+              <svg
+                class="size-4 shrink-0 animate-spin"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24">
+                <circle
+                  class="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                ></path>
+              </svg>
+              <span>Loading sessions…</span>
+            </div>
+          {:else if sessions.length > 0}
             <div class="my-0.5 border-t border-muted"></div>
             <div class="flex max-h-64 flex-col overflow-y-auto">
               {#each sessions as session (session.sessionId)}
@@ -623,7 +684,7 @@
         <div class="flex flex-1 flex-col items-center justify-center gap-3 text-center select-none">
           <div class="rounded-2xl bg-muted p-4">
             {#each [selectedAgentIcon] as AgentIcon}
-              <AgentIcon class="size-8 opacity-40" />
+              <AgentIcon class={['size-8 opacity-40', selectedAgentIconClass]} />
             {/each}
           </div>
           <div class="flex flex-col gap-1">

@@ -41,6 +41,9 @@ interface AgentSlice {
   errorMsg: string | null;
   // folderPath → session IDs loaded from Tauri
   folderSessions: Record<string, SessionEntry[]>;
+  // True while loadSessions() is in flight (Codex cold start can take a few
+  // seconds); drives the session-list loading spinner.
+  sessionsLoading: boolean;
 }
 
 // ── State ──────────────────────────────────────────────────────────────────────
@@ -61,7 +64,8 @@ function getSlice(agentId: string): AgentSlice {
       outputTokens: 0,
       lastCostUsd: null,
       errorMsg: null,
-      folderSessions: {} as Record<string, SessionEntry[]>
+      folderSessions: {} as Record<string, SessionEntry[]>,
+      sessionsLoading: false
     };
   }
   return slices[agentId];
@@ -206,14 +210,24 @@ function unregisterRun(runId: string) {
   runOwner.delete(runId);
 }
 
+// agentId → number of loadSessions() calls in flight. Several effects fire on an
+// agent switch and one of them may return before another that actually has the
+// data; a shared boolean would let the fast one clear the spinner (and, if it
+// returned empty, hide the list) while a slower call is still fetching. Counting
+// keeps the spinner up until ALL in-flight loads finish, and every call still
+// runs (so whichever one gets the rows populates the list).
+const loadingCounts = new Map<string, number>();
+
 async function loadSessions(agentId: string, folderPath: string) {
+  const slice = getSlice(agentId);
+  loadingCounts.set(agentId, (loadingCounts.get(agentId) ?? 0) + 1);
+  slice.sessionsLoading = true;
   try {
     const { invoke } = await import('@tauri-apps/api/core');
     const ids: Array<{ session_id: string; first_prompt: string | null }> = await invoke(
       'list_folder_sessions',
       { agentType: agentId, folderPath }
     );
-    const slice = getSlice(agentId);
     const existing = slice.folderSessions[folderPath] ?? [];
     // Merge: prefer in-memory firstPrompt over null from Tauri (timing / file-not-written-yet)
     const merged: SessionEntry[] = ids.map((s) => {
@@ -229,6 +243,10 @@ async function loadSessions(agentId: string, folderPath: string) {
     slice.folderSessions = { ...slice.folderSessions, [folderPath]: merged };
   } catch {
     // Agent type may not support session listing — leave existing cache
+  } finally {
+    const n = (loadingCounts.get(agentId) ?? 1) - 1;
+    loadingCounts.set(agentId, n);
+    if (n <= 0) slice.sessionsLoading = false;
   }
 }
 
