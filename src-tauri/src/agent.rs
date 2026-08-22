@@ -959,6 +959,19 @@ async fn ensure_codex_process(app: &AppHandle) -> Result<(), String> {
         .spawn()
         .map_err(|e| format!("Failed to spawn codex: {e}"))?;
 
+    // The mcp.json is only a carrier: spawn_command already read it and baked the
+    // url/token into `-c` overrides, so the running codex never touches the file
+    // (unlike Claude, which is handed it via --mcp-config for the process lifetime).
+    // Delete it and its unique run dir now so these token files don't accumulate
+    // across launches — the persistent process's read loop passes None, so nothing
+    // else cleans it up.
+    if let Some(ref p) = config.mcp_config_path {
+        let _ = tokio::fs::remove_file(p).await;
+        if let Some(dir) = p.parent() {
+            let _ = tokio::fs::remove_dir(dir).await;
+        }
+    }
+
     let stdout = child.stdout.take().unwrap();
     let stdin = child.stdin.take().unwrap();
     let (stdin_tx, mut stdin_rx) = mpsc::channel::<String>(32);
@@ -1456,7 +1469,14 @@ pub async fn list_folder_sessions(
                 let req = serde_json::json!({
                     "id": id,
                     "method": "thread/list",
-                    "params": { "cwd": folder_path, "sourceKinds": ["cli", "vscode", "appServer"] }
+                    // sortKey=updated_at (desc is the default) puts the most
+                    // recently active session on top, matching the Claude branch
+                    // which sorts by rollout file mtime.
+                    "params": {
+                        "cwd": folder_path,
+                        "sourceKinds": ["cli", "vscode", "appServer"],
+                        "sortKey": "updated_at"
+                    }
                 }).to_string();
                 (rx, req, stdin_tx)
             };
