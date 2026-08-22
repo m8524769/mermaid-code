@@ -1489,8 +1489,14 @@ pub async fn list_folder_sessions(
             if let Some(data) = result["data"].as_array() {
                 for t in data {
                     let Some(id) = t["id"].as_str() else { continue };
-                    let preview = t["preview"].as_str().map(|s| s.trim().to_string()).filter(|s| !s.is_empty());
-                    sessions.push(SessionInfo { session_id: id.to_string(), first_prompt: preview });
+                    // Prefer the explicit thread name (set via thread/name/set);
+                    // fall back to the auto first-message preview.
+                    let label = t["name"].as_str()
+                        .map(|s| s.trim())
+                        .filter(|s| !s.is_empty())
+                        .or_else(|| t["preview"].as_str().map(|s| s.trim()).filter(|s| !s.is_empty()))
+                        .map(|s| s.to_string());
+                    sessions.push(SessionInfo { session_id: id.to_string(), first_prompt: label });
                 }
             }
             Ok(sessions)
