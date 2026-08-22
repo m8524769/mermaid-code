@@ -1950,6 +1950,20 @@ pub async fn load_session_history(
                 let mut messages: Vec<HistoryMessage> = vec![];
                 let mut pending_tool: std::collections::HashMap<String, HistoryMessage> = std::collections::HashMap::new();
 
+                // Determine the thread's history mode the way codex does — from
+                // the session_meta line's `history_mode` (defaults to Legacy).
+                // Legacy rollouts carry messages as event_msg/{agent,user}_message;
+                // Paginated ones only as response_item/message. This decides which
+                // source we read so messages aren't double-counted or dropped.
+                let is_paginated = content.lines().find_map(|line| {
+                    let v = serde_json::from_str::<serde_json::Value>(line).ok()?;
+                    if v["type"] == "session_meta" {
+                        Some(v["payload"]["history_mode"].as_str() == Some("paginated"))
+                    } else {
+                        None
+                    }
+                }).unwrap_or(false);
+
                 for line in content.lines() {
                     let Ok(v) = serde_json::from_str::<serde_json::Value>(line) else { continue };
                     let t = v["type"].as_str().unwrap_or("");
@@ -2077,6 +2091,31 @@ pub async fn load_session_history(
                                     let tuid = tool_use.tool_use_id.clone();
                                     messages.push(tool_use);
                                     messages.push(HistoryMessage { role: "tool_result".into(), text: output, thinking: None, tool_name: None, tool_use_id: tuid, opened_files: vec![], selected_code: vec![] });
+                                }
+                            }
+                            // Paginated rollouts don't emit event_msg/*_message, so
+                            // messages live here as raw Responses API items. (Legacy
+                            // rollouts carry both, so we skip this to avoid doubling.)
+                            // Skips developer/system roles and injected user context.
+                            Some("message") if is_paginated => {
+                                let text = match &p["content"] {
+                                    c if c.is_array() => c.as_array().unwrap().iter()
+                                        .filter_map(|b| b["text"].as_str())
+                                        .collect::<Vec<_>>().join(""),
+                                    c if c.is_string() => c.as_str().unwrap_or("").to_string(),
+                                    _ => String::new(),
+                                };
+                                let text = text.trim();
+                                if !text.is_empty() {
+                                    match p["role"].as_str() {
+                                        Some("assistant") => {
+                                            messages.push(HistoryMessage { role: "assistant".into(), text: text.to_string(), thinking: None, tool_name: None, tool_use_id: None, opened_files: vec![], selected_code: vec![] });
+                                        }
+                                        Some("user") if !is_injected_content(text) => {
+                                            messages.push(HistoryMessage { role: "user".into(), text: text.to_string(), thinking: None, tool_name: None, tool_use_id: None, opened_files: vec![], selected_code: vec![] });
+                                        }
+                                        _ => {}
+                                    }
                                 }
                             }
                             _ => {}
