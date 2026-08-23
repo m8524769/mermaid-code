@@ -937,16 +937,30 @@ async fn build_mcp_config(app: &AppHandle) -> Option<PathBuf> {
     Some(path)
 }
 
-/// Poll for the shell PATH captured at startup (up to ~3s).
+/// Poll for the shell PATH captured at startup (up to ~10s).
 async fn wait_shell_path(app: &AppHandle) -> Option<String> {
-    let state = app.state::<AgentManagerState>();
-    let mut path = None;
-    for _ in 0..15 {
-        path = state.0.lock().await.shell_path.clone();
-        if path.is_some() { break; }
-        tokio::time::sleep(std::time::Duration::from_millis(200)).await;
+    // PATH is only captured on non-Windows (capture_shell_path is cfg'd out on
+    // Windows), so shell_path is never set there — return immediately instead of
+    // polling the full timeout on every agent start.
+    #[cfg(target_os = "windows")]
+    {
+        let _ = app;
+        None
     }
-    path
+    #[cfg(not(target_os = "windows"))]
+    {
+        let state = app.state::<AgentManagerState>();
+        let mut path = None;
+        // Poll up to 10s: capture_shell_path runs `zsh -l -i`, which can take ~3s+
+        // on shells with heavy interactive init, so a shorter wait risks timing out
+        // before the PATH is captured (→ packaged app can't find claude/codex).
+        for _ in 0..50 {
+            path = state.0.lock().await.shell_path.clone();
+            if path.is_some() { break; }
+            tokio::time::sleep(std::time::Duration::from_millis(200)).await;
+        }
+        path
+    }
 }
 
 /// Ensure the persistent Codex process exists and is handshaked (Ready).
@@ -1192,16 +1206,7 @@ pub async fn start_agent_session(
         .ok_or_else(|| format!("Unknown agent type: {}", params.agent_type))?;
     let driver = std::sync::Arc::new(Mutex::new(driver));
 
-    let shell_path = {
-        let state = app.state::<AgentManagerState>();
-        let mut path = None;
-        for _ in 0..15 {
-            path = state.0.lock().await.shell_path.clone();
-            if path.is_some() { break; }
-            tokio::time::sleep(std::time::Duration::from_millis(200)).await;
-        }
-        path
-    };
+    let shell_path = wait_shell_path(&app).await;
 
     let config = SessionConfig {
         prompt: params.prompt,
@@ -2161,17 +2166,7 @@ pub async fn check_agent_cli(app: AppHandle, agent_type: String) -> bool {
     #[cfg(not(target_os = "windows"))]
     {
         // Wait for capture_shell_path() to finish (runs async at startup).
-        // Poll up to 10 s before falling back to system PATH.
-        let shell_path = {
-            let state = app.state::<AgentManagerState>();
-            let mut path = None;
-            for _ in 0..50 {
-                path = state.0.lock().await.shell_path.clone();
-                if path.is_some() { break; }
-                tokio::time::sleep(std::time::Duration::from_millis(200)).await;
-            }
-            path
-        };
+        let shell_path = wait_shell_path(&app).await;
         let mut cmd = tokio::process::Command::new("which");
         cmd.arg(cmd_name);
         if let Some(ref path) = shell_path {

@@ -403,23 +403,3 @@
     </button>
   </div>
 </div>
-
-<style>
-  :global(.suggestion-icon) {
-    background-color: #e8eaf9;
-    width: 20px !important;
-    height: 20px !important;
-    margin-left: 4px;
-    background-image: url('/icons/use-chat.svg');
-    background-size: 16px 16px;
-    background-repeat: no-repeat;
-    background-position: center;
-    border-radius: 4px;
-    cursor: pointer;
-  }
-
-  :global(#editor.mermaid-dark .suggestion-icon) {
-    background-color: #2e4d6b;
-    background-image: url('/icons/use-chat-dark.svg');
-  }
-</style>
