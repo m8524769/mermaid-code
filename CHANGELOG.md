@@ -2,6 +2,33 @@
 
 All notable changes to Mermaid Code are documented here.
 
+## [v0.6.0] - 2026-08-23
+
+### Added
+
+- **Codex agent (experimental)**: a second built-in AI agent alongside Claude Code, backed by a single persistent `codex app-server` process that starts when Codex is selected and lives until the app exits. Chat, multi-turn conversations, tool-use visibility, token usage, and permission modes work like Claude Code
+- **Codex session management**: list, resume, and archive Codex sessions per folder through the app-server, sorted by most recently updated; explicit session names are shown when set
+- **Permission modes for Codex**: Manual, Edit automatically, Plan, and Auto map to Codex's approval policy and sandbox, and can be switched mid-session
+- **Agent selector**: switch between Claude Code and Codex from the Agent panel header
+
+### Changed
+
+- **MCP server** rejects requests that carry an `Origin` header, guarding against cross-site (browser-originated) access
+
+### Fixed
+
+- **Folder rename focus**: renaming a folder in the file tree sidebar no longer mishandles focus
+
+## [v0.5.1] - 2026-08-16
+
+### Changed
+
+- **MCP server** now binds to `127.0.0.1` (local loopback only) instead of all network interfaces
+
+### Fixed
+
+- **Editor tabs react to external file changes**: deleting or renaming an open `.mmd` file outside the app now closes or updates its tab (including macOS "move to Trash"); deleting the last open file falls back to the Draft tab
+
 ## [v0.5.0] - 2026-08-14
 
 ### Added

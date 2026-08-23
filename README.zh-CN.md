@@ -8,7 +8,7 @@
 
 ![Mermaid Code showcase](showcase.zh-CN.png)
 
-## 为 AI-first 工作流而打造
+## 为 AI-First 工作流而打造
 
 Mermaid Code 可与本地 AI Agent（如 Claude Code、Codex 等）无缝协作：图表以纯文本 .mmd 文件的形式存于本地，AI Agent 可直接读取您的代码库，生成并写入图表文件 —— 无需任何复制粘贴，也无需繁琐的浏览器导入导出流程。
 
