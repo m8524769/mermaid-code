@@ -4,22 +4,24 @@
 
 # Mermaid Code
 
-一款基于 [Mermaid Live Editor](https://github.com/mermaid-js/mermaid-live-editor) 的本地 Mermaid 图表编辑器，并借助 [Tauri](https://tauri.app) 赋予跨平台原生桌面应用体验。
+一款基于 [Mermaid Live Editor](https://github.com/mermaid-js/mermaid-live-editor) 的本地 Mermaid 图表编辑器，增强了 AI 协作能力并借助 [Tauri](https://tauri.app) 实现了跨平台原生桌面应用体验。
 
 ![Mermaid Code showcase](showcase.zh-CN.png)
 
-## 为「以 AI 为中心」的工作流而打造
+## 为 AI-first 工作流而打造
 
 Mermaid Code 可与本地 AI Agent（如 Claude Code、Codex 等）无缝协作：图表以纯文本 .mmd 文件的形式存于本地，AI Agent 可直接读取您的代码库，生成并写入图表文件 —— 无需任何复制粘贴，也无需繁琐的浏览器导入导出流程。
 
 ```
-# 示例：让 AI Agent 根据代码生成图表
-“请为该模块生成一张架构图，并保存到 docs/architecture.mmd”
+# 示例：让 AI Agent 根据代码库生成图表
+“请为当前项目生成一张架构图，并保存到 docs/architecture.mmd”
 ```
 
 Mermaid Code 启动后会实时检测文件内容变更并自动刷新图表，从而打通 AI 生成与视觉反馈之间的闭环，而这是纯网页编辑器中无法实现的。
 
 ![AI workflow](ai-workflow.zh-CN.png)
+
+Mermaid Code 额外还内置了轻量化的 AI 对话窗口，可让您在应用内直接与 Claude Code 或 Codex 进行交互协作；而对于其他未在应用内集成的 AI Agent，同样可以通过 Mermaid Code 内置的 MCP 服务器与其进行对接。
 
 所有数据均存于本地 —— 架构图、数据库 schemas、业务流程图等，无需担心任何服务条款或数据保留政策。
 
@@ -48,6 +50,7 @@ brew install --cask mermaid-code
 - 本地文件系统访问 —— 可直接打开、编辑和保存 `.mmd` 文件
 - 支持“打开方式” —— 在访达或资源管理器中双击任意 `.mmd` 或 `.mermaid` 文件，即可在 Mermaid Code 中打开
 - 退出保护 —— 关闭应用时若有未保存的更改，会弹出相应提示
+- 内置 AI Agent 对话侧边栏 —— 可在应用内直接与本地 Claude Code / Codex CLI 进行交互
 - 内置 MCP 服务器 —— 使你的 AI Agent 直接与 Mermaid Code 进行交互（详见 [MCP 服务器集成](#mcp-服务器集成)）
 
 ### 文件管理器

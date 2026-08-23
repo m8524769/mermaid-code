@@ -50,7 +50,7 @@ brew install --cask mermaid-code
 
 - **Built-in Claude Code and Codex integration** — chat with either agent directly inside the app without switching windows
 - Multi-turn conversations with session history — resume previous sessions per folder
-- **Built-in MCP server** — lets AI agents interact with the app directly (see [MCP Server Integration](#mcp-server-integration-experimental))
+- **Built-in MCP server** — lets AI agents interact with the app directly (see [MCP Server Integration](#mcp-server-integration))
 
 ### Desktop App (Tauri)
 
@@ -80,7 +80,7 @@ brew install --cask mermaid-code
 
 ---
 
-## MCP Server Integration <sup>experimental</sup>
+## MCP Server Integration
 
 Mermaid Code includes a built-in [MCP](https://modelcontextprotocol.io) server that lets AI agents interact with the app directly.
 
