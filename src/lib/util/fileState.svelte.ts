@@ -654,6 +654,34 @@ export const autoSaveTick = (): (() => void) => {
   return () => clearTimeout(timer);
 };
 
+// Reload an open tab's content from disk after an external write. Handles both
+// in-place writes (modify.data) and atomic writes — a temp file renamed into
+// place, which fires modify.rename and is how AI agents (Claude Code/Codex) and
+// many editors save. No-op when the on-disk content is unchanged (e.g. our own
+// save) or when nothing matches an open tab.
+const reconcileTabWithDisk = async (p: string): Promise<void> => {
+  const tab = tabs.find((t) => t.path === p);
+  if (!tab) return;
+  let code: string;
+  try {
+    code = await readTextFile(p);
+  } catch {
+    return;
+  }
+  if (code === tab.savedCode) return; // unchanged — our own save or a rename with same content
+  if (tab.isDirty) {
+    notify(`"${tab.name}" was modified externally but has unsaved changes`);
+  } else {
+    tab.code = code;
+    tab.savedCode = code;
+    tab.isDirty = false;
+    if (tab.id === activeTabId) {
+      updateCode(code, { updateDiagram: true });
+    }
+  }
+  thumbnailCache.invalidate(p);
+};
+
 const handleWatchEvent = async (event: import('$/util/fileSystem').WatchEvent): Promise<void> => {
   // Debounced tree refresh — only refresh for paths relevant to open tabs
   debouncedRefreshTree();
@@ -661,10 +689,16 @@ const handleWatchEvent = async (event: import('$/util/fileSystem').WatchEvent): 
   const kind = event.type;
   if (typeof kind === 'object' && 'modify' in kind) {
     if ((kind as any).modify?.kind === 'rename') {
-      // macOS fires modify.rename when a file is moved to Trash or renamed
       const { exists } = await import('@tauri-apps/plugin-fs');
       for (const p of event.paths) {
-        if (await exists(p)) continue; // file still exists — sidebar rename already updated tab path
+        if (await exists(p)) {
+          // File still here: either a sidebar rename (tab path already updated →
+          // no matching tab, no-op) or an atomic external write (temp renamed into
+          // place, e.g. an AI agent saving). Reconcile any open tab's content.
+          await reconcileTabWithDisk(p);
+          continue;
+        }
+        // File gone → external delete / move-to-Trash (macOS fires modify.rename)
         const affected = tabs.filter(
           (t) => t.path === p || t.path.startsWith(p + '/') || t.path.startsWith(p + '\\')
         );
@@ -688,32 +722,9 @@ const handleWatchEvent = async (event: import('$/util/fileSystem').WatchEvent): 
       }
       return;
     }
-    // File content changed externally
+    // In-place content change (modify.data)
     for (const p of event.paths) {
-      const tab = tabs.find((t) => t.path === p);
-      if (!tab) continue;
-      if (tab.isDirty) {
-        // Read the new file content to check if it's our own save
-        try {
-          const newCode = await readTextFile(p);
-          // If the file now matches savedCode, it was written by autoSave — ignore
-          if (newCode === tab.savedCode) continue;
-        } catch {
-          continue;
-        }
-        notify(`"${tab.name}" was modified externally but has unsaved changes`);
-      } else {
-        try {
-          const code = await readTextFile(p);
-          tab.code = code;
-          tab.savedCode = code;
-          tab.isDirty = false;
-          if (tab.id === activeTabId) {
-            updateCode(code, { updateDiagram: true });
-          }
-        } catch {}
-      }
-      thumbnailCache.invalidate(p);
+      await reconcileTabWithDisk(p);
     }
   }
   if (typeof kind === 'object' && 'remove' in kind) {
