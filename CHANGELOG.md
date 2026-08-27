@@ -2,6 +2,12 @@
 
 All notable changes to Mermaid Code are documented here.
 
+## [v0.6.1] - 2026-08-27
+
+### Fixed
+
+- **Preview refresh on external writes**: files saved via an atomic write (temp file + rename) — how AI agents (Claude Code/Codex) and many editors save — now reload the open tab and refresh the live preview, instead of being mistaken for a rename and ignored
+
 ## [v0.6.0] - 2026-08-23
 
 ### Added
