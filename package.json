@@ -5,8 +5,7 @@
   "license": "MIT",
   "scripts": {
     "dev": "vite dev",
-    "dev:force": "MERMAID_LOCAL=true pnpm dev --force",
-    "dev:test": "pnpm dev",
+    "dev:force": "vite dev --force",
     "build": "vite build",
     "preview": "vite preview",
     "tauri": "tauri",
