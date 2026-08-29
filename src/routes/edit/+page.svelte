@@ -167,7 +167,7 @@
             const urls: Record<string, string> = {
               'help-github': 'https://github.com/m8524769/mermaid-code',
               'help-issue': 'https://github.com/m8524769/mermaid-code/issues/new',
-              'help-changelog': 'https://github.com/m8524769/mermaid-code/blob/develop/CHANGELOG.md'
+              'help-changelog': 'https://github.com/m8524769/mermaid-code/blob/HEAD/CHANGELOG.md'
             };
             const { open } = await import('@tauri-apps/plugin-shell');
             await open(urls[event.payload]);
