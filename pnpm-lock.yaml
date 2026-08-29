@@ -103,8 +103,8 @@ importers:
         specifier: ^7.2.0
         version: 7.2.0
       '@iconify-json/hugeicons':
-        specifier: ^1.2.32
-        version: 1.2.32
+        specifier: ^1.2.33
+        version: 1.2.33
       '@iconify-json/logos':
         specifier: ^1.2.12
         version: 1.2.12
@@ -511,8 +511,8 @@ packages:
     resolution: {integrity: sha512-bV0Tgo9K4hfPCek+aMAn81RppFKv2ySDQeMoSZuvTASywNTnVJCArCZE2FWqpvIatKu7VMRLWlR1EazvVhDyhQ==}
     engines: {node: '>=18.18'}
 
-  '@iconify-json/hugeicons@1.2.32':
-    resolution: {integrity: sha512-J+iRbVCR9jZnX619pHzTuB5XSVJIPVE66i0a3TFcTjsjhoaULpjl/kgqDByQABhcNxhz0GnBIXHHke5XdDA36A==}
+  '@iconify-json/hugeicons@1.2.33':
+    resolution: {integrity: sha512-x5a5/Ipd+v9c9qSisecCR+KMAegZuWDoVeZfp5RREdzOP9/Orec7w0BNUVZrkNOEt5oVtttCu/DXb5etc8Sfig==}
 
   '@iconify-json/logos@1.2.12':
     resolution: {integrity: sha512-zUi/AoezU2F3L65nPVd2smiU6Y+ZI7RjdVPlGfeAeYbPbZ9kWn7Ucxj+KshmyQRBYwLtKoqAlUyoGgMqWG1T8g==}
@@ -4119,7 +4119,7 @@ snapshots:
 
   '@humanwhocodes/retry@0.4.3': {}
 
-  '@iconify-json/hugeicons@1.2.32':
+  '@iconify-json/hugeicons@1.2.33':
     dependencies:
       '@iconify/types': 2.0.0
 
