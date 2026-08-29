@@ -1,23 +1,9 @@
 {
-  "extends": [
-    "config:base",
-    ":rebaseStalePrs",
-    "group:allNonMajor",
-    "schedule:earlyMondays",
-    ":automergeMinor",
-    ":automergeTesters",
-    ":automergeLinters",
-    ":automergeTypes",
-    ":automergePatch"
-  ],
+  "extends": ["config:recommended"],
   "packageRules": [
     {
-      "matchPackagePatterns": ["^mermaid"],
+      "matchPackageNames": ["mermaid", "@mermaid-js/**"],
       "groupName": "Mermaid packages"
-    },
-    {
-      "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
-      "automerge": true
     }
   ],
   "dependencyDashboard": true,
