@@ -33,7 +33,7 @@
     "@eslint/js": "^10.0.1",
     "@fortawesome/fontawesome-free": "^7.2.0",
     "@iconify-json/hugeicons": "^1.2.32",
-    "@iconify-json/logos": "^1.2.12",
+    "@iconify-json/logos": "^1.2.13",
     "@iconify-json/material-symbols": "^1.2.88",
     "@iconify-json/mdi": "^1.2.3",
     "@lucide/svelte": "^1.30.0",
