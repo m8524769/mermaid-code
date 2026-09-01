@@ -306,15 +306,26 @@ export const updateCode = (
   code: string,
   {
     updateDiagram = false,
-    resetPanZoom = false
-  }: { updateDiagram?: boolean; resetPanZoom?: boolean } = {}
+    resetPanZoom = false,
+    pan,
+    zoom
+  }: {
+    updateDiagram?: boolean;
+    resetPanZoom?: boolean;
+    pan?: State['pan'];
+    zoom?: State['zoom'];
+  } = {}
 ): void => {
   errorDebug();
 
   update((state) => {
     if (resetPanZoom) {
-      state.pan = undefined;
-      state.zoom = undefined;
+      // Apply the target viewport (undefined => reset to fit) in the same
+      // update as the code, so the diagram renders once with the correct
+      // pan/zoom. Splitting code and pan/zoom into two updates makes View's
+      // render guard skip the second (code unchanged), leaving it reset.
+      state.pan = pan;
+      state.zoom = zoom;
     }
     state.code = code;
     state.updateDiagram = updateDiagram;

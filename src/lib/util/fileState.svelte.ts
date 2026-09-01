@@ -15,7 +15,7 @@ import {
 } from '$/util/fileSystem';
 import { notify } from '$/util/notify';
 import { m } from '$/paraglide/messages';
-import { inputState, updateCode, updateCodeStore } from '$/util/state.svelte';
+import { inputState, updateCode } from '$/util/state.svelte';
 import { readJSON, writeJSON } from '$/util/persist.svelte';
 import debounce from 'lodash-es/debounce';
 
@@ -433,11 +433,15 @@ export const fileState = {
     activeTabId = id;
     const tab = tabs.find((t) => t.id === id);
     if (tab) {
-      updateCode(tab.code, { updateDiagram: true, resetPanZoom: true });
-      // Restore this tab's pan/zoom if it has one
-      if (tab.pan !== undefined || tab.zoom !== undefined) {
-        updateCodeStore({ pan: tab.pan, zoom: tab.zoom });
-      }
+      // Restore this tab's viewport atomically with its code (undefined pan/zoom
+      // => reset to fit). A separate updateCodeStore for pan/zoom would be
+      // skipped by View's render guard, resetting the diagram on every switch.
+      updateCode(tab.code, {
+        updateDiagram: true,
+        resetPanZoom: true,
+        pan: tab.pan,
+        zoom: tab.zoom
+      });
     }
     saveTabsToStorage();
   },
