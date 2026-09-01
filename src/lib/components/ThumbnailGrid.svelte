@@ -64,6 +64,24 @@
     }
   });
 
+  // When the active file is saved, its thumbnail is stale. Track the last-seen
+  // saved content per path and enqueue on change; processQueue's disk-code
+  // comparison then re-renders only if the content actually differs (no blank
+  // flash). Keying by path means tab switches don't re-enqueue an unchanged file.
+  const seenSavedCode = new Map<string, string>();
+  $effect(() => {
+    const activeTab = fileState.tabs.find((t) => t.id === fileState.activeTabId);
+    const savedCode = activeTab?.savedCode;
+    const path = activeTab?.path;
+    if (!path || activeTab?.isDraft || savedCode === undefined) return;
+    if (seenSavedCode.get(path) === savedCode) return;
+    seenSavedCode.set(path, savedCode);
+    if (!queue.includes(path)) {
+      queue.push(path);
+      void processQueue();
+    }
+  });
+
   $effect(() => {
     const root = fileState.rootPath;
     // Re-scan when tree changes (new file/folder created, file deleted, etc.)
