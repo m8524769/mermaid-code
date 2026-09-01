@@ -2,6 +2,18 @@
 
 All notable changes to Mermaid Code are documented here.
 
+## [v0.7.0] - 2026-09-01
+
+### Added
+
+- **Internationalization (English & Simplified Chinese)**: the entire interface is now localized, including the native menu bar and system dialogs. A language switcher in the menu changes the app language instantly — UI text updates live without a reload, while the native menu picks up the change on the next launch. On first launch the app follows your system language and falls back to English
+
+## [v0.6.2] - 2026-08-30
+
+### Changed
+
+- **Mermaid.js updated to 11.17.2** (from 11.16.1), along with other dependency updates
+
 ## [v0.6.1] - 2026-08-27
 
 ### Fixed
