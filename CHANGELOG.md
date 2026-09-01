@@ -2,6 +2,13 @@
 
 All notable changes to Mermaid Code are documented here.
 
+## [v0.7.1] - 2026-09-02
+
+### Fixed
+
+- **Tab zoom & position preserved**: switching between open tabs no longer resets the diagram's zoom and pan — each tab keeps its own viewport
+- **Thumbnail refresh on save**: saving changes to a diagram now updates its thumbnail in the file grid, instead of showing the previously rendered version
+
 ## [v0.7.0] - 2026-09-01
 
 ### Added
