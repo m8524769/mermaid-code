@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { m } from '$/paraglide/messages';
   import DesktopEditor from '$/components/DesktopEditor.svelte';
   import { fileState } from '$lib/util/fileState.svelte';
   import {
@@ -124,13 +125,14 @@
     <div class="shrink-0 border-b bg-muted/40 px-3 py-2 text-xs">
       <div class="flex flex-col gap-2">
         <div class="flex items-center gap-2">
-          <label class="w-20 shrink-0 text-muted-foreground" for="cfg-theme">Theme</label>
+          <label class="w-20 shrink-0 text-muted-foreground" for="cfg-theme"
+            >{m.config_theme()}</label>
           <select
             id="cfg-theme"
             class="flex-1 rounded border bg-background px-1.5 py-0.5 text-xs"
             value={String(parsedConfig.theme ?? '')}
             onchange={(e) => setConfigField('theme', e.currentTarget.value)}>
-            <option value="">— default (default) —</option>
+            <option value="">{m.config_opt_default({ value: 'default' })}</option>
             {#each THEMES as t}
               <option value={t}>{t}</option>
             {/each}
@@ -138,17 +140,18 @@
           {#if isOverridden('theme')}
             <span
               class="shrink-0 text-yellow-500"
-              title="Overridden in code: {frontmatterConfig.theme}">⚠</span>
+              title={m.config_overridden({ value: frontmatterConfig.theme })}>⚠</span>
           {/if}
         </div>
         <div class="flex items-center gap-2">
-          <label class="w-20 shrink-0 text-muted-foreground" for="cfg-look">Look</label>
+          <label class="w-20 shrink-0 text-muted-foreground" for="cfg-look"
+            >{m.config_look()}</label>
           <select
             id="cfg-look"
             class="flex-1 rounded border bg-background px-1.5 py-0.5 text-xs"
             value={String(parsedConfig.look ?? '')}
             onchange={(e) => setConfigField('look', e.currentTarget.value)}>
-            <option value="">— default (classic) —</option>
+            <option value="">{m.config_opt_default({ value: 'classic' })}</option>
             {#each LOOKS as l}
               <option value={l}>{l}</option>
             {/each}
@@ -156,17 +159,18 @@
           {#if isOverridden('look')}
             <span
               class="shrink-0 text-yellow-500"
-              title="Overridden in code: {frontmatterConfig.look}">⚠</span>
+              title={m.config_overridden({ value: frontmatterConfig.look })}>⚠</span>
           {/if}
         </div>
         <div class="flex items-center gap-2">
-          <label class="w-20 shrink-0 text-muted-foreground" for="cfg-layout">Layout</label>
+          <label class="w-20 shrink-0 text-muted-foreground" for="cfg-layout"
+            >{m.config_layout()}</label>
           <select
             id="cfg-layout"
             class="flex-1 rounded border bg-background px-1.5 py-0.5 text-xs"
             value={String(parsedConfig.layout ?? '')}
             onchange={(e) => setConfigField('layout', e.currentTarget.value)}>
-            <option value="">— auto —</option>
+            <option value="">{m.config_opt_auto()}</option>
             {#each LAYOUTS as l}
               <option value={l}>{l}</option>
             {/each}
@@ -174,11 +178,12 @@
           {#if isOverridden('layout')}
             <span
               class="shrink-0 text-yellow-500"
-              title="Overridden in code: {frontmatterConfig.layout}">⚠</span>
+              title={m.config_overridden({ value: frontmatterConfig.layout })}>⚠</span>
           {/if}
         </div>
         <div class="flex items-center gap-2">
-          <label class="w-20 shrink-0 text-muted-foreground" for="cfg-font">Font</label>
+          <label class="w-20 shrink-0 text-muted-foreground" for="cfg-font"
+            >{m.config_font()}</label>
           <input
             id="cfg-font"
             type="text"
@@ -189,21 +194,21 @@
           {#if isOverridden('fontFamily')}
             <span
               class="shrink-0 text-yellow-500"
-              title="Overridden in code: {frontmatterConfig.fontFamily}">⚠</span>
+              title={m.config_overridden({ value: frontmatterConfig.fontFamily })}>⚠</span>
           {/if}
         </div>
         <div class="flex justify-end gap-1">
           <button
             class="rounded px-2 py-0.5 text-xs text-muted-foreground hover:bg-muted hover:text-foreground"
-            title="Reset config to default"
+            title={m.config_reset()}
             onclick={() => updateConfig('{}')}>
-            Reset
+            {m.reset()}
           </button>
           <button
             class="rounded px-2 py-0.5 text-xs text-muted-foreground hover:bg-muted hover:text-foreground"
-            title="Insert config as YAML frontmatter into the diagram code"
+            title={m.config_pin()}
             onclick={pinConfigToCode}>
-            Pin to code
+            {m.pin_to_code()}
           </button>
         </div>
       </div>

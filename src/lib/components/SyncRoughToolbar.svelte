@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { m } from '$/paraglide/messages';
   import FloatingToolbar from '$/components/FloatingToolbar.svelte';
   import { Toggle } from '$/components/ui/toggle';
   import { defaultState, inputState, updateCodeStore } from '$/util/state.svelte';
@@ -15,13 +16,13 @@
   <Toggle
     bind:pressed={() => inputState.rough, (rough) => updateCodeStore({ rough })}
     size="sm"
-    title="Hand-Drawn">
+    title={m.sync_hand_drawn()}>
     <RoughIcon />
   </Toggle>
   <Toggle
     bind:pressed={() => inputState.grid ?? defaultState.grid, (grid) => updateCodeStore({ grid })}
     size="sm"
-    title="Background Grid">
+    title={m.sync_background_grid()}>
     <BackgroundIcon />
   </Toggle>
 </FloatingToolbar>

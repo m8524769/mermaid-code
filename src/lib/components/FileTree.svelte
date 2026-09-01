@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { m } from '$/paraglide/messages';
   import { fileState, type FileTreeNode } from '$/util/fileState.svelte';
   import { confirmDialog } from '$/util/fileSystem';
   import FileTree from '$/components/FileTree.svelte';
@@ -50,9 +51,7 @@
     }
     if (newName !== node.name) {
       if (!node.isDir && !/\.(mmd|mermaid)$/i.test(newName)) {
-        const ok = await confirmDialog(
-          `"${newName}" is not a supported file type (.mmd or .mermaid). Rename anyway?`
-        );
+        const ok = await confirmDialog(m.rename_unsupported_confirm({ name: newName }));
         if (!ok) return;
       }
       await fileState.renameNode(node.path, newName);
@@ -142,26 +141,26 @@
         {#if node.isDir}
           <button
             class="cursor-pointer rounded bg-background p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground"
-            title="New File"
+            title={m.action_new_file()}
             onclick={() => fileState.createFile(node.path)}>
             <AddIcon class="size-3.5" />
           </button>
           <button
             class="cursor-pointer rounded bg-background p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground"
-            title="New Folder"
+            title={m.action_new_folder()}
             onclick={() => fileState.createDir(node.path)}>
             <FolderAddIcon class="size-3.5" />
           </button>
         {/if}
         <button
           class="cursor-pointer rounded bg-background p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground"
-          title="Rename"
+          title={m.action_rename()}
           onclick={() => startRename(node)}>
           <EditIcon class="size-3.5" />
         </button>
         <button
           class="cursor-pointer rounded bg-background p-0.5 text-destructive hover:bg-muted"
-          title="Delete"
+          title={m.action_delete()}
           onclick={() => fileState.deleteNode(node.path, node.isDir)}>
           <DeleteIcon class="size-3.5" />
         </button>

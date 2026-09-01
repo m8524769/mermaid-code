@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { m } from '$/paraglide/messages';
   import CopyButton from '$/components/CopyButton.svelte';
   import { Input } from '$/components/ui/input';
   import type { InputType } from '$/types';
@@ -6,7 +7,7 @@
 
   let {
     value,
-    label = 'Copy',
+    label = m.copy(),
     type = 'url',
     testID
   }: { value: string; label?: string; type?: InputType; testID?: string } = $props();

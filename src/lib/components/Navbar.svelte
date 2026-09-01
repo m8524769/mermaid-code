@@ -3,6 +3,7 @@
   import { Separator } from '$/components/ui/separator';
   import { updateState } from '$/util/updateState.svelte';
   import { fileState } from '$/util/fileState.svelte';
+  import { m } from '$/paraglide/messages';
   import { type Snippet } from 'svelte';
   import MermaidIcon from '~icons/custom/mermaid';
   import { version as appVersion } from '../../../package.json';
@@ -13,11 +14,11 @@
 
   let { children }: Props = $props();
 
-  const activeFileName = $derived(
-    fileState.tabs
-      .find((t) => t.id === fileState.activeTabId)
-      ?.name.replace(/\.(mmd|mermaid)$/i, '') ?? null
-  );
+  const activeFileName = $derived.by(() => {
+    const tab = fileState.tabs.find((t) => t.id === fileState.activeTabId);
+    if (!tab) return null;
+    return tab.isDraft ? m.draft() : tab.name.replace(/\.(mmd|mermaid)$/i, '');
+  });
 </script>
 
 <nav class="z-50 flex p-4 sm:p-6">
@@ -31,16 +32,16 @@
         {#if updateState.downloadProgress === null}
           <button
             class="text-xs text-accent hover:underline"
-            title="v{updateState.pendingVersion} is available. Click to download."
+            title={m.update_available({ version: updateState.pendingVersion })}
             onclick={() => void updateState.download()}>
             ↑ v{updateState.pendingVersion}
           </button>
         {:else if updateState.downloadProgress === 101}
           <button
             class="text-xs text-accent hover:underline"
-            title="Ready to install v{updateState.pendingVersion}"
+            title={m.update_ready({ version: updateState.pendingVersion })}
             onclick={() => void updateState.installDownloaded()}>
-            ↑ v{updateState.pendingVersion} — Install & Restart
+            ↑ v{updateState.pendingVersion} — {m.update_install_restart()}
           </button>
         {:else}
           <span class="text-xs text-muted-foreground">
@@ -48,7 +49,7 @@
           </span>
         {/if}
       {:else if updateState.isLatest}
-        <span class="text-xs text-muted-foreground/60">✓ latest</span>
+        <span class="text-xs text-muted-foreground/60">{m.update_latest()}</span>
       {/if}
     </div>
   </div>

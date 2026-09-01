@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { m } from '$/paraglide/messages';
   import FloatingToolbar from '$/components/FloatingToolbar.svelte';
   import { Button } from '$/components/ui/button';
   import { Separator } from '$/components/ui/separator';
@@ -21,7 +22,7 @@
 </script>
 
 <FloatingToolbar>
-  <Button variant="ghost" size="icon" title="Reset view" onclick={() => panZoomState.reset()}>
+  <Button variant="ghost" size="icon" title={m.reset_view()} onclick={() => panZoomState.reset()}>
     <ArrowsToCircleIcon />
   </Button>
   <Separator orientation="vertical" />
@@ -39,7 +40,7 @@
   <Button
     variant="ghost"
     size="icon"
-    title={isPresentationMode ? 'Exit Full Screen' : 'Full Screen'}
+    title={isPresentationMode ? m.exit_full_screen() : m.full_screen()}
     onclick={() => onPresentationToggle()}>
     {#if isPresentationMode}
       <CloseFullscreenIcon />

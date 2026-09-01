@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { m } from '$/paraglide/messages';
   import { fileState, autoSaveTick, IGNORED_DIRS } from '$/util/fileState.svelte';
   import { persisted } from '$/util/persist.svelte';
   import { mcpState } from '$/util/mcpState.svelte';
@@ -84,7 +85,7 @@
     <span
       class="min-w-0 flex-1 truncate text-xs font-semibold tracking-wide text-muted-foreground uppercase"
       title={fileState.rootPath ?? undefined}>
-      {pathLabel ?? 'Explorer'}
+      {pathLabel ?? m.explorer_label()}
     </span>
     {#if fileState.rootPath}
       <button
@@ -92,7 +93,7 @@
           'rounded p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground',
           viewMode.value === 'tree' && 'bg-muted'
         ]}
-        title="Tree view"
+        title={m.sidebar_tree_view()}
         onclick={() => (viewMode.value = 'tree')}>
         <ViewListIcon class="size-4" />
       </button>
@@ -101,14 +102,14 @@
           'rounded p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground',
           viewMode.value === 'grid' && 'bg-muted'
         ]}
-        title="Thumbnail grid"
+        title={m.sidebar_grid_view()}
         onclick={() => (viewMode.value = 'grid')}>
         <GridViewIcon class="size-4" />
       </button>
       <div class="mx-0.5 h-3.5 w-px bg-border"></div>
       <button
         class="rounded p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground"
-        title="New File"
+        title={m.action_new_file()}
         onclick={() => fileState.createFile(fileState.rootPath!)}>
         <AddIcon class="size-4" />
       </button>
@@ -119,9 +120,7 @@
             ? 'pointer-events-none text-muted-foreground/40'
             : 'text-muted-foreground hover:bg-muted hover:text-foreground'
         ]}
-        title={viewMode.value === 'grid'
-          ? 'New Folder (not available in thumbnail view)'
-          : 'New Folder'}
+        title={viewMode.value === 'grid' ? m.new_folder_grid_disabled() : m.action_new_folder()}
         disabled={viewMode.value === 'grid'}
         onclick={() => fileState.createDir(fileState.rootPath!)}>
         <FolderAddIcon class="size-4" />
@@ -129,7 +128,7 @@
     {/if}
     <button
       class="rounded p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground"
-      title="Open Folder"
+      title={m.action_open_folder()}
       onclick={() => fileState.openFolder()}>
       <FolderOpenIcon class="size-4" />
     </button>
@@ -139,7 +138,7 @@
     <div class="px-2 py-1">
       <input
         class="w-full rounded bg-muted/50 px-2 py-0.5 text-xs outline-none placeholder:text-muted-foreground/60 focus:ring-1 focus:ring-primary"
-        placeholder="Search files..."
+        placeholder={m.sidebar_search_placeholder()}
         bind:value={searchQuery} />
     </div>
   {/if}
@@ -148,17 +147,17 @@
     {#if !fileState.rootPath}
       <div class="flex flex-col items-center gap-3 px-4 py-8">
         <p class="text-center text-xs text-muted-foreground">
-          Open a folder to start editing your diagrams.
+          {m.open_folder_prompt()}
         </p>
         <button
           class="flex items-center gap-2 rounded-md bg-primary px-3 py-1.5 text-xs text-primary-foreground transition-colors hover:bg-primary/70"
           onclick={() => fileState.openFolder()}>
           <FolderOpenIcon class="size-4" />
-          Open Folder
+          {m.action_open_folder()}
         </button>
       </div>
     {:else if fileState.tree.length === 0}
-      <p class="px-3 py-4 text-center text-xs text-muted-foreground">This folder is empty.</p>
+      <p class="px-3 py-4 text-center text-xs text-muted-foreground">{m.folder_empty()}</p>
     {:else if viewMode.value === 'grid' && renderContainer}
       <ThumbnailGrid query={searchQuery} />
     {:else}
@@ -168,7 +167,7 @@
 
   {#if fileState.activeTabId}
     <div class="flex items-center justify-between border-t px-2 py-1 text-xs text-muted-foreground">
-      <span>Auto-save</span>
+      <span>{m.sidebar_autosave()}</span>
       <button
         class={[
           'rounded px-1.5 py-0.5 text-xs',

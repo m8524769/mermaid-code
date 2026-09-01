@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { m } from '$/paraglide/messages';
   import { fileState, IGNORED_DIRS } from '$/util/fileState.svelte';
   import { readTextFile, readDir, confirmDialog } from '$/util/fileSystem';
   import { render } from '$/util/mermaid';
@@ -144,9 +145,7 @@
     if (origExt && !newName.includes('.')) newName = newName + origExt;
     if (newName !== name) {
       if (!/\.(mmd|mermaid)$/i.test(newName)) {
-        const ok = await confirmDialog(
-          `"${newName}" is not a supported file type (.mmd or .mermaid). Rename anyway?`
-        );
+        const ok = await confirmDialog(m.rename_unsupported_confirm({ name: newName }));
         if (!ok) return;
       }
       await fileState.renameNode(path, newName);
@@ -263,13 +262,13 @@
               <div class="flex items-center gap-0.5">
                 <button
                   class="cursor-pointer rounded bg-background p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground"
-                  title="Rename"
+                  title={m.action_rename()}
                   onclick={(e) => startRename(path, e)}>
                   <EditIcon class="size-3" />
                 </button>
                 <button
                   class="cursor-pointer rounded bg-background p-0.5 text-destructive hover:bg-muted"
-                  title="Delete"
+                  title={m.action_delete()}
                   onclick={(e) => {
                     e.stopPropagation();
                     void fileState.deleteNode(path, false);

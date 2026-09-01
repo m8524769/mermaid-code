@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { m } from '$/paraglide/messages';
   import { Button } from '$/components/ui/button';
 
   interface Props {
@@ -10,5 +11,5 @@
 </script>
 
 <Button variant="secondary" size="sm" onclick={ontoggle}>
-  {collapsed ? 'Show code' : 'Hide code'}
+  {collapsed ? m.show_code() : m.hide_code()}
 </Button>

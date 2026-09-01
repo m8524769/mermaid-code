@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { m } from '$/paraglide/messages';
   import Card from '$/components/Card/Card.svelte';
   import { Button, buttonVariants } from '$/components/ui/button';
   import * as Popover from '$/components/ui/popover';
@@ -38,7 +39,7 @@
   ];
 </script>
 
-<Card title="Sample Diagrams" isStackable icon={{ component: ShapesIcon }}>
+<Card title={m.preset_title()} isStackable icon={{ component: ShapesIcon }}>
   <div class="flex h-fit max-h-52 flex-wrap gap-2 overflow-y-auto p-2">
     {#each diagramOrder as sample (sample)}
       {@const examples = samples[sample]}
@@ -52,7 +53,7 @@
         {#if examples.length > 1}
           <Popover.Root>
             <Popover.Trigger
-              aria-label="Choose a {sample} example"
+              aria-label={m.preset_choose_example({ sample })}
               class={cn(
                 buttonVariants({ size: 'sm' }),
                 'rounded-l-none border-l border-primary-foreground/30 px-0.5 [&_svg]:size-5'

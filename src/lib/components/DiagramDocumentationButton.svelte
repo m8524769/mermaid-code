@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { m } from '$/paraglide/messages';
   import { Button } from '$/components/ui/button';
   import type { DocumentationConfig } from '$/types';
   import { env } from '$/util/env';
@@ -108,7 +109,7 @@
   variant="ghost"
   href={doc.url}
   target="_blank"
-  title="View documentation for {doc.key.replace('Diagram', '')} diagram">
+  title={m.doc_view_for({ type: doc.key.replace('Diagram', '') })}>
   <BookIcon />
-  Docs
+  {m.docs_label()}
 </Button>

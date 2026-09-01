@@ -1,13 +1,14 @@
 <script lang="ts">
   import { Button } from '$/components/ui/button';
   import { notify } from '$/util/notify';
+  import { m } from '$/paraglide/messages';
   import { scale } from 'svelte/transition';
   import CheckIcon from '~icons/material-symbols/check-rounded';
   import CopyIcon from '~icons/material-symbols/content-copy-outline-rounded';
 
   let {
     onclick,
-    label = 'Copy'
+    label = m.copy()
   }: { onclick: (event?: Event) => Promise<unknown>; label?: string } = $props();
 
   let showCheckIcon = $state(false);
@@ -22,7 +23,7 @@
       }, 1000);
       await onclick(event);
     } catch {
-      notify('Failed to copy');
+      notify(m.copy_failed());
     }
   }}>
   <div class="grid">

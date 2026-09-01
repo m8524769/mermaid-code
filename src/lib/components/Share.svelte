@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { m } from '$/paraglide/messages';
   import { buttonVariants } from '$/components/ui/button';
   import * as Dialog from '$/components/ui/dialog';
   import { urls } from '$/util/state.svelte';
@@ -8,13 +9,14 @@
 </script>
 
 <Dialog.Root>
-  <Dialog.Trigger class={buttonVariants({ size: 'sm' })}>Share</Dialog.Trigger>
+  <Dialog.Trigger class={buttonVariants({ size: 'sm' })}>{m.share_button()}</Dialog.Trigger>
   <Dialog.Content>
     <Dialog.Header>
       <Dialog.Title class="flex items-center gap-2 text-xl">
-        <ShareIcon class="size-5" /> Shareable links
+        <ShareIcon class="size-5" />
+        {m.share_title()}
       </Dialog.Title>
-      <Dialog.Description>Share your diagrams with others.</Dialog.Description>
+      <Dialog.Description>{m.share_description()}</Dialog.Description>
     </Dialog.Header>
 
     <div class="flex flex-col gap-4">
@@ -25,7 +27,7 @@
         </h2>
         <CopyInput value={urls.current.edit} />
         <Dialog.Description>
-          The content of your diagrams never leaves your device.
+          {m.share_privacy_note()}
         </Dialog.Description>
       </div>
     </div>

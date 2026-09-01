@@ -1,5 +1,6 @@
 <script lang="ts">
   import Actions from '$/components/Actions.svelte';
+  import { m } from '$/paraglide/messages';
   import Card from '$/components/Card/Card.svelte';
   import DiagramDocButton from '$/components/DiagramDocumentationButton.svelte';
   import Editor from '$/components/Editor.svelte';
@@ -37,18 +38,18 @@
     updateCodeStore({ editorMode });
   };
 
-  const editorTabs: Tab[] = [
+  const editorTabs: Tab[] = $derived([
     {
       icon: CodeIcon,
       id: 'code',
-      title: 'Code'
+      title: m.tab_code()
     },
     {
       icon: GearIcon,
       id: 'config',
-      title: 'Config'
+      title: m.tab_config()
     }
-  ];
+  ]);
 
   let width = $state(0);
   let isDraggingOver = $state(false);
@@ -310,7 +311,7 @@
       style="pointer-events:none">
       <div
         class="rounded-xl border-2 border-dashed border-muted-foreground bg-background/80 px-8 py-6 text-sm font-medium text-muted-foreground shadow-lg">
-        Drop to open
+        {m.drop_to_open()}
       </div>
     </div>
   {/if}
@@ -320,8 +321,8 @@
       <Toggle
         bind:pressed={isSidebarOpen}
         size="sm"
-        title="File Explorer"
-        aria-label="File Explorer">
+        title={m.file_explorer()}
+        aria-label={m.file_explorer()}>
         <FolderIcon />
       </Toggle>
       {#if showSidebarHint}
@@ -330,7 +331,7 @@
           style="top:{hintTop}px;right:{hintRight}px"
           in:fade={{ duration: 500 }}
           out:fade={{ duration: 300 }}>
-          Open File Explorer
+          {m.open_file_explorer()}
           <div class="absolute -top-1 right-1/2 h-2 w-2 translate-x-1/2 rotate-45 bg-primary"></div>
         </div>
       {/if}
@@ -343,7 +344,7 @@
         if (isAgentCollapsed) agentPane?.expand();
         else agentPane?.collapse();
       }}
-      title="Chat with AI Agent">Ask AI</Button>
+      title={m.chat_with_ai()}>{m.ask_ai()}</Button>
   </Navbar>
 
   <div class="flex flex-1 flex-col overflow-hidden" bind:clientWidth={width}>

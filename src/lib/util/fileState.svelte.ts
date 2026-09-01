@@ -14,6 +14,7 @@ import {
   writeTextFile
 } from '$/util/fileSystem';
 import { notify } from '$/util/notify';
+import { m } from '$/paraglide/messages';
 import { inputState, updateCode, updateCodeStore } from '$/util/state.svelte';
 import { readJSON, writeJSON } from '$/util/persist.svelte';
 import debounce from 'lodash-es/debounce';
@@ -322,9 +323,7 @@ export const fileState = {
     const dirtyTabs = tabs.filter((t) => !t.isDraft && t.isDirty);
     if (dirtyTabs.length > 0) {
       const names = dirtyTabs.map((t) => t.name).join(', ');
-      const save = await confirmDialog(
-        `Unsaved changes in: ${names}\n\nSave all before switching?`
-      );
+      const save = await confirmDialog(m.unsaved_switch_confirm({ names }));
       if (save) {
         await Promise.all(dirtyTabs.map((t) => fileState.saveTab(t.id, { silent: true })));
       }
@@ -339,9 +338,7 @@ export const fileState = {
     const dirtyTabs = tabs.filter((t) => !t.isDraft && t.isDirty);
     if (dirtyTabs.length > 0) {
       const names = dirtyTabs.map((t) => t.name).join(', ');
-      const save = await confirmDialog(
-        `Unsaved changes in: ${names}\n\nSave all before switching?`
-      );
+      const save = await confirmDialog(m.unsaved_switch_confirm({ names }));
       if (save) {
         await Promise.all(dirtyTabs.map((t) => fileState.saveTab(t.id, { silent: true })));
       }
@@ -373,14 +370,14 @@ export const fileState = {
     const ext = path.split('.').pop()?.toLowerCase() ?? '';
     const supported = ['mmd', 'mermaid'];
     if (!supported.includes(ext)) {
-      notify(`Cannot edit this file type: .${ext}`);
+      notify(m.file_cannot_edit_type({ ext }));
       return;
     }
     let code = '';
     try {
       code = await readTextFile(path);
     } catch {
-      notify(`Failed to read file: ${pathBasename(path)}`);
+      notify(m.file_read_failed({ name: pathBasename(path) }));
       return;
     }
     const name = pathBasename(path);
@@ -403,9 +400,7 @@ export const fileState = {
     const tab = tabs.find((t) => t.id === id);
     if (!tab || tab.isDraft) return;
     if (tab.isDirty) {
-      const confirmed = await confirmDialog(
-        `"${tab.name}" has unsaved changes. Close without saving?`
-      );
+      const confirmed = await confirmDialog(m.close_unsaved_confirm({ name: tab.name }));
       if (!confirmed) return;
     }
     const idx = tabs.findIndex((t) => t.id === id);
@@ -462,9 +457,9 @@ export const fileState = {
       await writeTextFile(tab.path, snapshot);
       tab.savedCode = snapshot;
       tab.isDirty = tab.code !== snapshot;
-      if (!silent) notify(`Saved: ${tab.name}`);
+      if (!silent) notify(m.file_saved({ name: tab.name }));
     } catch {
-      notify(`Failed to save: ${tab.name}`);
+      notify(m.file_save_failed({ name: tab.name }));
     }
   },
 
@@ -492,7 +487,7 @@ export const fileState = {
       }
       await fileState.openFile(path, { recordRecent: false });
     } catch {
-      notify(`Failed to create file in ${pathBasename(dirPath)}`);
+      notify(m.file_create_failed({ dir: pathBasename(dirPath) }));
     }
   },
 
@@ -512,7 +507,7 @@ export const fileState = {
         await fileState.toggleDir(dirPath);
       }
     } catch {
-      notify(`Failed to create folder`);
+      notify(m.folder_create_failed());
     }
   },
 
@@ -547,14 +542,14 @@ export const fileState = {
       thumbnailCache.setLastCreated('');
       await refreshTree();
     } catch {
-      notify(`Failed to rename`);
+      notify(m.rename_failed());
     }
   },
 
   async deleteNode(path: string, isDir: boolean): Promise<void> {
     const name = pathBasename(path);
     const confirmed = await confirmDialog(
-      `Delete "${name}"${isDir ? ' and all its contents' : ''}? This cannot be undone.`
+      isDir ? m.delete_dir_confirm({ name }) : m.delete_file_confirm({ name })
     );
     if (!confirmed) return;
     try {
@@ -578,7 +573,7 @@ export const fileState = {
       }
       await refreshTree();
     } catch {
-      notify(`Failed to delete "${name}"`);
+      notify(m.delete_failed({ name }));
     }
   },
 
@@ -670,7 +665,7 @@ const reconcileTabWithDisk = async (p: string): Promise<void> => {
   }
   if (code === tab.savedCode) return; // unchanged — our own save or a rename with same content
   if (tab.isDirty) {
-    notify(`"${tab.name}" was modified externally but has unsaved changes`);
+    notify(m.file_modified_externally({ name: tab.name }));
   } else {
     tab.code = code;
     tab.savedCode = code;
@@ -703,7 +698,7 @@ const handleWatchEvent = async (event: import('$/util/fileSystem').WatchEvent): 
           (t) => t.path === p || t.path.startsWith(p + '/') || t.path.startsWith(p + '\\')
         );
         for (const tab of affected) {
-          notify(`"${tab.name}" was deleted externally`);
+          notify(m.file_deleted_externally({ name: tab.name }));
           tabs = tabs.filter((t) => t.id !== tab.id);
           if (activeTabId === tab.id) {
             const next = tabs[0] ?? null;
@@ -734,7 +729,7 @@ const handleWatchEvent = async (event: import('$/util/fileSystem').WatchEvent): 
         (t) => t.path === p || t.path.startsWith(p + '/') || t.path.startsWith(p + '\\')
       );
       for (const tab of affected) {
-        notify(`"${tab.name}" was deleted externally`);
+        notify(m.file_deleted_externally({ name: tab.name }));
         tabs = tabs.filter((t) => t.id !== tab.id);
         if (activeTabId === tab.id) {
           const next = tabs[0] ?? null;

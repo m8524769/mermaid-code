@@ -5,6 +5,8 @@
   import { saveFileAs } from '$/util/fileSystem';
   import { updateState } from '$/util/updateState.svelte';
   import { toggleDarkTheme } from '$/util/state.svelte';
+  import { initLocale } from '$/util/locale.svelte';
+  import { m } from '$/paraglide/messages';
   import { initHandler } from '$/util/util';
   import { mode, ModeWatcher } from 'mode-watcher';
   import { onMount, type Snippet } from 'svelte';
@@ -19,6 +21,10 @@
   // This can be removed once https://github.com/sveltejs/kit/issues/1612 is fixed.
   // Then move it into src and vite will bundle it automatically.
   onMount(() => {
+    // Mirror the resolved locale to a file the Rust side reads at startup to
+    // localize the native menu / dialogs.
+    initLocale();
+
     window.addEventListener('hashchange', () => {
       void initHandler();
     });
@@ -44,7 +50,7 @@
         // Check unsaved real files first
         if (dirtyTabs.length > 0) {
           const names = dirtyTabs.map((t) => t.name).join(', ');
-          const ok = await confirm(`You have unsaved changes in: ${names}\n\nQuit without saving?`);
+          const ok = await confirm(m.quit_unsaved_confirm({ names }));
           if (!ok) {
             event.preventDefault();
             return;
@@ -54,10 +60,10 @@
         // Then check draft
         if (draft) {
           event.preventDefault();
-          const save = await confirm('You have an unsaved draft. Save before closing?', {
-            title: 'Unsaved Draft',
-            okLabel: 'Save',
-            cancelLabel: 'Discard'
+          const save = await confirm(m.unsaved_draft_confirm(), {
+            title: m.unsaved_draft_title(),
+            okLabel: m.save(),
+            cancelLabel: m.discard()
           });
           if (save) {
             const now = new Date();
@@ -85,10 +91,9 @@
         if (update) {
           updateState.set(update.version, update);
           const { confirm } = await import('@tauri-apps/plugin-dialog');
-          const ok = await confirm(
-            `Mermaid Code ${update.version} is available.\n\nDownload now?`,
-            { title: 'Update Available' }
-          );
+          const ok = await confirm(m.update_confirm({ version: update.version }), {
+            title: m.update_available_title()
+          });
           if (ok) {
             void updateState.download();
           }

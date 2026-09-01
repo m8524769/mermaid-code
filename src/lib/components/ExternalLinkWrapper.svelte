@@ -1,5 +1,6 @@
 <script lang="ts">
   import { validatedState } from '$/util/state.svelte';
+  import { m } from '$/paraglide/messages';
   import * as Tooltip from '$lib/components/ui/tooltip';
   import type { ComponentProps, Snippet } from 'svelte';
   import ExternalLinkIcon from '~icons/material-symbols/open-in-new-rounded';
@@ -9,7 +10,7 @@
     domain,
     shouldCheckDiagramType = true,
     side = 'bottom',
-    labelPrefix = 'Opens your diagram in',
+    labelPrefix,
     isVisible = true,
     sharesData = true,
     showPopup = true
@@ -41,17 +42,15 @@
         <Tooltip.Content {side} class="bg-secondary shadow-xl">
           <div
             class="flex cursor-help items-center gap-2"
-            title={sharesData
-              ? 'Your diagram will be sent to the external service'
-              : 'Your diagram is not shared'}>
+            title={sharesData ? m.ext_will_send() : m.ext_not_shared()}>
             {#if shouldDisableComponent}
               <div class="text-muted-foreground">
-                This diagram type is not supported in {domain}
+                {m.ext_type_unsupported({ domain })}
               </div>
             {:else}
               <ExternalLinkIcon />
               <span class="flex items-center gap-1">
-                {labelPrefix}
+                {labelPrefix ?? m.ext_opens_in()}
                 <div class="text-accent">{domain}</div>
               </span>
             {/if}

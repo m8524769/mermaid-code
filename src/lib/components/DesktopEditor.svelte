@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { m } from '$/paraglide/messages';
   import type { EditorProps } from '$/types';
   import { env } from '$/util/env';
   import { validatedState } from '$/util/state.svelte';
@@ -256,7 +257,7 @@
 
     editor.addAction({
       id: 'file-save',
-      label: 'Save File',
+      label: m.editor_save_file(),
       keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS],
       run: () => {
         const activeTab = fileState.tabs.find((t) => t.id === fileState.activeTabId);
@@ -269,7 +270,7 @@
     });
     editor.addAction({
       id: 'file-save-as',
-      label: 'Save File As',
+      label: m.editor_save_file_as(),
       keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyMod.Shift | monaco.KeyCode.KeyS],
       run: () => {
         const tab = fileState.tabs.find((t) => t.id === fileState.activeTabId);
@@ -278,7 +279,7 @@
     });
     editor.addAction({
       id: 'file-close-tab',
-      label: 'Close Tab',
+      label: m.close_tab(),
       keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyW],
       run: () => {
         if (fileState.activeTabId) void fileState.closeTab(fileState.activeTabId);
@@ -286,7 +287,7 @@
     });
     editor.addAction({
       id: 'file-new',
-      label: 'New File',
+      label: m.action_new_file(),
       keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyT],
       run: () => {
         if (fileState.rootPath) void fileState.createFile(fileState.rootPath);
@@ -385,7 +386,7 @@
     <div class="flex shrink-0 flex-col text-sm">
       <div class="flex items-center gap-2 bg-slate-900 p-2 text-white">
         <ExclamationCircleIcon class="size-5 shrink-0 text-destructive" aria-hidden="true" />
-        <p>Syntax error</p>
+        <p>{m.error_syntax()}</p>
       </div>
       <output class="overflow-auto bg-muted p-2 text-xs" name="mermaid-error" for="editor">
         <pre
@@ -398,7 +399,7 @@
     <button
       class="ml-auto cursor-pointer px-1 py-0.5 select-none hover:text-foreground"
       onclick={toggleVimMode}
-      title="Toggle Vim mode">
+      title={m.toggle_vim()}>
       VIM {vimEnabled ? 'ON' : 'OFF'}
     </button>
   </div>

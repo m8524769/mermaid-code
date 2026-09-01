@@ -20,3 +20,9 @@
 /mcp-server/node_modules/
 /mcp-server/dist/
 *.bun-build
+
+# Paraglide (i18n) compiled output
+/src/lib/paraglide/
+
+# inlang project module cache
+/project.inlang/cache/

@@ -2,6 +2,8 @@
   import * as Popover from '$/components/ui/popover';
   import { Switch } from '$/components/ui/switch';
   import { env } from '$/util/env';
+  import { m } from '$/paraglide/messages';
+  import { setAppLocale, getAppLocale } from '$/util/locale.svelte';
   import { cn } from '$/utils';
   import { mode, setMode } from 'mode-watcher';
   import type { Component, Snippet } from 'svelte';
@@ -12,6 +14,7 @@
   import MenuIcon from '~icons/material-symbols/menu-rounded';
   import CommunityIcon from '~icons/material-symbols/person-play-outline-rounded';
   import ServerIcon from '~icons/material-symbols/lan-outline-rounded';
+  import TranslateIcon from '~icons/material-symbols/translate';
 
   import { mcpState } from '$/util/mcpState.svelte';
 
@@ -58,13 +61,13 @@
       renderer: menuItem
     },
     {
-      label: 'Documentation',
+      label: m.menu_documentation(),
       icon: BookIcon,
       href: `${env.docsUrl}/intro/`,
       renderer: menuItem
     },
     {
-      label: 'Community',
+      label: m.menu_community(),
       icon: CommunityIcon,
       href: 'https://discord.gg/sKeNQX4Wtj',
       renderer: menuItem
@@ -73,14 +76,21 @@
       href: '#',
       icon: ContrastIcon,
       isSectionEnd: false,
-      label: 'Dark Mode',
+      label: m.menu_dark_mode(),
       renderer: darkModeMenuItem
+    },
+    {
+      href: '#',
+      icon: TranslateIcon,
+      isSectionEnd: false,
+      label: m.menu_language(),
+      renderer: languageMenuItem
     },
     {
       href: '#',
       icon: ServerIcon,
       isSectionEnd: false,
-      label: 'MCP Server',
+      label: m.menu_mcp_server(),
       renderer: mcpMenuItem
     }
   ]);
@@ -110,11 +120,43 @@
     )}>
     <span class="flex items-center gap-2">
       <ContrastIcon />
-      Dark Mode
+      {m.menu_dark_mode()}
     </span>
     <Switch
       checked={mode.current === 'dark'}
       onCheckedChange={(dark) => setMode(dark ? 'dark' : 'light')} />
+  </div>
+{/snippet}
+
+{#snippet languageMenuItem(options: Omit<MenuItem, 'renderer'>)}
+  <div
+    class={cn(
+      'flex items-center justify-between border-b-2 px-3 py-2 hover:bg-muted',
+      options.isSectionEnd && 'border-border-dark',
+      options.class
+    )}>
+    <span class="flex items-center gap-2">
+      <TranslateIcon />
+      {m.menu_language()}
+    </span>
+    <div class="flex overflow-hidden rounded-md border">
+      <button
+        class={cn(
+          'px-2 py-0.5 text-xs',
+          getAppLocale() === 'en' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
+        )}
+        onclick={() => setAppLocale('en')}>
+        English
+      </button>
+      <button
+        class={cn(
+          'px-2 py-0.5 text-xs',
+          getAppLocale() === 'zh-CN' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
+        )}
+        onclick={() => setAppLocale('zh-CN')}>
+        中文
+      </button>
+    </div>
   </div>
 {/snippet}
 
@@ -132,7 +174,7 @@
     <span class="flex items-center gap-2">
       <ServerIcon />
       <span>
-        MCP Server
+        {m.menu_mcp_server()}
         {#if mcpState.enabled}
           <span class="ml-1 text-xs text-muted-foreground">:{MCP_PORT}</span>
         {/if}

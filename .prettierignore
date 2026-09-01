@@ -11,3 +11,6 @@ src-tauri/target/**
 src-tauri/gen/**
 src-tauri/Cargo.lock
 site/**
+src/lib/paraglide/**
+project.inlang/**
+!project.inlang/settings.json

@@ -1,5 +1,6 @@
 import tailwindcss from '@tailwindcss/vite';
 import { sveltekit } from '@sveltejs/kit/vite';
+import { paraglideVitePlugin } from '@inlang/paraglide-js';
 import { FileSystemIconLoader } from 'unplugin-icons/loaders';
 import Icons from 'unplugin-icons/vite';
 import { defineConfig } from 'vite';
@@ -21,6 +22,14 @@ export default defineConfig({
   plugins: [
     tailwindcss(),
     sveltekit(),
+    paraglideVitePlugin({
+      project: './project.inlang',
+      outdir: './src/lib/paraglide',
+      emitTsDeclarations: true,
+      // Tauri SPA: resolve locale from localStorage (persisted by setLocale),
+      // fall back to the browser's preferred language, then the base locale.
+      strategy: ['localStorage', 'preferredLanguage', 'baseLocale']
+    }),
     Icons({
       compiler: 'svelte',
       customCollections: {

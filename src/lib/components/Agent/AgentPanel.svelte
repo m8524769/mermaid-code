@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { m } from '$/paraglide/messages';
   import type { Component } from 'svelte';
   import { tick } from 'svelte';
   import Card from '$lib/components/Card/Card.svelte';
@@ -81,7 +82,7 @@
   const folderName = $derived(
     workingFolder
       ? (workingFolder.split(/[/\\]/).filter(Boolean).at(-1) ?? workingFolder)
-      : 'No folder'
+      : m.no_folder()
   );
 
   const recentAgentFolders = $state<string[]>(
@@ -180,7 +181,7 @@
   const sessionLabel = $derived(
     activeSession
       ? (activeSession.firstPrompt?.slice(0, 40) ?? activeSession.sessionId.slice(0, 8))
-      : 'New session'
+      : m.agent_new_session()
   );
 
   async function pickFolder() {
@@ -194,32 +195,32 @@
     label: string;
     description: string;
     icon: Component<any>;
-  }[] = [
+  }[] = $derived([
     {
       value: 'manual',
-      label: 'Manual',
-      description: 'Ask for approval before making each edit',
+      label: m.pm_manual_label(),
+      description: m.pm_manual_desc(),
       icon: ManualIcon
     },
     {
       value: 'acceptEdits',
-      label: 'Edit automatically',
-      description: 'Auto-approve file edits, ask for Bash commands',
+      label: m.pm_auto_edit_label(),
+      description: m.pm_auto_edit_desc(),
       icon: CodeBracketIcon
     },
     {
       value: 'plan',
-      label: 'Plan',
-      description: 'Explore the code and present a plan before editing',
+      label: m.pm_plan_label(),
+      description: m.pm_plan_desc(),
       icon: PlanIcon
     },
     {
       value: 'auto',
-      label: 'Auto',
-      description: 'Approve safe actions automatically, pause for risky ones',
+      label: m.pm_auto_label(),
+      description: m.pm_auto_desc(),
       icon: AutoIcon
     }
-  ];
+  ]);
   const VALID_PERMISSION_MODES: PermissionMode[] = ['manual', 'acceptEdits', 'plan', 'auto'];
   let permissionMode = $state<PermissionMode>(
     (() => {
@@ -459,7 +460,7 @@
     <div class="flex items-center gap-1">
       <Popover.Root bind:open={agentPopoverOpen}>
         <Popover.Trigger>
-          <Button size="icon" variant="ghost" title="Select agent">
+          <Button size="icon" variant="ghost" title={m.agent_select_agent()}>
             <SelectAgentIcon
               class="transition-transform duration-150 {agentPopoverOpen ? 'rotate-180' : ''}" />
           </Button>
@@ -494,7 +495,7 @@
             size="sm"
             variant="ghost"
             class="h-6 max-w-32 gap-1 px-1.5 text-xs"
-            title={workingFolder ?? 'Select folder'}>
+            title={workingFolder ?? m.select_folder()}>
             <span class="truncate">{folderName}</span>
           </Button>
         </Popover.Trigger>
@@ -531,7 +532,7 @@
               disabled={isProcessing}
               class="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs text-muted-foreground hover:bg-muted disabled:pointer-events-none disabled:opacity-50">
               <FolderOpenIcon class="size-3 shrink-0" />
-              Browse...
+              {m.browse()}
             </button>
           </Popover.Close>
         </Popover.Content>
@@ -546,7 +547,7 @@
             size="sm"
             variant="ghost"
             class="h-6 max-w-72 gap-1 px-1.5 text-xs"
-            title="Select session">
+            title={m.agent_select_session()}>
             <span class="truncate">{sessionLabel}</span>
           </Button>
         </Popover.Trigger>
@@ -558,7 +559,7 @@
               disabled={isProcessing || undefined}
               onclick={() => (activeSessionId = null)}>
               <AddIcon class="size-4 shrink-0" />
-              <span class="flex-1 text-left">New session</span>
+              <span class="flex-1 text-left">{m.agent_new_session()}</span>
               {#if activeSessionId === null}
                 <CheckIcon class="size-4 text-foreground" />
               {/if}
@@ -584,7 +585,7 @@
                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
                 ></path>
               </svg>
-              <span>Loading sessions…</span>
+              <span>{m.agent_loading_sessions()}</span>
             </div>
           {:else if sessions.length > 0}
             <div class="my-0.5 border-t border-muted"></div>
@@ -610,7 +611,7 @@
                     {@const sid = session.sessionId}
                     <button
                       class="mr-1 hidden shrink-0 rounded-sm p-1 text-muted-foreground/50 group-hover:flex hover:bg-background hover:text-destructive"
-                      title="Delete session"
+                      title={m.agent_delete_session()}
                       onclick={async () => {
                         try {
                           await agentState.deleteSession(selectedAgentId, workingFolder!, sid);
@@ -639,7 +640,7 @@
               variant="ghost"
               disabled={isProcessing}
               class="h-6 px-1.5 text-xs text-muted-foreground"
-              title="Permission mode">
+              title={m.agent_permission_mode()}>
               {PERMISSION_MODES.find((m) => m.value === permissionMode)?.label ?? 'Manual'}
             </Button>
           </Popover.Trigger>
@@ -691,11 +692,11 @@
             <p class="text-sm font-medium text-foreground/60">{selectedAgent.label}</p>
             <p class="text-xs text-muted-foreground">
               {#if !workingFolder}
-                Select a folder to get started.
+                {m.agent_select_folder_to_start()}
               {:else if activeSessionId}
-                No messages in this session.
+                {m.agent_no_messages()}
               {:else}
-                Start a conversation below.
+                {m.agent_start_conversation()}
               {/if}
             </p>
           </div>
@@ -852,7 +853,7 @@
           <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
           ></path>
         </svg>
-        <span class="text-xs text-muted-foreground">Checking environment…</span>
+        <span class="text-xs text-muted-foreground">{m.agent_checking_env()}</span>
       </div>
     {/if}
 
@@ -862,7 +863,7 @@
         class="flex items-center gap-3 border-t border-red-400/40 bg-red-50/80 px-3 py-2.5 dark:bg-red-950/30">
         <div class="flex min-w-0 flex-1 flex-col gap-0.5">
           <span class="text-xs font-medium text-red-800 dark:text-red-300"
-            >{selectedAgent.label} CLI not installed</span>
+            >{m.agent_cli_not_installed({ agent: selectedAgent.label })}</span>
           <span class="text-xs text-red-700/70 dark:text-red-400/70">
             <button
               class="underline underline-offset-2 hover:text-red-800 dark:hover:text-red-300"
@@ -874,7 +875,7 @@
                     : 'https://docs.anthropic.com/en/docs/claude-code/getting-started';
                 await open(url);
               }}>
-              Get started with {selectedAgent.label} →
+              {m.agent_get_started({ agent: selectedAgent.label })}
             </button>
           </span>
         </div>
@@ -887,9 +888,9 @@
         class="flex items-center gap-3 border-t border-amber-400/40 bg-amber-50/80 px-3 py-2.5 dark:bg-amber-950/30">
         <div class="flex min-w-0 flex-1 flex-col gap-0.5">
           <span class="text-xs font-medium text-amber-800 dark:text-amber-300"
-            >MCP Server disabled</span>
+            >{m.agent_mcp_disabled()}</span>
           <span class="text-xs text-amber-700/70 dark:text-amber-400/70"
-            >Agent cannot read or edit diagrams.</span>
+            >{m.agent_mcp_cannot_edit()}</span>
         </div>
         <button
           onclick={async () => {
@@ -898,7 +899,7 @@
             mcpState.set(true);
           }}
           class="shrink-0 rounded-md border border-amber-400/60 bg-white px-2.5 py-1 text-xs font-medium text-amber-800 transition-colors hover:bg-amber-50 dark:border-amber-400/40 dark:bg-transparent dark:text-amber-300 dark:hover:bg-amber-900/40">
-          Enable
+          {m.agent_enable()}
         </button>
       </div>
     {/if}
@@ -922,10 +923,10 @@
         <div
           class="mb-2 flex items-center gap-2 text-xs font-medium text-amber-600 dark:text-amber-400">
           <LockIcon class="size-3.5 shrink-0" />
-          <span>Permission Request</span>
+          <span>{m.agent_permission_request()}</span>
         </div>
         <p class="mb-1 text-xs text-foreground">
-          Allow <span class="font-mono font-medium">{pendingPermission.toolName}</span>?
+          {m.agent_allow()} <span class="font-mono font-medium">{pendingPermission.toolName}</span>?
         </p>
         {#if pendingPermission.toolInput && Object.keys(pendingPermission.toolInput as object).length > 0}
           <pre
@@ -938,7 +939,7 @@
         {#if selectedAgentId !== 'codex'}
           <textarea
             bind:value={denyMessage}
-            placeholder="Tell Claude what to do instead"
+            placeholder={m.agent_deny_placeholder()}
             rows="1"
             class="mb-2 w-full resize-none rounded-md bg-muted px-2 py-1.5 text-xs outline-none placeholder:text-muted-foreground/60"
           ></textarea>
@@ -947,12 +948,12 @@
           <button
             onclick={allowPermission}
             class="flex-1 rounded-md bg-green-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-green-700">
-            Allow
+            {m.agent_allow()}
           </button>
           <button
             onclick={denyPermission}
             class="flex-1 rounded-md bg-muted px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted/80">
-            Deny
+            {m.agent_deny()}
           </button>
         </div>
       </div>
@@ -962,7 +963,7 @@
     <div class="flex gap-1 border-t border-muted p-2">
       <textarea
         bind:value={inputText}
-        placeholder={workingFolder ? 'Message...' : 'Select a folder first…'}
+        placeholder={workingFolder ? m.agent_input_placeholder() : m.agent_select_folder_first()}
         rows="1"
         disabled={!workingFolder || !!pendingPermission || cliAvailable !== true}
         style="field-sizing: content; max-height: 8lh;"

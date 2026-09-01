@@ -1,6 +1,11 @@
 use std::sync::Mutex;
 use tauri::{Emitter, Manager};
 use tauri::menu::{Menu, MenuItem, PredefinedMenuItem, Submenu};
+use rust_i18n::t;
+
+// Native-menu / dialog translations live in src-tauri/locales/{en,zh-CN}.yml.
+// The active locale is resolved from the frontend-written locale.json at startup.
+rust_i18n::i18n!("locales");
 
 mod mcp;
 mod agent;
@@ -47,7 +52,7 @@ fn update_recent(app: tauri::AppHandle, folders: Vec<String>, files: Vec<String>
     let has_folders = !folders.is_empty();
     let has_files = !files.is_empty();
     if !has_folders && !has_files {
-        let _ = MenuItem::with_id(&app, format!("recent-empty-{gen}"), "No Recent Items", false, None::<&str>)
+        let _ = MenuItem::with_id(&app, format!("recent-empty-{gen}"), t!("menu_no_recent_items"), false, None::<&str>)
             .map(|item| guard.append(&item));
         return;
     }
@@ -161,6 +166,26 @@ fn emit_open_files(app: &tauri::AppHandle, paths: Vec<std::path::PathBuf>) {
     }
 }
 
+/// Resolve the UI locale: prefer the frontend-written `locale.json` in the app
+/// config dir, then the OS locale, then English. Normalized to a locale we ship
+/// translations for (`en` / `zh-CN`).
+fn resolve_locale(app: &tauri::AppHandle) -> String {
+    let from_file = app
+        .path()
+        .app_config_dir()
+        .ok()
+        .map(|d| d.join("locale.json"))
+        .and_then(|p| std::fs::read_to_string(p).ok())
+        .and_then(|s| serde_json::from_str::<serde_json::Value>(&s).ok())
+        .and_then(|v| v["locale"].as_str().map(str::to_string));
+    let raw = from_file.or_else(tauri_plugin_os::locale).unwrap_or_default();
+    if raw.to_lowercase().starts_with("zh") {
+        "zh-CN".to_string()
+    } else {
+        "en".to_string()
+    }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -214,11 +239,11 @@ pub fn run() {
                         use tauri_plugin_dialog::{DialogExt, MessageDialogButtons};
                         let confirmed = app
                             .dialog()
-                            .message(format!("Do you trust this link?\n\n{url_owned}"))
-                            .title("External Link")
+                            .message(t!("dialog_trust_link", url = url_owned).to_string())
+                            .title(t!("dialog_external_link_title").to_string())
                             .buttons(MessageDialogButtons::OkCancelCustom(
-                                "Open in Browser".into(),
-                                "Cancel".into(),
+                                t!("dialog_open_in_browser").to_string(),
+                                t!("dialog_cancel").to_string(),
                             ))
                             .blocking_show();
                         if confirmed {
@@ -251,6 +276,11 @@ pub fn run() {
             agent::ensure_agent_ready,
         ])
         .setup(|app| {
+            // Resolve the UI locale (written by the frontend to locale.json),
+            // falling back to the OS locale, then English. Must run before the
+            // native menu is built so its labels are localized.
+            rust_i18n::set_locale(&resolve_locale(app.handle()));
+
             // macOS App menu (always first on macOS)
             #[cfg(target_os = "macos")]
             let app_menu = Submenu::with_items(
@@ -272,33 +302,33 @@ pub fn run() {
 
             let open_recent_menu = Submenu::with_items(
                 app,
-                "Open Recent",
+                t!("menu_open_recent"),
                 true,
                 &[
-                    &MenuItem::with_id(app, "recent-empty", "No Recent Folders", false, None::<&str>)?,
+                    &MenuItem::with_id(app, "recent-empty", t!("menu_no_recent_folders"), false, None::<&str>)?,
                 ],
             )?;
 
             let file_menu = Submenu::with_items(
                 app,
-                "File",
+                t!("menu_file"),
                 true,
                 &[
-                    &MenuItem::with_id(app, "open-file", "Open File...", true, Some("CmdOrCtrl+O"))?,
-                    &MenuItem::with_id(app, "open-folder", "Open Folder...", true, Some("CmdOrCtrl+Shift+O"))?,
+                    &MenuItem::with_id(app, "open-file", t!("menu_open_file"), true, Some("CmdOrCtrl+O"))?,
+                    &MenuItem::with_id(app, "open-folder", t!("menu_open_folder"), true, Some("CmdOrCtrl+Shift+O"))?,
                     &open_recent_menu,
                     &PredefinedMenuItem::separator(app)?,
-                    &MenuItem::with_id(app, "save", "Save", true, None::<&str>)?,
-                    &MenuItem::with_id(app, "save-as", "Save As...", true, None::<&str>)?,
+                    &MenuItem::with_id(app, "save", t!("menu_save"), true, None::<&str>)?,
+                    &MenuItem::with_id(app, "save-as", t!("menu_save_as"), true, None::<&str>)?,
                     &PredefinedMenuItem::separator(app)?,
-                    &MenuItem::with_id(app, "close-tab", "Close Tab", true, None::<&str>)?,
+                    &MenuItem::with_id(app, "close-tab", t!("menu_close_tab"), true, None::<&str>)?,
                     &PredefinedMenuItem::close_window(app, None)?,
                 ],
             )?;
 
             let edit_menu = Submenu::with_items(
                 app,
-                "Edit",
+                t!("menu_edit"),
                 true,
                 &[
                     &PredefinedMenuItem::undo(app, None)?,
@@ -313,19 +343,19 @@ pub fn run() {
 
             let view_menu = Submenu::with_items(
                 app,
-                "View",
+                t!("menu_view"),
                 true,
                 &[
-                    &MenuItem::with_id(app, "toggle-explorer", "Toggle File Explorer", true, Some("CmdOrCtrl+B"))?,
-                    &MenuItem::with_id(app, "toggle-editor", "Toggle Editor", true, None::<&str>)?,
+                    &MenuItem::with_id(app, "toggle-explorer", t!("menu_toggle_explorer"), true, Some("CmdOrCtrl+B"))?,
+                    &MenuItem::with_id(app, "toggle-editor", t!("menu_toggle_editor"), true, None::<&str>)?,
                     &PredefinedMenuItem::separator(app)?,
-                    &MenuItem::with_id(app, "toggle-presentation", "Toggle Presentation Mode", true, Some("CmdOrCtrl+Shift+F"))?,
+                    &MenuItem::with_id(app, "toggle-presentation", t!("menu_toggle_presentation"), true, Some("CmdOrCtrl+Shift+F"))?,
                 ],
             )?;
 
             let window_menu = Submenu::with_items(
                 app,
-                "Window",
+                t!("menu_window"),
                 true,
                 &[
                     &PredefinedMenuItem::minimize(app, None)?,
@@ -339,13 +369,13 @@ pub fn run() {
 
             let help_menu = Submenu::with_items(
                 app,
-                "Help",
+                t!("menu_help"),
                 true,
                 &[
-                    &MenuItem::with_id(app, "help-github", "GitHub Repository", true, None::<&str>)?,
-                    &MenuItem::with_id(app, "help-issue", "Report an Issue", true, None::<&str>)?,
+                    &MenuItem::with_id(app, "help-github", t!("menu_github"), true, None::<&str>)?,
+                    &MenuItem::with_id(app, "help-issue", t!("menu_report_issue"), true, None::<&str>)?,
                     &PredefinedMenuItem::separator(app)?,
-                    &MenuItem::with_id(app, "help-changelog", "What's New", true, None::<&str>)?,
+                    &MenuItem::with_id(app, "help-changelog", t!("menu_whats_new"), true, None::<&str>)?,
                 ],
             )?;
 

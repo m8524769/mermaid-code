@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { m } from '$/paraglide/messages';
   import { fileState } from '$/util/fileState.svelte';
   import AddIcon from '~icons/material-symbols/add-rounded';
   import CloseIcon from '~icons/material-symbols/close-rounded';
@@ -33,10 +34,10 @@
       ]}
       role="tab"
       tabindex="0"
-      title={tab.isDraft ? 'Unsaved draft' : tab.path}
+      title={tab.isDraft ? m.unsaved_draft_title() : tab.path}
       onclick={() => fileState.switchTab(tab.id)}
       onkeydown={(e) => e.key === 'Enter' && fileState.switchTab(tab.id)}>
-      <span class="min-w-0 flex-1 truncate">{tab.name}</span>
+      <span class="min-w-0 flex-1 truncate">{tab.isDraft ? m.draft() : tab.name}</span>
       {#if tab.isDirty}
         <span class="size-[5px] shrink-0 rounded-full bg-orange-400"></span>
       {/if}
@@ -50,7 +51,7 @@
             !tab.isDirty && 'opacity-0 group-hover:opacity-100'
           ]}
           onclick={(e) => handleClose(e, tab.id)}
-          title={tab.isDirty ? 'Close (unsaved)' : 'Close'}>
+          title={tab.isDirty ? m.close_unsaved() : m.titlebar_close()}>
           <CloseIcon class="size-3 {tab.isDirty ? 'text-muted-foreground' : ''}" />
         </button>
       {/if}
@@ -60,7 +61,7 @@
     <button
       class="flex shrink-0 items-center px-2 text-muted-foreground hover:bg-muted/60 hover:text-foreground"
       onclick={handleNew}
-      title="New File">
+      title={m.action_new_file()}>
       <AddIcon class="size-4" />
     </button>
   {/if}
