@@ -27,7 +27,7 @@
     "test": "pnpm test:unit"
   },
   "devDependencies": {
-    "@eslint/compat": "^2.1.0",
+    "@eslint/compat": "^2.1.1",
     "@eslint/eslintrc": "^3.3.6",
     "@eslint/js": "^10.0.1",
     "@fortawesome/fontawesome-free": "^7.2.0",
