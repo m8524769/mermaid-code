@@ -52,6 +52,7 @@
   "share_button": "分享",
   "share_title": "可分享链接",
   "share_privacy_note": "图表内容编码于链接本身，不会上传到任何服务器。",
+  "share_kroki_note": "由 kroki.io 渲染 —— 图表会被发送到该服务。",
   "error_syntax": "语法错误",
   "toggle_vim": "切换 Vim 模式",
   "reset_view": "重置视图",

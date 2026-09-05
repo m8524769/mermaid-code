@@ -52,6 +52,7 @@
   "share_button": "Share",
   "share_title": "Shareable links",
   "share_privacy_note": "The diagram is encoded in the link — nothing is uploaded to a server.",
+  "share_kroki_note": "Rendered by kroki.io — the diagram is sent to that service.",
   "error_syntax": "Syntax error",
   "toggle_vim": "Toggle Vim mode",
   "reset_view": "Reset view",

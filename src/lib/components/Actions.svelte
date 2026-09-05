@@ -291,13 +291,6 @@
     <div class="flex gap-2">
       {@render dualActionButton('PNG', onDownloadPNG, urls.current.png)}
       {@render dualActionButton('SVG', onDownloadSVG, urls.current.svg)}
-      <ExternalLinkWrapper domain={getDomain(urls.current.kroki)} isVisible={!!urls.current.kroki}>
-        <a target="_blank" rel="noreferrer" class="flex-grow" href={urls.current.kroki}>
-          <Button class="action-btn flex w-full items-center gap-2">
-            <ExternalLinkIcon /> Kroki
-          </Button>
-        </a>
-      </ExternalLinkWrapper>
     </div>
     <Separator />
     {#if isClipboardAvailable()}
