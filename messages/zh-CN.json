@@ -51,7 +51,7 @@
   "rename_unsupported_confirm": "“{name}”不是受支持的文件类型（.mmd 或 .mermaid），仍要重命名吗？",
   "share_button": "分享",
   "share_title": "可分享链接",
-  "share_privacy_note": "你的图表内容绝不会离开你的设备。",
+  "share_privacy_note": "图表内容编码于链接本身，不会上传到任何服务器。",
   "error_syntax": "语法错误",
   "toggle_vim": "切换 Vim 模式",
   "reset_view": "重置视图",

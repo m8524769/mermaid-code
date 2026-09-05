@@ -88,6 +88,7 @@
     },
     {
       href: '#',
+      class: 'border-b-0',
       icon: ServerIcon,
       isSectionEnd: false,
       label: m.menu_mcp_server(),
