@@ -1,7 +1,6 @@
 <script lang="ts">
   import Card from '$/components/Card/Card.svelte';
   import CopyButton from '$/components/CopyButton.svelte';
-  import CopyInput from '$/components/CopyInput.svelte';
   import ExternalLinkWrapper from '$/components/ExternalLinkWrapper.svelte';
   import { Button } from '$/components/ui/button';
   import { Input } from '$/components/ui/input';
@@ -296,11 +295,5 @@
     {#if isClipboardAvailable()}
       <CopyButton onclick={onCopyClipboard} label={m.actions_copy_image()} />
     {/if}
-    <ExternalLinkWrapper
-      labelPrefix={m.ext_thumbnail_by()}
-      domain={getDomain(urls.current.png)}
-      isVisible={!!urls.current.mdCode}>
-      <CopyInput value={urls.current.mdCode} label={m.actions_copy_markdown()} />
-    </ExternalLinkWrapper>
   </div>
 </Card>

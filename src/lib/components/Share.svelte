@@ -6,6 +6,7 @@
   import { urls } from '$/util/state.svelte';
   import { asset } from '$app/paths';
   import ShareIcon from '~icons/material-symbols/share';
+  import MarkdownIcon from '~icons/material-symbols/markdown';
   import CopyInput from './CopyInput.svelte';
 </script>
 
@@ -41,6 +42,19 @@
           <CopyInput value={urls.current.kroki} />
           <Dialog.Description>
             {m.share_kroki_note()}
+          </Dialog.Description>
+        </div>
+      {/if}
+      {#if urls.current.mdCode}
+        <Separator />
+        <div class="flex flex-col gap-2">
+          <h2 class="flex items-center gap-2">
+            <MarkdownIcon class="size-5" />
+            {m.share_markdown_title()}
+          </h2>
+          <CopyInput value={urls.current.mdCode} />
+          <Dialog.Description>
+            {m.share_markdown_note()}
           </Dialog.Description>
         </div>
       {/if}
