@@ -1,5 +1,3 @@
-import { loadDataFromUrl } from './fileLoaders/loader';
-import { initLoading } from './loading.svelte';
 import { applyMigrations } from './migrations.svelte';
 import { initURLSubscription, loadState, updateCodeStore, verifyState } from './state.svelte';
 
@@ -22,7 +20,6 @@ export const syncDiagram = (): void => {
 export const initHandler = async (): Promise<void> => {
   applyMigrations();
   loadStateFromURL();
-  await initLoading('Loading Gist...', loadDataFromUrl().catch(console.error));
   syncDiagram();
   initURLSubscription();
   verifyState();
@@ -39,14 +36,6 @@ export const errorDebug = (limit = 1000) => {
 };
 
 export const formatJSON = (data: unknown): string => JSON.stringify(data, undefined, 2);
-export const fetchJSON = async <T>(url: string): Promise<T> => {
-  const res = await fetch(url);
-  return res.json() as T;
-};
-export const fetchText = async (url: string): Promise<string> => {
-  const res = await fetch(url);
-  return res.text();
-};
 
 export const copyToClipboard = async (text: string) => {
   try {

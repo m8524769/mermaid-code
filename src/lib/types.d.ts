@@ -34,7 +34,6 @@ export interface State {
   editorMode?: EditorMode;
   pan?: { x: number; y: number };
   zoom?: number;
-  loader?: LoaderConfig;
 }
 
 export interface ValidatedState extends State {
@@ -44,28 +43,6 @@ export interface ValidatedState extends State {
   errorMarkers: MarkerData[];
   serialized: string;
 }
-
-export interface GistLoaderConfig {
-  url: string;
-}
-
-export interface LoadingState {
-  loading: boolean;
-  message?: string;
-}
-export interface FileLoaderConfig {
-  codeURL: string;
-  configURL?: string;
-}
-export type LoaderConfig =
-  | {
-      type: 'gist';
-      config: GistLoaderConfig;
-    }
-  | {
-      type: 'files';
-      config: FileLoaderConfig;
-    };
 
 export type DocumentationConfig = Record<
   string,

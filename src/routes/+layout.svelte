@@ -1,6 +1,5 @@
 <script lang="ts">
   import { Toaster } from '$/components/ui/sonner/index.js';
-  import { loadingState } from '$/util/loading.svelte';
   import { fileState } from '$/util/fileState.svelte';
   import { saveFileAs } from '$/util/fileSystem';
   import { updateState } from '$/util/updateState.svelte';
@@ -117,44 +116,3 @@
 <main class="h-dvh">
   {@render children()}
 </main>
-
-{#if loadingState.loading}
-  <div
-    class="absolute top-0 left-0 z-50 flex h-screen w-screen justify-center bg-gray-600 align-middle opacity-50">
-    <div class="my-auto text-4xl font-bold text-indigo-100">
-      <div class="loader mx-auto"></div>
-      <div>{loadingState.message}</div>
-    </div>
-  </div>
-{/if}
-
-<style>
-  .loader {
-    border: 0.45em solid #f3f3f3;
-    border-radius: 50%;
-    border-top: 0.45em solid #6365f1;
-    width: 3em;
-    height: 3em;
-    -webkit-animation: spin 2s linear infinite; /* Safari */
-    animation: spin 2s linear infinite;
-  }
-
-  /* Safari */
-  @-webkit-keyframes spin {
-    0% {
-      -webkit-transform: rotate(0deg);
-    }
-    100% {
-      -webkit-transform: rotate(360deg);
-    }
-  }
-
-  @keyframes spin {
-    0% {
-      transform: rotate(0deg);
-    }
-    100% {
-      transform: rotate(360deg);
-    }
-  }
-</style>

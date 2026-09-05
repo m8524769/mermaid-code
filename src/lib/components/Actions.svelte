@@ -240,21 +240,6 @@
     void notifyDownload(getFileName('svg'));
   };
 
-  let gistURL = $state('');
-  $effect(() => {
-    const { loader } = validatedState.current;
-    if (loader?.type === 'gist') {
-      gistURL = loader.config.url;
-    }
-  });
-
-  const loadGist = () => {
-    if (!gistURL) {
-      return alert(m.actions_gist_url_required());
-    }
-    window.location.href = `${window.location.pathname}?gist=${gistURL}`;
-  };
-
   let imageSizeMode: 'auto' | 'width' | 'height' = $state('auto');
 
   $effect(() => {
@@ -324,9 +309,5 @@
       isVisible={!!urls.current.mdCode}>
       <CopyInput value={urls.current.mdCode} label={m.actions_copy_markdown()} />
     </ExternalLinkWrapper>
-    <div class="flex w-full items-center gap-2">
-      <Input type="url" bind:value={gistURL} placeholder={m.actions_gist_placeholder()} />
-      <Button onclick={loadGist}>{m.actions_load_gist()}</Button>
-    </div>
   </div>
 </Card>

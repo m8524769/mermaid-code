@@ -34,15 +34,7 @@
         "style-src": ["'self'", "'unsafe-inline'", "tauri:", "https://cdnjs.cloudflare.com"],
         "img-src": ["'self'", "data:", "blob:", "tauri:"],
         "font-src": ["'self'", "data:", "tauri:", "https://cdnjs.cloudflare.com"],
-        "connect-src": [
-          "'self'",
-          "tauri:",
-          "ipc:",
-          "http://localhost:*",
-          "https://api.github.com",
-          "https://gist.githubusercontent.com",
-          "https://raw.githubusercontent.com"
-        ],
+        "connect-src": ["'self'", "tauri:", "ipc:", "http://localhost:*"],
         "worker-src": ["'self'", "blob:"]
       }
     }
