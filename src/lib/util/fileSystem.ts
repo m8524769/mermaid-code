@@ -129,6 +129,11 @@ export const readTextFile = async (path: string): Promise<string> => {
   return tauriRead(path);
 };
 
+export const writeBinaryFile = async (path: string, data: Uint8Array): Promise<void> => {
+  const { writeFile } = await import('@tauri-apps/plugin-fs');
+  await writeFile(path, data);
+};
+
 export const confirmDialog = async (message: string): Promise<boolean> => {
   const { confirm } = await import('@tauri-apps/plugin-dialog');
   return confirm(message);
