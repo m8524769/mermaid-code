@@ -3,21 +3,21 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Mermaid Code — Local-first Mermaid diagram editor</title>
+  <title>Mermaid Code — Local-first Mermaid diagram editor with AI agents</title>
   <meta name="description" content="A desktop Mermaid diagram editor built for AI-first workflows. Open .mmd files locally, preview instantly, and let AI agents write diagrams directly to your filesystem." />
   <link rel="canonical" href="https://mermaid-code.com/" />
 
   <!-- Open Graph -->
   <meta property="og:type" content="website" />
   <meta property="og:url" content="https://mermaid-code.com/" />
-  <meta property="og:title" content="Mermaid Code — Local-first Mermaid diagram editor" />
+  <meta property="og:title" content="Mermaid Code — Local-first Mermaid diagram editor with AI agents" />
   <meta property="og:description" content="Local-first Mermaid diagram editor with AI agent integration. Diagrams live as plain .mmd files — AI agents can read and write them directly." />
   <meta property="og:image" content="https://mermaid-code.com/showcase.png" />
   <meta property="og:site_name" content="Mermaid Code" />
 
   <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="Mermaid Code — Local-first Mermaid diagram editor" />
+  <meta name="twitter:title" content="Mermaid Code — Local-first Mermaid diagram editor with AI agents" />
   <meta name="twitter:description" content="Local-first Mermaid diagram editor with AI agent integration. Diagrams live as plain .mmd files — AI agents can read and write them directly." />
   <meta name="twitter:image" content="https://mermaid-code.com/showcase.png" />
 
@@ -310,19 +310,6 @@
       padding: 40px 48px;
     }
     @media (max-width: 600px) { .mcp-wrap { padding: 28px 24px; } }
-    .mcp-badge {
-      display: inline-block;
-      background: rgba(62, 207, 142, 0.12);
-      border: 1px solid rgba(62, 207, 142, 0.3);
-      color: var(--green);
-      font-size: 11px;
-      font-weight: 600;
-      padding: 3px 10px;
-      border-radius: 999px;
-      margin-bottom: 16px;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-    }
     .mcp-split {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -546,7 +533,6 @@ $ claude "Generate a sequence diagram for the
 
 <section id="mcp">
   <div class="mcp-wrap">
-    <div class="mcp-badge">Experimental</div>
     <h2 style="margin-bottom:8px">Built-in MCP Server</h2>
     <p style="color:var(--muted);font-size:16px;max-width:560px">
       Mermaid Code includes a built-in <a href="https://modelcontextprotocol.io" target="_blank">Model Context Protocol</a> server. AI agents can interact with the running app directly — no filesystem access required.

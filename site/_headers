@@ -3,3 +3,20 @@
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: camera=(), microphone=(), geolocation=()
+
+# Static assets — filenames are stable (not content-hashed). This sets the
+# BROWSER cache (private, per-visitor): repeat visits and reloads serve from
+# disk with zero network. It does NOT touch Cloudflare's edge cache, which is
+# separate and auto-purged on every Pages deploy.
+#
+# Because it's the browser cache, a new deploy CANNOT invalidate it — returning
+# visitors may see an asset up to 1 week stale. To push an update immediately,
+# rename the file or bump a version query on its references (e.g. img.webp?v=2).
+/*.webp
+  Cache-Control: public, max-age=604800
+/*.png
+  Cache-Control: public, max-age=604800
+/*.svg
+  Cache-Control: public, max-age=604800
+/*.ico
+  Cache-Control: public, max-age=604800
