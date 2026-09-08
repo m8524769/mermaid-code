@@ -143,9 +143,7 @@ function aggregate(releases) {
 
   perVersion.sort((a, b) => semverCmp(a.version, b.version));
   // Order types by overall volume (largest stack segment first).
-  const orderedTypes = [...types].sort(
-    (a, b) => totalOf(perVersion, b) - totalOf(perVersion, a)
-  );
+  const orderedTypes = [...types].sort((a, b) => totalOf(perVersion, b) - totalOf(perVersion, a));
   return { perVersion, orderedTypes, grandInstalls, grandPolls, grandUpdates, grandHomebrewCI };
 }
 
@@ -153,10 +151,21 @@ function totalOf(perVersion, type) {
   return perVersion.reduce((s, v) => s + (v.byType[type] || 0), 0);
 }
 
-function printTable({ perVersion, orderedTypes, grandInstalls, grandPolls, grandUpdates, grandHomebrewCI }) {
+function printTable({
+  perVersion,
+  orderedTypes,
+  grandInstalls,
+  grandPolls,
+  grandUpdates,
+  grandHomebrewCI
+}) {
   const rows = perVersion.filter((v) => v.total > 0);
   const vw = Math.max(7, ...rows.map((r) => r.version.length));
-  const header = ['version'.padEnd(vw), ...orderedTypes.map((t) => t.padStart(16)), 'TOTAL'.padStart(7)];
+  const header = [
+    'version'.padEnd(vw),
+    ...orderedTypes.map((t) => t.padStart(16)),
+    'TOTAL'.padStart(7)
+  ];
   console.log(header.join('  '));
   console.log('-'.repeat(header.join('  ').length));
   for (const r of rows) {
@@ -185,7 +194,8 @@ function printTable({ perVersion, orderedTypes, grandInstalls, grandPolls, grand
 }
 
 function renderHtml(data) {
-  const { perVersion, orderedTypes, grandInstalls, grandPolls, grandUpdates, grandHomebrewCI } = data;
+  const { perVersion, orderedTypes, grandInstalls, grandPolls, grandUpdates, grandHomebrewCI } =
+    data;
   const rows = perVersion.filter((v) => v.total > 0 || v.updates > 0);
   const labels = rows.map((r) => r.version);
   const datasets = orderedTypes.map((type) => ({

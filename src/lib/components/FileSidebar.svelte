@@ -10,6 +10,7 @@
   import FolderAddIcon from '~icons/material-symbols/create-new-folder-outline-rounded';
   import ViewListIcon from '~icons/material-symbols/view-list-rounded';
   import GridViewIcon from '~icons/material-symbols/grid-view-rounded';
+  import CloseIcon from '~icons/material-symbols/close-rounded';
   import { onMount } from 'svelte';
 
   const viewMode = persisted<'tree' | 'grid'>('mermaid-sidebar-view', 'grid');
@@ -135,11 +136,22 @@
   </div>
 
   {#if fileState.rootPath}
-    <div class="px-2 py-1">
-      <input
-        class="w-full rounded bg-muted/50 px-2 py-0.5 text-xs outline-none placeholder:text-muted-foreground/60 focus:ring-1 focus:ring-primary"
-        placeholder={m.sidebar_search_placeholder()}
-        bind:value={searchQuery} />
+    <div class="p-2 pb-1">
+      <div
+        class="flex h-6 items-center rounded bg-muted/50 px-2 focus-within:ring-1 focus-within:ring-primary">
+        <input
+          class="min-w-0 flex-1 bg-transparent text-xs outline-none placeholder:text-muted-foreground/60"
+          placeholder={m.sidebar_search_placeholder()}
+          bind:value={searchQuery} />
+        {#if searchQuery}
+          <button
+            class="ml-1 shrink-0 rounded p-0.5 text-muted-foreground hover:bg-background hover:text-foreground"
+            title={m.sidebar_search_clear()}
+            onclick={() => (searchQuery = '')}>
+            <CloseIcon class="block size-3" />
+          </button>
+        {/if}
+      </div>
     </div>
   {/if}
 

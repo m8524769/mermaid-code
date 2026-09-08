@@ -47,12 +47,11 @@
             'shrink-0 rounded p-0.5 hover:text-foreground',
             tab.id === fileState.activeTabId
               ? 'text-muted-foreground hover:bg-muted'
-              : 'hover:bg-background',
-            !tab.isDirty && 'opacity-0 group-hover:opacity-100'
+              : 'hover:bg-background'
           ]}
           onclick={(e) => handleClose(e, tab.id)}
           title={tab.isDirty ? m.close_unsaved() : m.titlebar_close()}>
-          <CloseIcon class="size-3 {tab.isDirty ? 'text-muted-foreground' : ''}" />
+          <CloseIcon class="size-3" />
         </button>
       {/if}
     </div>
