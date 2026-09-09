@@ -14,6 +14,7 @@
     "build:mcp": "bash scripts/build-mcp.sh",
     "tauri:build:full": "bash scripts/build-mcp.sh && tauri build",
     "release": "sh scripts/release.sh",
+    "build:changelog": "node scripts/build-changelog.mjs",
     "stats:downloads": "node scripts/download-stats.mjs --open",
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
     "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",

@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Changelog — Mermaid Code</title>
+  <meta name="description" content="Release notes and version history for Mermaid Code, the local-first Mermaid diagram editor built for AI-first workflows." />
+  <link rel="canonical" href="https://mermaid-code.com/changelog" />
+
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://mermaid-code.com/changelog" />
+  <meta property="og:title" content="Changelog — Mermaid Code" />
+  <meta property="og:description" content="Release notes and version history for Mermaid Code." />
+  <meta property="og:image" content="https://mermaid-code.com/showcase.png" />
+  <meta property="og:site_name" content="Mermaid Code" />
+
+  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0f1117;
+      --bg2: #161b27;
+      --bg3: #1e2535;
+      --border: #2a3347;
+      --text: #e8edf5;
+      --muted: #8b96aa;
+      --accent: #4f8ef7;
+      --accent2: #7c5cbf;
+      --radius: 10px;
+      --max: 780px;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      font-size: 16px;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    /* NAV — mirrors index.html */
+    nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(15, 17, 23, 0.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+    }
+    .nav-inner {
+      max-width: var(--max);
+      margin: 0 auto;
+      padding: 0 24px;
+      height: 56px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .nav-logo {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 600;
+      font-size: 15px;
+      color: var(--text);
+    }
+    .nav-logo img { width: 22px; height: 22px; }
+    .nav-spacer { flex: 1; }
+    .nav-links { display: flex; gap: 4px; align-items: center; }
+    .nav-links a {
+      font-size: 14px;
+      color: var(--muted);
+      padding: 6px 10px;
+      border-radius: 6px;
+      transition: color 0.15s, background 0.15s;
+    }
+    .nav-links a:hover { color: var(--text); background: var(--bg3); text-decoration: none; }
+
+    /* CONTENT */
+    main {
+      max-width: var(--max);
+      margin: 0 auto;
+      padding: 56px 24px 72px;
+    }
+    .changelog h1 {
+      font-size: clamp(30px, 5vw, 44px);
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 8px;
+    }
+    /* Intro paragraph directly after the H1 */
+    .changelog h1 + p {
+      color: var(--muted);
+      font-size: 16px;
+      margin-bottom: 8px;
+    }
+    .changelog h2 {
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      margin-top: 48px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--border);
+    }
+    .changelog h3 {
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-top: 24px;
+      margin-bottom: 10px;
+    }
+    .changelog ul { list-style: none; padding: 0; }
+    .changelog li {
+      position: relative;
+      padding-left: 20px;
+      margin-bottom: 10px;
+      color: var(--muted);
+      font-size: 15px;
+    }
+    .changelog li::before {
+      content: "";
+      position: absolute;
+      left: 4px;
+      top: 11px;
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: var(--accent);
+    }
+    .changelog li strong { color: var(--text); font-weight: 600; }
+    .changelog code {
+      font-family: 'SF Mono', 'Fira Code', Menlo, monospace;
+      font-size: 0.86em;
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      padding: 1px 6px;
+      color: var(--accent);
+    }
+    .changelog hr { display: none; }
+
+    /* FOOTER — mirrors index.html */
+    footer {
+      max-width: var(--max);
+      margin: 0 auto;
+      padding: 32px 24px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+      border-top: 1px solid var(--border);
+    }
+    footer .footer-left { display: flex; align-items: center; gap: 8px; }
+    footer .footer-left img { width: 18px; height: 18px; opacity: 0.7; }
+    footer .footer-left span { font-size: 13px; color: var(--muted); }
+    footer .footer-right { margin-left: auto; display: flex; gap: 16px; }
+    footer .footer-right a { font-size: 13px; color: var(--muted); }
+    footer .footer-right a:hover { color: var(--text); }
+  </style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-inner">
+    <a class="nav-logo" href="/">
+      <img src="favicon.svg" alt="" />
+      Mermaid Code
+    </a>
+    <div class="nav-spacer"></div>
+    <div class="nav-links">
+      <a href="/#features">Features</a>
+      <a href="/#mcp">MCP</a>
+      <a href="/#install">Install</a>
+      <a href="https://github.com/m8524769/mermaid-code">GitHub</a>
+    </div>
+  </div>
+</nav>
+
+<main class="changelog">
+<h1>Changelog</h1>
+<p>All notable changes to Mermaid Code are documented here.</p>
+<h2>[v0.7.3] - 2026-09-10</h2>
+<h3>Added</h3>
+<ul>
+<li><strong>Syntax highlighting for every diagram type</strong>: newer diagram types that previously had little or no highlighting — mindmap, timeline, block-beta, and others — now get accurate coloring</li>
+<li><strong>Color preview swatches</strong>: inline color chips for <code>style</code> and <code>classDef</code> colors, with a click-to-edit color picker</li>
+</ul>
+<h3>Changed</h3>
+<ul>
+<li><strong>Tree-sitter powered highlighting</strong>: the editor&#39;s syntax highlighting is now driven by the tree-sitter Mermaid grammar (<a href="https://github.com/Latias94/merman/tree/main/distribution/tree-sitter-mermaid">@mermanjs/tree-sitter-mermaid</a>) for semantically accurate coloring, with the previous tokenizer kept as a fallback so highlighting still works while the grammar loads; light and dark theme colors were unified across both layers to avoid any color flicker</li>
+<li><strong>File sidebar search</strong>: added a button to quickly clear the current file search query</li>
+<li><strong>Small UI refinements</strong>: various minor polish across the interface</li>
+</ul>
+<h2>[v0.7.2] - 2026-09-06</h2>
+<h3>Added</h3>
+<ul>
+<li><strong>Custom download folder</strong>: the Actions panel now lets you pick a folder for PNG/SVG exports and remembers it across restarts. Exports write straight to the chosen folder, ask before overwriting an existing file, and surface an error if the save fails; a reset button restores the default download folder</li>
+</ul>
+<h3>Changed</h3>
+<ul>
+<li><strong>Share dialog consolidation</strong>: the Kroki link and Markdown embed code moved out of the Actions panel into the Share dialog, each with a note that the diagram is sent to an external rendering service (kroki.io / mermaid.ink)</li>
+<li><strong>Gist loading removed</strong>: the app no longer loads diagrams from GitHub Gist URLs</li>
+</ul>
+<h3>Fixed</h3>
+<ul>
+<li><strong>Share privacy note</strong>: corrected the wording to accurately describe that a shareable link encodes the diagram in the link itself rather than uploading it to a server</li>
+</ul>
+<h2>[v0.7.1] - 2026-09-02</h2>
+<h3>Fixed</h3>
+<ul>
+<li><strong>Tab zoom &amp; position preserved</strong>: switching between open tabs no longer resets the diagram&#39;s zoom and pan — each tab keeps its own viewport</li>
+<li><strong>Thumbnail refresh on save</strong>: saving changes to a diagram now updates its thumbnail in the file grid, instead of showing the previously rendered version</li>
+</ul>
+<h2>[v0.7.0] - 2026-09-01</h2>
+<h3>Added</h3>
+<ul>
+<li><strong>Internationalization (English &amp; Simplified Chinese)</strong>: the entire interface is now localized, including the native menu bar and system dialogs. A language switcher in the menu changes the app language instantly — UI text updates live without a reload, while the native menu picks up the change on the next launch. On first launch the app follows your system language and falls back to English</li>
+</ul>
+<h2>[v0.6.2] - 2026-08-30</h2>
+<h3>Changed</h3>
+<ul>
+<li><strong>Mermaid.js updated to 11.17.2</strong> (from 11.16.1), along with other dependency updates</li>
+</ul>
+<h2>[v0.6.1] - 2026-08-27</h2>
+<h3>Fixed</h3>
+<ul>
+<li><strong>Preview refresh on external writes</strong>: files saved via an atomic write (temp file + rename) — how AI agents (Claude Code/Codex) and many editors save — now reload the open tab and refresh the live preview, instead of being mistaken for a rename and ignored</li>
+</ul>
+<h2>[v0.6.0] - 2026-08-23</h2>
+<h3>Added</h3>
+<ul>
+<li><strong>Codex agent (experimental)</strong>: a second built-in AI agent alongside Claude Code, backed by a single persistent <code>codex app-server</code> process that starts when Codex is selected and lives until the app exits. Chat, multi-turn conversations, tool-use visibility, token usage, and permission modes work like Claude Code</li>
+<li><strong>Codex session management</strong>: list, resume, and archive Codex sessions per folder through the app-server, sorted by most recently updated; explicit session names are shown when set</li>
+<li><strong>Permission modes for Codex</strong>: Manual, Edit automatically, Plan, and Auto map to Codex&#39;s approval policy and sandbox, and can be switched mid-session</li>
+<li><strong>Agent selector</strong>: switch between Claude Code and Codex from the Agent panel header</li>
+</ul>
+<h3>Changed</h3>
+<ul>
+<li><strong>MCP server</strong> rejects requests that carry an <code>Origin</code> header, guarding against cross-site (browser-originated) access</li>
+</ul>
+<h3>Fixed</h3>
+<ul>
+<li><strong>Folder rename focus</strong>: renaming a folder in the file tree sidebar no longer mishandles focus</li>
+</ul>
+<h2>[v0.5.1] - 2026-08-16</h2>
+<h3>Changed</h3>
+<ul>
+<li><strong>MCP server</strong> now binds to <code>127.0.0.1</code> (local loopback only) instead of all network interfaces</li>
+</ul>
+<h3>Fixed</h3>
+<ul>
+<li><strong>Editor tabs react to external file changes</strong>: deleting or renaming an open <code>.mmd</code> file outside the app now closes or updates its tab (including macOS &quot;move to Trash&quot;); deleting the last open file falls back to the Draft tab</li>
+</ul>
+<h2>[v0.5.0] - 2026-08-14</h2>
+<h3>Added</h3>
+<ul>
+<li><strong>AI Agent panel</strong>: built-in Claude Code integration — chat with Claude Code directly inside the app without switching to a terminal; supports multi-turn conversations, session history, and resuming previous sessions per folder</li>
+<li><strong>Tool use visibility</strong>: tool calls and their results are displayed inline in the conversation as collapsible items, showing the tool name, input, and output</li>
+<li><strong>Token usage and cost</strong>: output token count and cumulative USD cost are shown per session</li>
+<li><strong>Permission mode selector</strong>: choose between Manual, Edit automatically, Plan, and Auto modes for each session; dynamically switchable mid-session</li>
+<li><strong>Permission request UI</strong>: Claude pauses before executing potentially dangerous operations and shows an inline permission request; users can allow or deny each action, with an optional message to guide Claude on what to do instead</li>
+<li><strong>Recent agent working directories</strong>: folder picker in the Agent panel remembers recently used directories for quick switching</li>
+<li><strong>Active file name in Navbar</strong>: displays the current diagram file name (without extension) in the top navigation bar</li>
+</ul>
+<h3>Changed</h3>
+<ul>
+<li><strong>Presentation mode</strong>: all toolbar overlays are now hidden in presentation mode for a clean fullscreen view</li>
+</ul>
+<h2>[v0.4.7] - 2026-08-10</h2>
+<h3>Fixed</h3>
+<ul>
+<li><strong>Copy/paste on macOS</strong>: added the Edit menu (Cut, Copy, Paste, Select All, Undo, Redo) to the macOS menu bar, restoring keyboard shortcuts that were previously non-functional</li>
+</ul>
+<h2>[v0.4.6] - 2026-08-09</h2>
+<h3>Added</h3>
+<ul>
+<li><strong>View in Finder/Explorer after export</strong>: a toast notification with a <strong>View</strong> button appears after exporting PNG or SVG, opening the file&#39;s location in Finder (macOS) or Explorer (Windows) via <code>tauri-plugin-opener</code></li>
+</ul>
+<h3>Fixed</h3>
+<ul>
+<li><strong>Save draft via Ctrl+S</strong>: pressing Ctrl+S (or ⌘S on macOS) in the Monaco editor on the Draft tab now correctly triggers Save As instead of doing nothing</li>
+</ul>
+<h2>[v0.4.5] - 2026-08-08</h2>
+<h3>Added</h3>
+<ul>
+<li><strong>Sidebar toggle in macOS title bar</strong>: a sidebar toggle button is now embedded in the custom macOS title bar area for quick access without reaching the main toolbar</li>
+</ul>
+<h3>Changed</h3>
+<ul>
+<li><strong>macOS title bar style</strong>: adjusted spacing and layout of the custom macOS title bar</li>
+</ul>
+<h2>[v0.4.4] - 2026-08-07</h2>
+<h3>Added</h3>
+<ul>
+<li><strong>Open Recent</strong>: File menu now lists recently opened folders and files; selecting an item reopens it directly</li>
+</ul>
+<h3>Changed</h3>
+<ul>
+<li><strong>Skip duplicate folder open</strong>: opening a folder that is already open no longer reloads it</li>
+</ul>
+<h2>[v0.4.3] - 2026-08-04</h2>
+<h3>Added</h3>
+<ul>
+<li><strong>Custom title bar on Windows</strong>: native title bar replaced with a custom one; includes File/View/Window/Help menu buttons, sidebar toggle, drag region, and window controls (minimize/maximize/close) using Segoe MDL2 Assets icons</li>
+<li><strong>Help menu</strong>: GitHub Repository, Report an Issue, and What&#39;s New links accessible from the menu bar</li>
+</ul>
+<h2>[v0.4.2] - 2026-08-03</h2>
+<h3>Added</h3>
+<ul>
+<li><strong>Native menu bar</strong>: custom File, View, and Window menus with keyboard shortcuts; menu actions wired to frontend (Open File, Open Folder, Save, Save As, Close Tab, Toggle File Explorer, Toggle Editor, Toggle Presentation Mode)</li>
+</ul>
+<h2>[v0.4.1] - 2026-08-03</h2>
+<h3>Added</h3>
+<ul>
+<li><strong>MCP token authentication</strong>: MCP bridge server now generates a random per-session token passed to the sidecar via environment variable; all bridge requests require <code>Authorization: Bearer &lt;token&gt;</code></li>
+</ul>
+<h3>Removed</h3>
+<ul>
+<li><strong>Unused tests</strong>: removed DOM-dependent test files that were no longer maintained</li>
+</ul>
+<h2>[v0.4.0] - 2026-08-02</h2>
+<h3>Added</h3>
+<ul>
+<li><strong>MCP Server Integration</strong>: built-in MCP server (port 37079) exposes <code>preview_diagram</code> and <code>list_diagrams</code> tools; AI agents can preview diagrams in the Draft tab and list all open <code>.mmd</code> files; enable via the main menu toggle</li>
+<li><strong>MCP HTTP bridge</strong>: internal axum server (port 37078) bridges MCP requests to the Tauri frontend</li>
+</ul>
+<h3>Changed</h3>
+<ul>
+<li><strong>Linux packages</strong>: <code>.AppImage</code> is no longer provided due to a compatibility issue between Bun&#39;s statically-linked sidecar binary and <code>linuxdeploy</code>; <code>.deb</code> and <code>.rpm</code> packages are still available</li>
+</ul>
+<h2>[v0.3.13] - 2026-07-27</h2>
+<h3>Fixed</h3>
+<ul>
+<li><strong>Navigation guard on Windows</strong>: allow <code>tauri://</code>, <code>http://tauri.localhost</code>, <code>https://tauri.localhost</code>, and <code>data:</code> URLs in addition to blob URLs so the app loads correctly on Windows</li>
+<li><strong>Save race condition</strong>: take a snapshot of the code before writing to disk so that rapid edits no longer cause <code>isDirty</code> to be incorrectly cleared</li>
+<li><strong>YAML frontmatter parsing on Windows</strong>: regex now handles <code>\r\n</code> line endings in frontmatter blocks</li>
+<li><strong>Path parsing</strong>: file name extraction now uses a cross-platform regex (<code>/[/\\]/</code>) instead of splitting on <code>/</code> then <code>\</code></li>
+</ul>
+<h2>[v0.3.12] - 2026-07-27</h2>
+<h3>Added</h3>
+<ul>
+<li><strong>Content Security Policy (CSP)</strong>: configured CSP for the WebView to restrict resource loading</li>
+<li><strong>External link confirmation</strong>: clicking a diagram link now shows a &quot;Do you trust this link?&quot; dialog before opening in the system browser</li>
+</ul>
+<h3>Fixed</h3>
+<ul>
+<li><strong>PNG export with external links</strong>: diagrams containing <code>click href</code> links can now be exported as PNG; external hrefs are stripped from the canvas SVG to prevent canvas taint</li>
+<li><strong>External link navigation</strong>: links in diagrams no longer navigate inside the app; they open in the system browser instead</li>
+<li><strong>Vim <code>:w</code>/<code>:q</code>/<code>:wq</code> on Draft tab</strong>: correctly triggers Save As when the Draft tab is active instead of doing nothing</li>
+<li><strong>Thumbnail security level</strong>: thumbnail rendering now uses <code>strict</code> security level instead of <code>loose</code></li>
+<li><strong>Unsaved changes on folder switch</strong>: switching to a different folder with unsaved changes now prompts to save instead of silently discarding them</li>
+<li><strong>Delete directory on Windows</strong>: deleting a directory now correctly closes all tabs whose files are inside it (fixed path separator mismatch on Windows)</li>
+<li><strong>Rename directory</strong>: renaming a directory now correctly updates paths of all open tabs inside it and re-registers file watchers</li>
+</ul>
+<h2>[v0.3.11] - 2026-07-25</h2>
+<h3>Added</h3>
+<ul>
+<li><strong>Window state persistence</strong>: window size and position are now saved and restored on next launch</li>
+</ul>
+<h3>Fixed</h3>
+<ul>
+<li><strong>&quot;Open with&quot; tab activation</strong>: opening a file via &quot;Open with Mermaid Code&quot; now correctly activates the corresponding tab instead of staying on the previously active tab</li>
+</ul>
+<h2>[v0.3.10] - 2026-07-21</h2>
+<h3>Fixed</h3>
+<ul>
+<li><strong>&quot;Open with&quot; on macOS</strong>: fixed file association so that double-clicking or using &quot;Open with Mermaid Code&quot; in Finder correctly opens the file on first launch</li>
+<li><strong>&quot;Open with&quot; on Windows</strong>: fixed file association for first launch when the app is not already running</li>
+</ul>
+<h2>[v0.3.8] - 2026-07-20</h2>
+<h3>Added</h3>
+<ul>
+<li><strong>Syntax error display</strong>: syntax error message now appears above the VIM status bar, integrated into the editor</li>
+</ul>
+<h3>Fixed</h3>
+<ul>
+<li><strong>Editor undo loop</strong>: fixed undo/redo cycling between the last two states when typing</li>
+<li><strong>Auto-save false alarm</strong>: auto-saving a file no longer triggers &quot;modified externally but has unsaved changes&quot; notification</li>
+</ul>
+<h3>Changed</h3>
+<ul>
+<li><strong>Build output directory</strong>: changed from <code>docs/</code> to <code>dist/</code></li>
+<li><strong>Removed web support</strong>: app is now desktop-only; CodeMirror removed</li>
+<li><strong>Removed analytics</strong>: Plausible Analytics and all usage statistics removed</li>
+</ul>
+<h2>[v0.3.7] - 2026-07-20</h2>
+<h3>Added</h3>
+<ul>
+<li><strong>Draft tab</strong>: always-visible &quot;Draft&quot; tab for unsaved work; prompts to save before quitting if draft has content</li>
+<li><strong>Editor expand button</strong>: when the editor pane is collapsed, a button appears on the left edge of the preview to expand it</li>
+</ul>
+<h3>Changed</h3>
+<ul>
+<li><strong>TabBar</strong>: always visible; shows a &quot;＋&quot; button when no files are open; standalone style (rounded, bordered) when sidebar is collapsed</li>
+</ul>
+<h2>[v0.3.6] - 2026-07-17</h2>
+<h3>Added</h3>
+<ul>
+<li><strong>Sub-directory file watching</strong>: clicking a file from a sub-directory in grid view now registers a file watcher for that directory</li>
+</ul>
+<h3>Fixed</h3>
+<ul>
+<li><strong>Sub-directory watching</strong>: fixed file change detection for files outside the root directory</li>
+</ul>
+<h2>[v0.3.5] - 2026-07-14</h2>
+<h3>Changed</h3>
+<ul>
+<li><strong>Presentation mode</strong>: full-screen now hides the editor pane; ESC or macOS green button exits correctly</li>
+</ul>
+<h2>[v0.3.4] - 2026-07-13</h2>
+<h3>Added</h3>
+<ul>
+<li><strong>Config reset button</strong>: added a Reset button in the Config tab to restore default Mermaid config</li>
+</ul>
+<h3>Changed</h3>
+<ul>
+<li><strong>Homebrew tap auto-update</strong>: GitHub Actions workflow now automatically updates the Homebrew tap on release</li>
+</ul>
+<h2>[v0.3.3] - 2026-07-13</h2>
+<h3>Added</h3>
+<ul>
+<li><strong>Homebrew tap</strong>: available via <code>brew tap m8524769/tap &amp;&amp; brew install --cask mermaid-code</code></li>
+</ul>
+<h3>Fixed</h3>
+<ul>
+<li><strong>macOS relaunch after update</strong>: app now correctly relaunches after installing an update</li>
+</ul>
+<h2>[v0.3.2] - 2026-07-13</h2>
+<h3>Changed</h3>
+<ul>
+<li><strong>Update flow</strong>: download and install are now separate steps; &quot;Install &amp; Restart&quot; button appears after download completes</li>
+</ul>
+<h2>[v0.3.1] - 2026-07-13</h2>
+<h3>Added</h3>
+<ul>
+<li><strong>Update progress</strong>: download progress shown inline next to the version badge</li>
+<li><strong>✓ latest badge</strong>: shown next to version number when the app is confirmed up to date</li>
+</ul>
+<h2>[v0.3.0] - 2026-07-12</h2>
+<h3>Added</h3>
+<ul>
+<li><strong>Auto-update</strong>: app checks for updates on launch and prompts the user to install; a version badge appears next to the title when an update is available, clicking it triggers the install</li>
+</ul>
+<h2>[v0.2.5] - 2026-07-12</h2>
+<h3>Added</h3>
+<ul>
+<li><strong>Version info</strong>: app version is now displayed next to the title in the navbar</li>
+<li><strong>Single instance</strong>: launching a second instance focuses the existing window instead of opening a new one</li>
+<li><strong>File associations</strong>: <code>.mmd</code> and <code>.mermaid</code> files are now associated with Mermaid Code on Windows</li>
+</ul>
+<h2>[v0.2.4] - 2026-07-11</h2>
+<h3>Added</h3>
+<ul>
+<li><strong>Vim mode</strong>: <code>:q</code> closes the current tab (exits the app when no tabs are open); <code>:wq</code> saves and closes; <code>H</code>/<code>L</code> mapped to <code>^</code>/<code>$</code>; <code>jk</code> mapped to <code>&lt;Esc&gt;</code> in insert mode</li>
+<li><strong>Export filename</strong>: PNG and SVG exports now use the current file&#39;s name instead of a timestamp</li>
+<li><strong>Download notification</strong>: a toast shows the download folder path after exporting PNG or SVG</li>
+<li><strong>Rename warning</strong>: renaming a file to an unsupported extension now prompts for confirmation</li>
+</ul>
+<h3>Fixed</h3>
+<ul>
+<li><strong><code>:q</code> permission</strong>: added <code>core:window:allow-close</code> capability so <code>:q</code> can close the window</li>
+</ul>
+<h2>[v0.2.3] - 2026-07-10</h2>
+<h3>Added</h3>
+<ul>
+<li><strong>Drag and drop</strong>: drag <code>.mmd</code>/<code>.mermaid</code> files or folders onto the app window to open them</li>
+</ul>
+<h2>[v0.2.2] - 2026-07-10</h2>
+<h3>Added</h3>
+<ul>
+<li><strong><code>look</code> config field</strong>: Config tab now includes a Look selector (<code>classic</code> / <code>neo</code>)</li>
+<li><strong>Thumbnail stale tracking</strong>: changing the config immediately re-renders the current file&#39;s thumbnail; other files&#39; thumbnails are refreshed on next click</li>
+</ul>
+<h3>Changed</h3>
+<ul>
+<li>Default mermaid config changed from <code>{&quot;theme&quot;: &quot;default&quot;}</code> to <code>{}</code> (same behavior, cleaner)</li>
+</ul>
+<h2>[v0.2.1] - 2026-07-10</h2>
+<h3>Added</h3>
+<ul>
+<li><strong>Sidebar search bar</strong>: filter files by filename in both tree and grid views; search auto-clears when switching folders</li>
+<li><strong>Dirty indicator in thumbnail view</strong>: unsaved files now show the orange dot in the thumbnail grid, matching the tree view</li>
+</ul>
+<h3>Fixed</h3>
+<ul>
+<li><strong>Thumbnail rename sorting</strong>: renaming a file no longer incorrectly pins it to the top of the grid</li>
+</ul>
+<h2>[v0.2.0] - 2026-07-10</h2>
+<h3>Added</h3>
+<ul>
+<li><strong>Thumbnail grid view</strong>: sidebar now supports a thumbnail grid view showing SVG previews of all <code>.mmd</code>/<code>.mermaid</code> files in the opened folder (including subdirectories); switch between tree and grid view with the toggle buttons in the sidebar header; view preference is persisted</li>
+<li><strong>Onboarding tooltip</strong>: first-time users see a tooltip pointing to the File Explorer button after 3 seconds, which disappears once the sidebar is opened</li>
+</ul>
+<h3>Fixed</h3>
+<ul>
+<li><strong>Editor horizontal scrollbar</strong>: VIM status bar no longer overlaps the Monaco editor&#39;s horizontal scrollbar</li>
+<li><strong>Ignored files</strong>: <code>.DS_Store</code>, <code>Thumbs.db</code>, and <code>desktop.ini</code> are now excluded from the file tree</li>
+</ul>
+<h2>[v0.1.13] - 2026-07-09</h2>
+<h3>Added</h3>
+<ul>
+<li><strong>Relative line numbers in Vim mode</strong>: editor switches to <code>lineNumbers: &#39;relative&#39;</code> when Vim mode is enabled, restores to absolute on disable</li>
+</ul>
+<h3>Fixed</h3>
+<ul>
+<li><strong>ZenUML infinite reload loop</strong>: switching away from ZenUML no longer triggers repeated page reloads</li>
+<li><strong>Pin to code preserves existing frontmatter</strong>: other fields (e.g. <code>title</code>, nested <code>flowchart</code> config) are no longer overwritten when pinning theme/layout/fontFamily</li>
+</ul>
+<h3>Changed</h3>
+<ul>
+<li><strong>ZenUML removed from Sample Diagrams</strong>: due to global style injection side effects that cannot be cleaned up without a page reload</li>
+</ul>
+<h2>[v0.1.12] - 2026-07-09</h2>
+<h3>Added</h3>
+<ul>
+<li><strong>Pin to code</strong>: Config tab now has a &quot;Pin to code&quot; button that inserts the current config as YAML frontmatter into the diagram code</li>
+</ul>
+<h3>Changed</h3>
+<ul>
+<li><strong><code>@mermaid-js/layout-elk</code> upgraded to 0.2.2</strong></li>
+</ul>
+<h2>[v0.1.11] - 2026-07-09</h2>
+<h3>Added</h3>
+<ul>
+<li><strong>Config form</strong>: theme, layout, and font family can now be set via a visual form at the top of the Config tab, synchronized with the JSON editor below</li>
+</ul>
+<h2>[v0.1.10] - 2026-07-09</h2>
+<h3>Added</h3>
+<ul>
+<li><strong>Theme hint in Config tab</strong>: available mermaid theme names are now listed as badges at the top of the Config editor</li>
+</ul>
+<h3>Fixed</h3>
+<ul>
+<li><strong>Config tab empty on first open</strong>: switching to the Config tab now correctly populates the editor with the current mermaid config</li>
+<li><strong>Dirty indicator dot</strong>: replaced Unicode <code>●</code> with a CSS <code>rounded-full</code> element for consistent cross-platform sizing</li>
+</ul>
+<h2>[v0.1.9] - 2026-07-08</h2>
+<h3>Fixed</h3>
+<ul>
+<li><strong>Deleted folder closes tabs</strong>: deleting a folder now automatically closes all tabs whose files were inside it</li>
+<li><strong>UI polish</strong>: muted icon colors on inactive states for sidebar buttons, file tree action buttons, tab bar close button, and New File button; hover states now use consistent foreground color</li>
+</ul>
+<h3>Changed</h3>
+<ul>
+<li>Zoom scroll sensitivity increased from <code>0.1</code> (library default) to <code>0.2</code></li>
+<li>Sidebar title tooltip now shows the full folder path on hover</li>
+</ul>
+<h2>[v0.1.8] - 2026-07-08</h2>
+<h3>Fixed</h3>
+<ul>
+<li><strong>Copy Image</strong>: works correctly in Tauri desktop mode via a custom Rust command; the PNG is decoded on the Rust side and written to the system clipboard using <code>arboard</code>, bypassing WKWebView&#39;s restriction on <code>navigator.clipboard.write</code></li>
+</ul>
+<h2>[v0.1.7] - 2026-07-08</h2>
+<h3>Fixed</h3>
+<ul>
+<li><strong>Per-tab undo isolation</strong>: each tab now uses its own Monaco model; switching tabs no longer leaks undo history from other files</li>
+<li><strong>Vim clipboard</strong>: <code>y</code>/<code>d</code>/<code>c</code> operations now correctly write to the system clipboard via unnamed register override</li>
+<li><strong>Per-tab pan/zoom state</strong>: viewport position is saved and restored per tab; panning/zooming in one tab no longer affects others</li>
+<li><strong>File tree actions</strong>: replaced context menu (broken in Tauri) with inline hover action buttons</li>
+</ul>
+<h2>[v0.1.6] - 2026-07-08</h2>
+<h3>Fixed</h3>
+<ul>
+<li><strong>File rename</strong>: extension is preserved automatically when the user omits it; text selection excludes the extension so only the stem is selected</li>
+</ul>
+<h2>[v0.1.5] - 2026-07-08</h2>
+<h3>Fixed</h3>
+<ul>
+<li>Sidebar now shows &quot;This folder is empty.&quot; when the opened folder has no supported files</li>
+<li>Tab tooltip shows the full file path</li>
+<li>File watcher no longer causes UI lag when opening large directories</li>
+</ul>
+<h2>[v0.1.4] - 2026-07-08</h2>
+<h3>Changed</h3>
+<ul>
+<li>Bumped GitHub Actions versions</li>
+<li>Minor release workflow configuration fixes</li>
+</ul>
+<h2>[v0.1.3] - 2026-07-07</h2>
+<h3>Changed</h3>
+<ul>
+<li>Release workflow now uses GitHub&#39;s native auto-generated release notes</li>
+</ul>
+<h2>[v0.1.2] - 2026-07-07</h2>
+<h3>Added</h3>
+<ul>
+<li><strong>Save / Save As buttons</strong>: toolbar Save button in Tauri desktop mode; Save As dialog when no tab is active</li>
+<li><strong>File type association</strong>: <code>.mmd</code> and <code>.mermaid</code> registered via <code>Info.plist</code></li>
+<li><strong>Date-stamped default names</strong>: new files default to <code>Diagram YYYY-MM-DD at HH.MM.SS.mmd</code>; new folders to <code>New Folder YYYY-MM-DD at HH.MM.SS</code></li>
+<li><strong>Auto-expand on new file</strong>: creating a file inside a collapsed directory now expands that directory automatically</li>
+</ul>
+<h3>Fixed</h3>
+<ul>
+<li>Tab persistence no longer overwrites the current folder&#39;s tab list when opening an individual file from a different directory</li>
+</ul>
+<h2>[v0.1.1] - 2026-07-07</h2>
+<h3>Added</h3>
+<ul>
+<li><strong>Vim mode</strong>: Monaco editor supports Vim keybindings (<code>monaco-vim</code>); <code>:w</code> triggers file save</li>
+<li><strong>Full-screen preview</strong>: new &quot;Full Screen&quot; button opens the diagram preview in a separate Tauri WebviewWindow (or new browser tab on web)</li>
+</ul>
+<h2>[v0.1.0] - 2026-07-07</h2>
+<p>Initial release of Mermaid Code, forked from mermaid-live-editor.</p>
+<h3>Added</h3>
+<ul>
+<li><strong>Tauri desktop app</strong>: packaged as a native app for macOS, Windows, and Linux using Tauri v2</li>
+<li><strong>File manager sidebar</strong>: open a local folder and browse, create, rename, and delete <code>.mmd</code> and <code>.mermaid</code> files</li>
+<li><strong>Multi-tab editing</strong>: open multiple files simultaneously with independent undo history per tab; drag to reorder tabs</li>
+<li><strong>Per-folder tab persistence</strong>: reopening a folder restores the previously open tabs and active tab</li>
+<li><strong>Auto-save</strong>: sidebar toggle enables auto-save with a 2-second idle delay</li>
+<li><strong>Keyword autocomplete</strong>: Monaco editor provides diagram-type-aware keyword completions</li>
+<li><strong>Mermaid upgraded to 11.16.0</strong>; pako upgraded to 3.0.0</li>
+<li><strong>Performance improvements</strong>: pan/zoom change throttle set to 200 ms; editor update debounce set to 100 ms</li>
+<li><strong>Shareable links</strong>: domain changed to <code>mermaid.live</code> (no longer shows <code>localhost</code>)</li>
+<li><strong>Multi-platform release workflow</strong>: GitHub Actions builds and publishes installers for macOS, Windows, and Linux</li>
+</ul>
+
+</main>
+
+<footer>
+  <div class="footer-left">
+    <img src="favicon.svg" alt="" />
+    <span>Mermaid Code — Fork of <a href="https://github.com/mermaid-js/mermaid-live-editor" style="color:var(--muted)">mermaid-live-editor</a></span>
+  </div>
+  <div class="footer-right">
+    <a href="/">Home</a>
+    <a href="https://github.com/m8524769/mermaid-code/releases">Releases</a>
+    <a href="https://github.com/m8524769/mermaid-code/blob/main/CHANGELOG.md">Source</a>
+  </div>
+</footer>
+
+</body>
+</html>
