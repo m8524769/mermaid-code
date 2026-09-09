@@ -27,7 +27,10 @@
     },
     overviewRulerLanes: 0,
     glyphMargin: false,
-    lineNumbersMinChars: 4
+    lineNumbersMinChars: 4,
+    // Enable tree-sitter semantic highlighting (see monacoExtra.ts). Default is
+    // 'configuredByTheme'; forcing true keeps it on regardless of theme.
+    'semanticHighlighting.enabled': true
   } satisfies monaco.editor.IStandaloneEditorConstructionOptions;
   let currentText = '';
   let isUpdatingFromState = false;

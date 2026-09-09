@@ -62,12 +62,14 @@ brew install --cask mermaid-code
 - 自动保存（默认开启，每间隔 2 秒）
 - 文件操作：新建文件/文件夹、重命名、删除
 
-### Code 编辑器
+### 代码编辑器
 
+- Tree-sitter 语法高亮 —— 覆盖所有图表类型的精准语义高亮，基于 [@mermanjs/tree-sitter-mermaid](https://github.com/Latias94/merman/tree/main/distribution/tree-sitter-mermaid)
+- 颜色预览色块 —— 为 `style` / `classDef` 中的颜色显示行内色块，点击即可取色编辑
 - Vim 模式 —— 可通过状态栏中的 VIM ON/OFF 切换
 - 关键字自动补全 —— 根据图表类型提供智能建议
 
-### Config 面板
+### 配置面板
 
 - 可视化配置 —— 通过表单设置主题、布局和字体，无需编辑 JSON
 - Pin to code —— 将当前配置以 YAML 的形式插入到图表代码中以固定样式

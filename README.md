@@ -70,6 +70,8 @@ brew install --cask mermaid-code
 
 ### Editor
 
+- **Tree-sitter syntax highlighting** — accurate semantic highlighting for every diagram type, powered by [@mermanjs/tree-sitter-mermaid](https://github.com/Latias94/merman/tree/main/distribution/tree-sitter-mermaid)
+- **Color preview swatches** — inline color chips with a click-to-edit picker for `style` / `classDef` colors
 - **Vim mode** — toggle with the VIM ON/OFF button in the status bar
 - **Keyword autocomplete** — diagram-type-aware suggestions
 

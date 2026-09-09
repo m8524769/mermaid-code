@@ -1,8 +1,67 @@
 // Modified from https://github.com/Yash-Singh1/monaco-mermaid/blob/main/index.ts
 
 import type * as Monaco from 'monaco-editor';
+import {
+  computeSemanticTokens,
+  SEMANTIC_TOKEN_MODIFIERS,
+  SEMANTIC_TOKEN_TYPES
+} from './treeSitterHighlight';
 
 const commentRegex = /(?<!["'])%%(?![^"']*["']\)).*$/;
+
+const SEMANTIC_LEGEND: Monaco.languages.SemanticTokensLegend = {
+  tokenTypes: [...SEMANTIC_TOKEN_TYPES],
+  tokenModifiers: [...SEMANTIC_TOKEN_MODIFIERS]
+};
+
+// Matches CSS colors used in Mermaid `style`/`classDef` statements: hex
+// (#RGB / #RGBA / #RRGGBB / #RRGGBBAA) and rgb()/rgba(). The negative lookahead
+// stops a 6-digit hex from being matched as a 3-digit one plus trailing chars.
+const COLOR_REGEX =
+  '#(?:[0-9a-fA-F]{8}|[0-9a-fA-F]{6}|[0-9a-fA-F]{4}|[0-9a-fA-F]{3})(?![0-9a-fA-F])|rgba?\\([^)]*\\)';
+
+// Parse a color literal into Monaco's IColor (channels in the 0..1 range).
+const parseColor = (text: string): Monaco.languages.IColor | null => {
+  if (text.startsWith('#')) {
+    let hex = text.slice(1);
+    if (hex.length === 3 || hex.length === 4) {
+      hex = [...hex].map((c) => c + c).join('');
+    }
+    const red = parseInt(hex.slice(0, 2), 16) / 255;
+    const green = parseInt(hex.slice(2, 4), 16) / 255;
+    const blue = parseInt(hex.slice(4, 6), 16) / 255;
+    const alpha = hex.length === 8 ? parseInt(hex.slice(6, 8), 16) / 255 : 1;
+    return { red, green, blue, alpha };
+  }
+  const parts = text
+    .slice(text.indexOf('(') + 1, text.lastIndexOf(')'))
+    .split(',')
+    .map((p) => p.trim());
+  if (parts.length < 3) {
+    return null;
+  }
+  const [r, g, b, a] = parts;
+  const red = Number(r) / 255;
+  const green = Number(g) / 255;
+  const blue = Number(b) / 255;
+  const alpha = a === undefined ? 1 : Number(a);
+  // Bail on percentages / malformed channels (e.g. `rgb(100%,0%,0%)`) rather
+  // than handing Monaco an IColor with NaN channels, which breaks the swatch.
+  if ([red, green, blue, alpha].some(Number.isNaN)) {
+    return null;
+  }
+  return { red, green, blue, alpha };
+};
+
+// Format an IColor back to a hex string (adds the alpha byte only when < 1).
+const colorToHex = ({ red, green, blue, alpha }: Monaco.languages.IColor): string => {
+  const byte = (n: number) =>
+    Math.round(n * 255)
+      .toString(16)
+      .padStart(2, '0');
+  const base = `#${byte(red)}${byte(green)}${byte(blue)}`;
+  return alpha < 1 ? `${base}${byte(alpha)}` : base;
+};
 
 export const initEditor = (monacoEditor: typeof Monaco): void => {
   monacoEditor.languages.register({ id: 'mermaid' });
@@ -556,6 +615,36 @@ export const initEditor = (monacoEditor: typeof Monaco): void => {
     }
   });
 
+  // tree-sitter semantic highlighting, layered on top of the Monarch tokenizer
+  // above. Registered per-language so it applies to every `mermaid` model with
+  // no per-model wiring. If the wasm fails to load the provider throws and
+  // Monaco silently keeps the Monarch colors — graceful degradation.
+  monacoEditor.languages.registerDocumentSemanticTokensProvider('mermaid', {
+    getLegend: () => SEMANTIC_LEGEND,
+    provideDocumentSemanticTokens: async (model) => {
+      const data = await computeSemanticTokens(model.getValue());
+      return { data, resultId: undefined };
+    },
+    releaseDocumentSemanticTokens: () => {}
+  });
+
+  // Color decorators: render a swatch before each color literal in `style` /
+  // `classDef` statements and enable Monaco's built-in color picker on click.
+  monacoEditor.languages.registerColorProvider('mermaid', {
+    provideDocumentColors: (model) => {
+      const matches = model.findMatches(COLOR_REGEX, false, true, false, null, false);
+      const colors: Monaco.languages.IColorInformation[] = [];
+      for (const { range } of matches) {
+        const color = parseColor(model.getValueInRange(range));
+        if (color) {
+          colors.push({ range, color });
+        }
+      }
+      return colors;
+    },
+    provideColorPresentations: (_model, colorInfo) => [{ label: colorToHex(colorInfo.color) }]
+  });
+
   monacoEditor.editor.defineTheme('mermaid-dark', {
     base: 'vs-dark',
     colors: {},
@@ -563,7 +652,22 @@ export const initEditor = (monacoEditor: typeof Monaco): void => {
     rules: [
       { fontStyle: 'bold', foreground: '9650c8', token: 'typeKeyword' },
       { fontStyle: 'bold', foreground: '008800', token: 'transition' },
-      { foreground: '9cdcfe', token: 'identifier' }
+      { foreground: '9cdcfe', token: 'identifier' },
+      // tree-sitter semantic token colors — full VS Code Dark+ palette.
+      { foreground: '569cd6', token: 'keyword' },
+      { foreground: '6a9955', token: 'comment' },
+      { foreground: 'ce9178', token: 'string' },
+      { foreground: 'b5cea8', token: 'number' },
+      { foreground: 'd4d4d4', token: 'operator' },
+      { foreground: '9cdcfe', token: 'variable' },
+      { foreground: '4fc1ff', token: 'constant' },
+      { foreground: '4ec9b0', token: 'type' },
+      { foreground: '4ec9b0', token: 'namespace' },
+      { foreground: '9cdcfe', token: 'property' },
+      { foreground: 'dcdcaa', token: 'function' },
+      { foreground: '808080', token: 'punctuation' },
+      { foreground: '9cdcfe', token: 'attribute' },
+      { foreground: '569cd6', token: 'boolean' }
     ]
   });
 
@@ -572,18 +676,29 @@ export const initEditor = (monacoEditor: typeof Monaco): void => {
     colors: {},
     inherit: true,
     rules: [
+      // Monarch-only decorative tokens (kept as-is; not part of the semantic legend).
       { fontStyle: 'bold', foreground: '9650c8', token: 'typeKeyword' },
-      { foreground: '649696', token: 'keyword' },
       { fontStyle: 'bold', foreground: 'ff0000', token: 'custom-error' },
-      { foreground: 'AA8500', token: 'string' },
       { fontStyle: 'bold', foreground: '008800', token: 'transition' },
       { fontStyle: 'bold', foreground: '000000', token: 'delimiter.bracket' },
       { foreground: '4b4b96', token: 'annotation' },
-      { foreground: '4b4b96', token: 'number' },
-      { foreground: '888c89', token: 'comment' },
-      { foreground: 'A22889', token: 'variable' },
-      { foreground: '2BDEA8', token: 'type' },
-      { foreground: '9cdcfe', token: 'identifier' }
+      { foreground: '9cdcfe', token: 'identifier' },
+      // tree-sitter semantic token colors — full VS Code Light+ palette (mirrors
+      // the Dark+ set in the mermaid-dark theme).
+      { foreground: '0000ff', token: 'keyword' },
+      { foreground: '008000', token: 'comment' },
+      { foreground: 'a31515', token: 'string' },
+      { foreground: '098658', token: 'number' },
+      { foreground: '0000ff', token: 'operator' },
+      { foreground: '001080', token: 'variable' },
+      { foreground: '0070c1', token: 'constant' },
+      { foreground: '267f99', token: 'type' },
+      { foreground: '267f99', token: 'namespace' },
+      { foreground: '001080', token: 'property' },
+      { foreground: '795e26', token: 'function' },
+      { foreground: '808080', token: 'punctuation' },
+      { foreground: '001080', token: 'attribute' },
+      { foreground: '0000ff', token: 'boolean' }
     ]
   });
 
