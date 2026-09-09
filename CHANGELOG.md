@@ -2,6 +2,19 @@
 
 All notable changes to Mermaid Code are documented here.
 
+## [v0.7.3] - 2026-09-10
+
+### Added
+
+- **Syntax highlighting for every diagram type**: newer diagram types that previously had little or no highlighting — mindmap, timeline, block-beta, and others — now get accurate coloring
+- **Color preview swatches**: inline color chips for `style` and `classDef` colors, with a click-to-edit color picker
+
+### Changed
+
+- **Tree-sitter powered highlighting**: the editor's syntax highlighting is now driven by the tree-sitter Mermaid grammar ([@mermanjs/tree-sitter-mermaid](https://github.com/Latias94/merman/tree/main/distribution/tree-sitter-mermaid)) for semantically accurate coloring, with the previous tokenizer kept as a fallback so highlighting still works while the grammar loads; light and dark theme colors were unified across both layers to avoid any color flicker
+- **File sidebar search**: added a button to quickly clear the current file search query
+- **Small UI refinements**: various minor polish across the interface
+
 ## [v0.7.2] - 2026-09-06
 
 ### Added
