@@ -165,27 +165,62 @@ export async function computeSemanticTokens(text: string): Promise<Uint32Array> 
     tree.delete();
   }
 
-  // Sort by position, then widest-first, and sweep to drop overlaps so the
-  // stream Monaco receives is strictly non-overlapping and ordered.
-  raw.sort((a, b) => a.line - b.line || a.char - b.char || b.length - a.length);
+  // Resolve overlaps with "innermost wins". Some highlight queries tag a whole
+  // multi-line construct with a coarse type — e.g. the C4 grammar captures an
+  // entire `Enterprise_Boundary(...) { ... }` block as punctuation.bracket. If
+  // the widest span won, it would drown the string/type/variable colors inside.
+  // So we paint each line and let the NARROWER (more specific) capture overwrite
+  // the wider one, matching standard tree-sitter highlighting semantics.
+  const byLine = new Map<number, RawToken[]>();
+  for (const token of raw) {
+    let bucket = byLine.get(token.line);
+    if (!bucket) {
+      bucket = [];
+      byLine.set(token.line, bucket);
+    }
+    bucket.push(token);
+  }
+
+  const resolved: RawToken[] = [];
+  for (const [line, tokens] of byLine) {
+    // Paint widest-first so the narrowest capture at each column wins.
+    tokens.sort((a, b) => b.length - a.length);
+    let width = 0;
+    for (const token of tokens) {
+      width = Math.max(width, token.char + token.length);
+    }
+    const cover = new Int32Array(width).fill(-1);
+    for (const token of tokens) {
+      cover.fill(token.typeIndex, token.char, token.char + token.length);
+    }
+    // Coalesce runs of equal type into single spans.
+    for (let i = 0; i < width;) {
+      if (cover[i] === -1) {
+        i++;
+        continue;
+      }
+      let j = i + 1;
+      while (j < width && cover[j] === cover[i]) {
+        j++;
+      }
+      resolved.push({ line, char: i, length: j - i, typeIndex: cover[i] });
+      i = j;
+    }
+  }
+
+  // Order the (now strictly non-overlapping) spans and delta-encode them.
+  resolved.sort((a, b) => a.line - b.line || a.char - b.char);
 
   const data: number[] = [];
   let prevLine = 0;
   let prevChar = 0;
-  let lastLine = -1;
-  let lastEnd = 0;
 
-  for (const token of raw) {
-    if (token.line === lastLine && token.char < lastEnd) {
-      continue; // overlaps an already-emitted token on this line
-    }
+  for (const token of resolved) {
     const deltaLine = token.line - prevLine;
     const deltaChar = deltaLine === 0 ? token.char - prevChar : token.char;
     data.push(deltaLine, deltaChar, token.length, token.typeIndex, 0);
     prevLine = token.line;
     prevChar = token.char;
-    lastLine = token.line;
-    lastEnd = token.char + token.length;
   }
 
   return new Uint32Array(data);

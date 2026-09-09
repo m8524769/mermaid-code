@@ -650,15 +650,23 @@ export const initEditor = (monacoEditor: typeof Monaco): void => {
     colors: {},
     inherit: true,
     rules: [
-      { fontStyle: 'bold', foreground: '9650c8', token: 'typeKeyword' },
-      { fontStyle: 'bold', foreground: '008800', token: 'transition' },
+      // Monarch fallback tokens, repainted to match their tree-sitter semantic
+      // role (the palette below) so the fallback layer blends in and there is no
+      // color flicker when semantic tokens take over: typeKeyword/section →
+      // keyword, transition (arrows) → operator, identifier (node ids) →
+      // variable, annotation (<<...>>) → attribute, brackets → punctuation.
+      { fontStyle: 'bold', foreground: '569cd6', token: 'typeKeyword' },
+      { fontStyle: 'bold', foreground: 'd4d4d4', token: 'transition' },
       { foreground: '9cdcfe', token: 'identifier' },
+      { foreground: '9cdcfe', token: 'annotation' },
+      { foreground: '808080', token: 'delimiter.bracket' },
+      { fontStyle: 'bold', foreground: 'ff0000', token: 'custom-error' },
       // tree-sitter semantic token colors — full VS Code Dark+ palette.
-      { foreground: '569cd6', token: 'keyword' },
+      { fontStyle: 'bold', foreground: '569cd6', token: 'keyword' },
       { foreground: '6a9955', token: 'comment' },
       { foreground: 'ce9178', token: 'string' },
       { foreground: 'b5cea8', token: 'number' },
-      { foreground: 'd4d4d4', token: 'operator' },
+      { fontStyle: 'bold', foreground: 'd4d4d4', token: 'operator' },
       { foreground: '9cdcfe', token: 'variable' },
       { foreground: '4fc1ff', token: 'constant' },
       { foreground: '4ec9b0', token: 'type' },
@@ -676,20 +684,22 @@ export const initEditor = (monacoEditor: typeof Monaco): void => {
     colors: {},
     inherit: true,
     rules: [
-      // Monarch-only decorative tokens (kept as-is; not part of the semantic legend).
-      { fontStyle: 'bold', foreground: '9650c8', token: 'typeKeyword' },
+      // Monarch fallback tokens, repainted to match their tree-sitter semantic
+      // role (the Light+ palette below) so the fallback blends in with no flicker
+      // when semantic tokens take over. custom-error stays a distinct red.
+      { fontStyle: 'bold', foreground: '0000ff', token: 'typeKeyword' },
       { fontStyle: 'bold', foreground: 'ff0000', token: 'custom-error' },
-      { fontStyle: 'bold', foreground: '008800', token: 'transition' },
-      { fontStyle: 'bold', foreground: '000000', token: 'delimiter.bracket' },
-      { foreground: '4b4b96', token: 'annotation' },
-      { foreground: '9cdcfe', token: 'identifier' },
+      { fontStyle: 'bold', foreground: '0000ff', token: 'transition' },
+      { foreground: '808080', token: 'delimiter.bracket' },
+      { foreground: '001080', token: 'annotation' },
+      { foreground: '001080', token: 'identifier' },
       // tree-sitter semantic token colors — full VS Code Light+ palette (mirrors
       // the Dark+ set in the mermaid-dark theme).
-      { foreground: '0000ff', token: 'keyword' },
+      { fontStyle: 'bold', foreground: '0000ff', token: 'keyword' },
       { foreground: '008000', token: 'comment' },
       { foreground: 'a31515', token: 'string' },
       { foreground: '098658', token: 'number' },
-      { foreground: '0000ff', token: 'operator' },
+      { fontStyle: 'bold', foreground: '0000ff', token: 'operator' },
       { foreground: '001080', token: 'variable' },
       { foreground: '0070c1', token: 'constant' },
       { foreground: '267f99', token: 'type' },
