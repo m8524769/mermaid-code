@@ -21,6 +21,14 @@ import { marked } from 'marked';
 const root = new URL('../', import.meta.url);
 const changelogPath = fileURLToPath(new URL('CHANGELOG.md', root));
 const outPath = fileURLToPath(new URL('site/changelog.html', root));
+const sitemapPath = fileURLToPath(new URL('site/sitemap.xml', root));
+
+// Local calendar date as YYYY-MM-DD (not UTC — toISOString() would roll back a
+// day for timezones ahead of UTC, e.g. writing 09-09 late on the local 09-10).
+const now = new Date();
+const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(
+  now.getDate()
+).padStart(2, '0')}`;
 
 const markdown = readFileSync(changelogPath, 'utf8');
 // GitHub-flavored rendering; the CHANGELOG only uses headings, lists, inline
@@ -236,3 +244,16 @@ ${body}
 
 writeFileSync(outPath, html);
 console.log(`✓ site/changelog.html generated from CHANGELOG.md (${html.length} bytes)`);
+
+// Keep the changelog entry's <lastmod> in sitemap.xml in sync with today, so
+// search engines see the page as freshly updated. Only the changelog <url>
+// block is touched — the homepage entry is left alone.
+const sitemap = readFileSync(sitemapPath, 'utf8');
+const sitemapRe =
+  /(<loc>https:\/\/mermaid-code\.com\/changelog<\/loc>\s*<lastmod>)\d{4}-\d{2}-\d{2}(<\/lastmod>)/;
+if (sitemapRe.test(sitemap)) {
+  writeFileSync(sitemapPath, sitemap.replace(sitemapRe, `$1${today}$2`));
+  console.log(`✓ site/sitemap.xml changelog lastmod → ${today}`);
+} else {
+  console.warn('⚠ site/sitemap.xml: no /changelog <lastmod> found, left unchanged');
+}
