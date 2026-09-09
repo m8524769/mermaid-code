@@ -186,7 +186,8 @@
 {/snippet}
 
 <Popover.Root>
-  <Popover.Trigger class="shrink-0">
+  <Popover.Trigger
+    class="flex shrink-0 items-center rounded-md p-1 transition-colors hover:bg-muted data-[state=open]:bg-muted">
     <MenuIcon class="size-6" />
   </Popover.Trigger>
   <Popover.Content align="start" class="flex flex-col overflow-hidden border-2 p-0" sideOffset={16}>
