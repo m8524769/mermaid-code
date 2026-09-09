@@ -2,6 +2,21 @@
 
 All notable changes to Mermaid Code are documented here.
 
+## [v0.7.2] - 2026-09-06
+
+### Added
+
+- **Custom download folder**: the Actions panel now lets you pick a folder for PNG/SVG exports and remembers it across restarts. Exports write straight to the chosen folder, ask before overwriting an existing file, and surface an error if the save fails; a reset button restores the default download folder
+
+### Changed
+
+- **Share dialog consolidation**: the Kroki link and Markdown embed code moved out of the Actions panel into the Share dialog, each with a note that the diagram is sent to an external rendering service (kroki.io / mermaid.ink)
+- **Gist loading removed**: the app no longer loads diagrams from GitHub Gist URLs
+
+### Fixed
+
+- **Share privacy note**: corrected the wording to accurately describe that a shareable link encodes the diagram in the link itself rather than uploading it to a server
+
 ## [v0.7.1] - 2026-09-02
 
 ### Fixed
