@@ -1,6 +1,6 @@
 <script lang="ts">
   import { m } from '$/paraglide/messages';
-  import DesktopEditor from '$/components/DesktopEditor.svelte';
+  import { getLocale } from '$/paraglide/runtime';
   import { fileState } from '$lib/util/fileState.svelte';
   import {
     updateCode,
@@ -19,6 +19,20 @@
       updateConfig(text);
     }
   };
+
+  // Load Monaco's UI in the app's language, then lazy-load the editor. The NLS
+  // script only sets globalThis._VSCODE_NLS_MESSAGES as a side effect, and
+  // Monaco reads it once at module-eval time — so it must run *before* Monaco
+  // (and monaco-vim) are imported. DesktopEditor is the only runtime importer
+  // of monaco-editor, so dynamically importing it *after* the NLS script is the
+  // single point that guarantees the ordering. English needs no script (it is
+  // the built-in default). Language changes take effect on the next launch.
+  const desktopEditor = (async () => {
+    if (getLocale() === 'zh-CN') {
+      await import('monaco-editor/esm/nls.messages.zh-cn.js');
+    }
+    return (await import('$/components/DesktopEditor.svelte')).default;
+  })();
 
   const THEMES = [
     'default',
@@ -214,5 +228,7 @@
       </div>
     </div>
   {/if}
-  <DesktopEditor {onUpdate} />
+  {#await desktopEditor then DesktopEditor}
+    <DesktopEditor {onUpdate} />
+  {/await}
 </div>
