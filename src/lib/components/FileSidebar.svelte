@@ -173,7 +173,9 @@
     {:else if viewMode.value === 'grid' && renderContainer}
       <ThumbnailGrid query={searchQuery} />
     {:else}
-      <FileTree nodes={fileState.tree} query={searchQuery} />
+      <div class="pr-2">
+        <FileTree nodes={fileState.tree} query={searchQuery} />
+      </div>
     {/if}
   </div>
 

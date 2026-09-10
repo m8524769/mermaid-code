@@ -213,7 +213,10 @@
 
 <div
   bind:this={containerEl}
-  class={['grid gap-2 overflow-y-auto p-2', containerWidth >= 240 ? 'grid-cols-2' : 'grid-cols-1']}>
+  class={[
+    'grid gap-2 overflow-y-auto p-2 pt-0.5',
+    containerWidth >= 240 ? 'grid-cols-2' : 'grid-cols-1'
+  ]}>
   {#each flatFiles.filter((p) => !query || basename(p)
         .toLowerCase()
         .includes(query.toLowerCase())) as path (path)}
