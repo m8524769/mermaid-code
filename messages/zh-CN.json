@@ -5,6 +5,7 @@
   "menu_dark_mode": "深色模式",
   "menu_mcp_server": "MCP 服务器",
   "menu_language": "语言",
+  "menu_language_restart_hint": "部分界面需重启后完全生效。",
   "actions_title": "操作",
   "actions_png_size": "PNG 尺寸",
   "actions_size_auto": "自动",

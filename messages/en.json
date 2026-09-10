@@ -5,6 +5,7 @@
   "menu_dark_mode": "Dark Mode",
   "menu_mcp_server": "MCP Server",
   "menu_language": "Language",
+  "menu_language_restart_hint": "Some parts of the UI apply after a restart.",
   "actions_title": "Actions",
   "actions_png_size": "PNG size",
   "actions_size_auto": "Auto",

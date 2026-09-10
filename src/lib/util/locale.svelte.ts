@@ -5,6 +5,8 @@ import {
   locales,
   baseLocale
 } from '$/paraglide/runtime';
+import { m } from '$/paraglide/messages';
+import { notify } from '$/util/notify';
 
 export { locales, baseLocale };
 
@@ -46,9 +48,15 @@ async function writeLocaleFile(locale: string): Promise<void> {
  * picks up the change on next launch.
  */
 export function setAppLocale(locale: Locale): void {
+  const changed = locale !== current;
   pgSetLocale(locale, { reload: false });
   current = locale;
   void writeLocaleFile(locale);
+  // Most of the UI re-renders live via the rune above, but the Monaco editor
+  // (localized at load time) and the native menu (built at startup) only pick
+  // up the new language on the next launch. Hint at this so the lag doesn't
+  // look like a bug. Shown in the just-selected language.
+  if (changed) notify(m.menu_language_restart_hint());
 }
 
 /**
