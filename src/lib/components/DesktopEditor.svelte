@@ -28,6 +28,10 @@
     overviewRulerLanes: 0,
     glyphMargin: false,
     lineNumbersMinChars: 4,
+    // Fira Code (self-hosted, see app.css @font-face). System mono fallbacks
+    // keep the editor readable if the webfont ever fails to load.
+    fontFamily: "'Fira Code', ui-monospace, Menlo, Consolas, monospace",
+    fontLigatures: true,
     // Enable tree-sitter semantic highlighting (see monacoExtra.ts). Default is
     // 'configuredByTheme'; forcing true keeps it on regardless of theme.
     'semanticHighlighting.enabled': true
@@ -257,6 +261,10 @@
     initEditor(monaco);
     errorDebug();
     editor = monaco.editor.create(divElement, editorOptions);
+
+    // Monaco measures glyph width at creation time. If Fira Code finishes
+    // loading afterwards (FOUT), remeasure so the cursor/selection stay aligned.
+    void document.fonts.ready.then(() => monaco.editor.remeasureFonts());
 
     editor.addAction({
       id: 'file-save',
