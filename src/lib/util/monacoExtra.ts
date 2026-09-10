@@ -300,6 +300,11 @@ export const initEditor = (monacoEditor: typeof Monaco): void => {
         }),
         {}
       ),
+    // Monaco Monarch uses the FIRST tokenizer state as the initial state unless
+    // `start` is set. Our states are spread in alphabetical order, so without
+    // this the lexer would start (and get stuck) in `c4Diagram` — never reaching
+    // `root`, so diagram-type detection and every per-diagram state never fire.
+    start: 'root',
     tokenizer: {
       c4Diagram: [
         configDirectiveHandler,
