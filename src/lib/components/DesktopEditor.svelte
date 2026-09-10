@@ -21,6 +21,31 @@
 
   let divElement: HTMLDivElement | undefined = $state();
   let editor: monaco.editor.IStandaloneCodeEditor | undefined;
+
+  // Characters that can form Fira Code arrow/link ligatures in Mermaid
+  // (--> -.-> ==> ->> --|> <--> ~~~ ...). Used to locate the ligature run
+  // under the caret so it can be temporarily "un-ligated" while editing.
+  const LIGATURE_CHARS = new Set(['-', '=', '<', '>', '.', '~', '|']);
+
+  // Returns the range of the contiguous ligature-character run touching the
+  // caret, or null when the caret isn't on such a run (or it's a single char
+  // that can't ligate). Columns are Monaco's 1-based positions.
+  const computeLigatureRange = (
+    model: monaco.editor.ITextModel,
+    position: monaco.Position
+  ): monaco.Range | null => {
+    const line = model.getLineContent(position.lineNumber);
+    const isLig = (i: number) => i >= 0 && i < line.length && LIGATURE_CHARS.has(line[i]);
+    const left = position.column - 2; // char left of caret (0-based)
+    const right = position.column - 1; // char right of caret (0-based)
+    if (!isLig(left) && !isLig(right)) return null;
+    let start = isLig(right) ? right : left;
+    let end = start;
+    while (isLig(start - 1)) start--;
+    while (isLig(end + 1)) end++;
+    if (end - start + 1 < 2) return null; // a single char can't form a ligature
+    return new monaco.Range(position.lineNumber, start + 1, position.lineNumber, end + 2);
+  };
   let editorOptions = {
     minimap: {
       enabled: false
@@ -265,6 +290,38 @@
     // Monaco measures glyph width at creation time. If Fira Code finishes
     // loading afterwards (FOUT), remeasure so the cursor/selection stay aligned.
     void document.fonts.ready.then(() => monaco.editor.remeasureFonts());
+
+    // Temporarily disable ligatures on the arrow/link under the caret so its
+    // individual characters are visible while editing. Monaco draws the caret
+    // as an overlay on top of the ligature glyph, so without this the raw
+    // characters (e.g. --> ) stay hidden. An inline decoration forces a span
+    // boundary + `font-variant-ligatures: none` on just that run (see app.css).
+    const ligatureDecorations = editor.createDecorationsCollection();
+    let lastLigatureKey = '';
+    const updateLigatureDecoration = () => {
+      const model = editor?.getModel();
+      const position = editor?.getPosition();
+      const range =
+        model && position && model.getLanguageId() === 'mermaid'
+          ? computeLigatureRange(model, position)
+          : null;
+      const key = range ? range.toString() : '';
+      if (key === lastLigatureKey) return; // avoid churn while moving within the same run
+      lastLigatureKey = key;
+      ligatureDecorations.set(
+        range ? [{ range, options: { inlineClassName: 'monaco-no-ligatures' } }] : []
+      );
+    };
+    editor.onDidChangeCursorPosition(updateLigatureDecoration);
+    // Decorations are stored on the model, so clear ours while the outgoing
+    // model is still attached (onWillChangeModel fires before detach) —
+    // otherwise the run lingers un-ligated on that model and reappears when the
+    // tab is switched back to. Then recompute for the newly attached model.
+    editor.onWillChangeModel(() => {
+      ligatureDecorations.clear();
+      lastLigatureKey = '';
+    });
+    editor.onDidChangeModel(updateLigatureDecoration);
 
     editor.addAction({
       id: 'file-save',

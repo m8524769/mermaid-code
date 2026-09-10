@@ -13,6 +13,17 @@
   font-display: swap;
 }
 
+/* Applied by a Monaco inline decoration to the arrow/link run under the caret
+   (see DesktopEditor.svelte) so its raw characters show through instead of the
+   ligature glyph while editing. Global (not Svelte-scoped) because Monaco owns
+   the span it lands on. */
+.monaco-no-ligatures {
+  font-variant-ligatures: none !important;
+  font-feature-settings:
+    'liga' 0,
+    'calt' 0 !important;
+}
+
 @custom-variant dark (&:is(.dark *));
 
 @layer base {
