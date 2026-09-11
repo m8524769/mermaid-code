@@ -2,6 +2,18 @@
 
 All notable changes to Mermaid Code are documented here.
 
+## [v0.7.4] - 2026-09-12
+
+### Added
+
+- **Fira Code editor font with ligatures**: the code editor now ships with Fira Code (self-hosted, works offline), so link syntax like `-->`, `->>`, and `==>` renders as connected arrow glyphs; moving the caret onto an arrow temporarily reveals its raw characters for precise editing
+- **Localized code editor in Chinese**: with the app language set to Simplified Chinese, the editor's own menus (context menu, command palette, tooltips) are now translated as well — applied on the next launch
+
+### Changed
+
+- **Language-switch hint**: after changing the app language, a short note explains that some parts of the interface (the editor and the native menu) finish updating after a restart, so the lag doesn't look like a bug
+- **Small UI refinements**: minor polish in the file sidebar and thumbnail grid
+
 ## [v0.7.3] - 2026-09-10
 
 ### Added
