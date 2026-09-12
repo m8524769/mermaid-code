@@ -1,11 +1,14 @@
-name: Mirror updater to R2
+name: Mirror release to R2
 
-# Mirrors the release's updater artifacts and manifest to Cloudflare R2, which
-# serves as the primary updater endpoint (https://updates.mermaid-code.com).
+# Mirrors a published release to Cloudflare R2 (served at
+# https://releases.mermaid-code.com):
+#   1. <version>/…      immutable, version-pinned copies of every artifact
+#   2. latest.json      Tauri updater manifest, points at the <version>/ copies
+#   3. latest/…         installers under stable, version-stripped names for the
+#                       website to hardcode (overwritten every release)
 # Runs only once a release is *published* — the human "Publish release" click is
-# the single go-live gate for both GitHub and R2, so the built binaries can be
-# QA'd from the draft first. workflow_dispatch allows re-mirroring a tag (e.g.
-# after an R2 hiccup) without cutting a new release.
+# the single go-live gate, so the built binaries can be QA'd from the draft
+# first. workflow_dispatch allows re-mirroring a tag without cutting a release.
 on:
   release:
     types: [published]
@@ -20,7 +23,7 @@ permissions:
 
 jobs:
   publish-r2:
-    # Never push a pre-release to the stable latest.json; manual runs are always allowed.
+    # Never push a pre-release to the stable manifests; manual runs are always allowed.
     if: ${{ github.event_name == 'workflow_dispatch' || github.event.release.prerelease == false }}
     runs-on: ubuntu-latest
     env:
@@ -38,7 +41,7 @@ jobs:
       REPO: ${{ github.repository }}
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
-      - name: Mirror updater artifacts to R2
+      - name: Mirror release artifacts to R2
         run: |
           set -euo pipefail
           version="${TAG#v}"
@@ -51,15 +54,21 @@ jobs:
           gh release download "$TAG" --repo "$REPO" --pattern 'latest.json' --dir dist --clobber
           gh api "repos/$REPO/releases/tags/$TAG" > dist/release.json
 
-          # Unique referenced assets as "<api-url>\t<filename>" (multiple platform
-          # keys — e.g. darwin-x86_64 and darwin-x86_64-app — share one asset).
+          # Assets to mirror = union of:
+          #   - updater artifacts referenced by latest.json (may be .app.tar.gz etc.)
+          #   - user-facing installers by extension (.dmg is not in latest.json)
+          # Deduped as "<api-url>\t<filename>" (many platform keys share one asset).
           jq -r --slurpfile r dist/release.json '
             ($r[0].assets | map({(.url): .name}) | add) as $names
-            | [ .platforms[].url ] | unique[] | "\(.)\t\($names[.])"
+            | ( [ .platforms[].url ]
+                + ( $r[0].assets
+                    | map(select(.name | test("\\.(dmg|msi|exe|deb|rpm|AppImage)$")))
+                    | map(.url) ) )
+            | unique[] | "\(.)\t\($names[.])"
           ' dist/latest.json > dist/refs.tsv
 
           if [ ! -s dist/refs.tsv ]; then
-            echo "::error::latest.json references no assets — nothing to mirror" >&2
+            echo "::error::nothing to mirror (no updater artifacts or installers found)" >&2
             exit 1
           fi
 
@@ -78,10 +87,10 @@ jobs:
               --cache-control "public, max-age=31536000, immutable"
           done < dist/refs.tsv
 
+          # --- Updater manifest (latest.json) --------------------------------
           # Rewrite each platform url to the R2 custom domain + versioned path.
-          # Filenames contain spaces, so URL-encode the last segment (@uri); the
-          # R2 object key keeps the raw name and matches on the wire. Signatures
-          # are inlined in the manifest and left untouched.
+          # @uri-encode the filename (may contain spaces); the R2 object key keeps
+          # the raw name and matches on the wire. Signatures are left untouched.
           jq --slurpfile r dist/release.json --arg base "$R2_PUBLIC_BASE_URL/$version" '
             ($r[0].assets | map({(.url): .name}) | add) as $names
             | .platforms |= map_values(.url = "\($base)/\($names[.url] | @uri)")
@@ -93,4 +102,22 @@ jobs:
             --content-type "application/json" \
             --cache-control "public, max-age=60, must-revalidate"
 
-          echo "Mirrored $TAG ($version) to $R2_PUBLIC_BASE_URL/latest.json"
+          # --- Stable installer links (latest/) ------------------------------
+          # Copy each installer to latest/ under a version-stripped name so the
+          # website can hardcode URLs. Overwritten every release, so these are
+          # mutable -> short TTL (the versioned copies above stay immutable).
+          # Updater tarballs (.app.tar.gz) are not user installers and are skipped.
+          while IFS=$'\t' read -r url name; do
+            case "$name" in
+              *.dmg|*.msi|*.exe|*.deb|*.rpm|*.AppImage) ;;
+              *) continue ;;
+            esac
+            stable="${name//_${version}_/_}"   # …_0.7.4_x64.dmg      -> …_x64.dmg
+            stable="${stable//-${version}-/-}" # …-0.7.4-1.x86_64.rpm -> …-1.x86_64.rpm
+            aws s3 cp "dist/$name" "s3://$R2_BUCKET/latest/$stable" \
+              --endpoint-url "$R2_ENDPOINT" \
+              --cache-control "public, max-age=300"
+            echo "latest/$stable  <-  $version/$name"
+          done < dist/refs.tsv
+
+          echo "Mirrored $TAG ($version): versioned artifacts + latest.json + latest/ installers"
