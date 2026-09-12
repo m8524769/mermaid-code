@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Download — Mermaid Code</title>
+  <meta name="description" content="Download Mermaid Code, the local-first Mermaid diagram editor built for AI-first workflows. Free for macOS (Apple Silicon & Intel) and Windows." />
+  <link rel="canonical" href="https://mermaid-code.com/download" />
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://mermaid-code.com/download" />
+  <meta property="og:title" content="Download — Mermaid Code" />
+  <meta property="og:description" content="Download Mermaid Code for macOS and Windows. Free and local-first." />
+  <meta property="og:image" content="https://mermaid-code.com/showcase.png" />
+  <meta property="og:site_name" content="Mermaid Code" />
+
+  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0f1117;
+      --bg2: #161b27;
+      --bg3: #1e2535;
+      --border: #2a3347;
+      --text: #e8edf5;
+      --muted: #8b96aa;
+      --accent: #4f8ef7;
+      --accent2: #7c5cbf;
+      --green: #3ecf8e;
+      --radius: 10px;
+      --max: 980px;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      font-size: 16px;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    /* NAV */
+    nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(15, 17, 23, 0.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+    }
+    .nav-inner {
+      max-width: var(--max);
+      margin: 0 auto;
+      padding: 0 24px;
+      height: 56px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .nav-logo {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 600;
+      font-size: 15px;
+      color: var(--text);
+    }
+    .nav-logo img { width: 22px; height: 22px; }
+    .nav-spacer { flex: 1; }
+    .nav-links { display: flex; gap: 4px; align-items: center; }
+    .nav-links a {
+      font-size: 14px;
+      color: var(--muted);
+      padding: 6px 10px;
+      border-radius: 6px;
+      transition: color 0.15s, background 0.15s;
+    }
+    .nav-links a:hover { color: var(--text); background: var(--bg3); text-decoration: none; }
+    .nav-links a.active { color: var(--text); }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 11px 22px;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: opacity 0.15s, transform 0.1s;
+      border: none;
+    }
+    .btn:hover { opacity: 0.88; transform: translateY(-1px); text-decoration: none; }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-secondary {
+      background: var(--bg3);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+
+    /* HEADER */
+    .dl-head {
+      max-width: var(--max);
+      margin: 0 auto;
+      padding: 72px 24px 8px;
+      text-align: center;
+    }
+    .dl-head h1 {
+      font-size: clamp(32px, 5vw, 48px);
+      font-weight: 700;
+      line-height: 1.1;
+      letter-spacing: -0.02em;
+      margin-bottom: 16px;
+    }
+    .dl-head p {
+      font-size: clamp(15px, 2.5vw, 18px);
+      color: var(--muted);
+      max-width: 560px;
+      margin: 0 auto;
+    }
+    .dl-recommend {
+      max-width: var(--max);
+      margin: 0 auto;
+      padding: 28px 24px 8px;
+      text-align: center;
+      min-height: 84px;
+    }
+    .dl-recommend .btn-primary { padding: 13px 26px; font-size: 16px; }
+    .dl-recommend .rec-alt { display: block; margin-top: 12px; font-size: 13px; color: var(--muted); }
+
+    /* GRID */
+    section {
+      max-width: var(--max);
+      margin: 0 auto;
+      padding: 32px 24px 56px;
+    }
+    .dl-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 16px;
+    }
+    .dl-card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      transition: border-color 0.15s;
+    }
+    .dl-card:hover { border-color: rgba(79, 142, 247, 0.4); }
+    .dl-card.is-recommended {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 1px var(--accent);
+      background: linear-gradient(165deg, rgba(79, 142, 247, 0.10), var(--bg2) 55%);
+    }
+    /* App-icon-style tile: equal 52px box for both logos, so the Apple and
+       Windows glyphs read as the same visual weight and stop floating. */
+    /* Icon tile + title/subtitle share one row so the top of the card fills its
+       width instead of clustering in the corner, which also shortens the card. */
+    .dl-head-row { display: flex; align-items: center; gap: 14px; margin-bottom: 22px; }
+    .dl-meta { min-width: 0; }
+    .dl-os {
+      flex: none;
+      width: 52px;
+      height: 52px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 14px;
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      color: var(--text);
+    }
+    .dl-os svg { width: 28px; height: 28px; }
+    /* Windows glyph fills its whole viewBox; Apple only ~73% — 20px here matches
+       Apple's ~20px rendered height at 28px, so the two look equal weight. */
+    .dl-os svg.win { width: 20px; height: 20px; }
+    .dl-card.is-recommended .dl-os {
+      background: rgba(79, 142, 247, 0.12);
+      border-color: rgba(79, 142, 247, 0.35);
+    }
+    .dl-card h3 { font-size: 16px; font-weight: 600; }
+    .dl-arch { font-size: 13px; color: var(--muted); margin-top: 2px; }
+    .dl-card .btn { margin-top: 0; width: 100%; }
+    .dl-alt { margin-top: 10px; font-size: 13px; text-align: center; }
+    .dl-badge {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+      color: var(--accent);
+      background: rgba(79, 142, 247, 0.12);
+      border: 1px solid rgba(79, 142, 247, 0.3);
+      border-radius: 999px;
+      padding: 2px 9px;
+      margin-bottom: 16px;
+      align-self: flex-start;
+      visibility: hidden;
+    }
+    .dl-card.is-recommended .dl-badge { visibility: visible; }
+
+    /* CODE BLOCK (Homebrew) */
+    .code-block {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px 22px;
+      margin-top: 14px;
+    }
+    .code-block .prompt { color: var(--green); font-weight: 500; }
+    .code-block pre {
+      font-family: 'SF Mono', 'Fira Code', Menlo, monospace;
+      font-size: 13px;
+      color: #c8d3e8;
+      white-space: pre-wrap;
+      line-height: 1.7;
+    }
+
+    h2 { font-size: 20px; font-weight: 600; margin-bottom: 4px; }
+    .sub { color: var(--muted); font-size: 14px; margin-bottom: 4px; }
+
+    .install-note {
+      margin-top: 16px;
+      padding: 14px 16px;
+      background: rgba(79, 142, 247, 0.07);
+      border: 1px solid rgba(79, 142, 247, 0.2);
+      border-radius: 8px;
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    hr { border: none; border-top: 1px solid var(--border); margin: 0; }
+
+    /* FOOTER */
+    footer {
+      max-width: var(--max);
+      margin: 0 auto;
+      padding: 32px 24px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    footer .footer-left { display: flex; align-items: center; gap: 8px; }
+    footer .footer-left img { width: 18px; height: 18px; opacity: 0.7; }
+    footer .footer-left span { font-size: 13px; color: var(--muted); }
+    footer .footer-right { margin-left: auto; display: flex; gap: 16px; }
+    footer .footer-right a { font-size: 13px; color: var(--muted); }
+    footer .footer-right a:hover { color: var(--text); }
+  </style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-inner">
+    <a class="nav-logo" href="/">
+      <img src="favicon.svg" alt="" />
+      Mermaid Code
+    </a>
+    <div class="nav-spacer"></div>
+    <div class="nav-links">
+      <a href="/#features">Features</a>
+      <a href="/#mcp">MCP</a>
+      <a href="/download" class="active">Download</a>
+      <a href="/changelog">Changelog</a>
+      <a href="https://github.com/m8524769/mermaid-code">GitHub</a>
+    </div>
+  </div>
+</nav>
+
+<div class="dl-head">
+  <h1>Download Mermaid Code</h1>
+  <p>Free and local-first. Always the latest release — for macOS and Windows.</p>
+</div>
+
+<!-- Auto-detected recommendation (filled in by JS; falls back to the full grid below) -->
+<div class="dl-recommend" id="recommend" hidden>
+  <a class="btn btn-primary" id="rec-btn" href="#downloads">Download</a>
+  <span class="rec-alt" id="rec-alt"></span>
+</div>
+
+<section id="downloads">
+  <div class="dl-grid">
+    <div class="dl-card" data-os="macos" data-arch="aarch64">
+      <span class="dl-badge">Recommended</span>
+      <div class="dl-head-row">
+        <div class="dl-os"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.53 4.09zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/></svg></div>
+        <div class="dl-meta">
+          <h3>macOS</h3>
+          <div class="dl-arch">Apple Silicon</div>
+        </div>
+      </div>
+      <a class="btn btn-primary" href="https://releases.mermaid-code.com/latest/Mermaid.Code_aarch64.dmg">Download .dmg</a>
+      <div class="dl-alt"><a href="https://releases.mermaid-code.com/latest/Mermaid.Code_x64.dmg">Intel Mac? Get the Intel build</a></div>
+    </div>
+
+    <div class="dl-card" data-os="windows" data-arch="x64">
+      <span class="dl-badge">Recommended</span>
+      <div class="dl-head-row">
+        <div class="dl-os"><svg class="win" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M0 3.449L9.75 2.1v9.451H0m10.949-9.602L24 0v11.4H10.949M0 12.6h9.75v9.451L0 20.699M10.949 12.6H24V24l-12.9-1.801"/></svg></div>
+        <div class="dl-meta">
+          <h3>Windows</h3>
+          <div class="dl-arch">x64 · Windows 10/11</div>
+        </div>
+      </div>
+      <a class="btn btn-primary" href="https://releases.mermaid-code.com/latest/Mermaid.Code_x64-setup.exe">Download installer</a>
+      <div class="dl-alt"><a href="https://releases.mermaid-code.com/latest/Mermaid.Code_x64_en-US.msi">Prefer the .msi?</a></div>
+    </div>
+  </div>
+
+  <div class="install-note">
+    <strong style="color:var(--text)">macOS note:</strong> The app is not signed with an Apple Developer certificate. On first launch, go to <strong style="color:var(--text)">System Settings → Privacy &amp; Security</strong> and click <em>Open Anyway</em>. If blocked, run:<br>
+    <code style="font-family:monospace;font-size:12px">xattr -dr com.apple.quarantine "/Applications/Mermaid Code.app"</code>
+  </div>
+</section>
+
+<hr />
+
+<section>
+  <h2>Install with Homebrew</h2>
+  <p class="sub">On macOS, install and update via the tap:</p>
+  <div class="code-block">
+    <pre><span class="prompt">$</span> brew tap m8524769/tap
+<span class="prompt">$</span> brew install --cask mermaid-code</pre>
+  </div>
+  <p class="sub" style="margin-top:16px">
+    Looking for older versions or all file formats? See the
+    <a href="https://github.com/m8524769/mermaid-code/releases">GitHub Releases</a> page.
+    Once installed, the app updates itself automatically.
+  </p>
+</section>
+
+<hr />
+
+<footer>
+  <div class="footer-left">
+    <img src="favicon.svg" alt="" />
+    <span>Mermaid Code — Fork of <a href="https://github.com/mermaid-js/mermaid-live-editor" style="color:var(--muted)">mermaid-live-editor</a></span>
+  </div>
+  <div class="footer-right">
+    <a href="/">Home</a>
+    <a href="https://github.com/m8524769/mermaid-code/releases">Releases</a>
+    <a href="/changelog">Changelog</a>
+  </div>
+</footer>
+
+<script>
+  // Highlight the download that matches the visitor's OS. The full grid stays
+  // visible — this only surfaces a one-click recommendation up top. macOS arch
+  // can't be detected reliably in-browser, so Apple Silicon is the default with
+  // an Intel fallback link.
+  (function () {
+    var ua = navigator.userAgent || '';
+    var plat = navigator.platform || '';
+    var os = null;
+    if (/Mac/.test(plat) || /Mac OS X/.test(ua)) os = 'macos';
+    else if (/Win/.test(plat) || /Windows/.test(ua)) os = 'windows';
+    if (/Android|iPhone|iPad|iPod/.test(ua)) os = null; // desktop app only
+
+    if (!os) return;
+
+    // Recommended card per OS (macOS -> Apple Silicon).
+    var selector = os === 'macos'
+      ? '.dl-card[data-os="macos"][data-arch="aarch64"]'
+      : '.dl-card[data-os="' + os + '"]';
+    var card = document.querySelector(selector);
+    if (!card) return;
+    card.classList.add('is-recommended');
+
+    // Demote the non-recommended card's button to secondary so a single blue
+    // CTA leads the eye. If OS is undetected, both stay primary (no early add
+    // of is-recommended has run), so there's always a clear call to action.
+    document.querySelectorAll('.dl-grid .dl-card').forEach(function (c) {
+      if (c === card) return;
+      var b = c.querySelector('.btn-primary');
+      if (b) { b.classList.remove('btn-primary'); b.classList.add('btn-secondary'); }
+    });
+
+    var link = card.querySelector('.btn-primary');
+    var labels = { macos: 'Download for macOS', windows: 'Download for Windows' };
+    var alts = {
+      macos: 'Using an Intel Mac, or on Windows? See all downloads below.',
+      windows: 'On a Mac? See all downloads below.'
+    };
+
+    var rec = document.getElementById('recommend');
+    var recBtn = document.getElementById('rec-btn');
+    var recAlt = document.getElementById('rec-alt');
+    recBtn.href = link.getAttribute('href');
+    recBtn.textContent = labels[os];
+    recAlt.innerHTML = '<a href="#downloads">' + alts[os] + '</a>';
+    rec.hidden = false;
+  })();
+</script>
+
+</body>
+</html>

@@ -7,6 +7,12 @@
     <priority>1.0</priority>
   </url>
   <url>
+    <loc>https://mermaid-code.com/download</loc>
+    <lastmod>2026-09-12</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
     <loc>https://mermaid-code.com/changelog</loc>
     <lastmod>2026-09-12</lastmod>
     <changefreq>weekly</changefreq>
