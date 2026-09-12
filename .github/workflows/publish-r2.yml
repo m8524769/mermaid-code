@@ -1,0 +1,96 @@
+name: Mirror updater to R2
+
+# Mirrors the release's updater artifacts and manifest to Cloudflare R2, which
+# serves as the primary updater endpoint (https://updates.mermaid-code.com).
+# Runs only once a release is *published* — the human "Publish release" click is
+# the single go-live gate for both GitHub and R2, so the built binaries can be
+# QA'd from the draft first. workflow_dispatch allows re-mirroring a tag (e.g.
+# after an R2 hiccup) without cutting a new release.
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag to mirror (e.g. v0.7.4)'
+        required: true
+
+permissions:
+  contents: read # only reads the release + its assets
+
+jobs:
+  publish-r2:
+    # Never push a pre-release to the stable latest.json; manual runs are always allowed.
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.release.prerelease == false }}
+    runs-on: ubuntu-latest
+    env:
+      AWS_DEFAULT_REGION: auto
+      AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+      # aws-cli v2 adds default integrity checksums that R2 rejects (HTTP 501);
+      # only send/validate them when the operation actually requires it.
+      AWS_REQUEST_CHECKSUM_CALCULATION: when_required
+      AWS_RESPONSE_CHECKSUM_VALIDATION: when_required
+      R2_ENDPOINT: https://${{ secrets.R2_ACCOUNT_ID }}.r2.cloudflarestorage.com
+      R2_BUCKET: ${{ vars.R2_BUCKET }}
+      R2_PUBLIC_BASE_URL: ${{ vars.R2_PUBLIC_BASE_URL }}
+      TAG: ${{ github.event.release.tag_name || inputs.tag }}
+      REPO: ${{ github.repository }}
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Mirror updater artifacts to R2
+        run: |
+          set -euo pipefail
+          version="${TAG#v}"
+          mkdir -p dist
+
+          # tauri-action merges every platform into this single manifest. Its
+          # platform urls are GitHub *API asset* urls (…/releases/assets/<id>),
+          # not filename download urls, so we resolve each id -> real filename
+          # from the release's asset list before re-hosting.
+          gh release download "$TAG" --repo "$REPO" --pattern 'latest.json' --dir dist --clobber
+          gh api "repos/$REPO/releases/tags/$TAG" > dist/release.json
+
+          # Unique referenced assets as "<api-url>\t<filename>" (multiple platform
+          # keys — e.g. darwin-x86_64 and darwin-x86_64-app — share one asset).
+          jq -r --slurpfile r dist/release.json '
+            ($r[0].assets | map({(.url): .name}) | add) as $names
+            | [ .platforms[].url ] | unique[] | "\(.)\t\($names[.])"
+          ' dist/latest.json > dist/refs.tsv
+
+          if [ ! -s dist/refs.tsv ]; then
+            echo "::error::latest.json references no assets — nothing to mirror" >&2
+            exit 1
+          fi
+
+          # Download each asset by id (unambiguous, handles spaces in names) and
+          # upload under its real filename. Versioned path = immutable, cache 1y.
+          while IFS=$'\t' read -r url name; do
+            if [ -z "$name" ] || [ "$name" = "null" ]; then
+              echo "::error::asset $url not found in release assets" >&2
+              exit 1
+            fi
+            asset_id="${url##*/}"
+            gh api "repos/$REPO/releases/assets/$asset_id" \
+              -H "Accept: application/octet-stream" > "dist/$name"
+            aws s3 cp "dist/$name" "s3://$R2_BUCKET/$version/$name" \
+              --endpoint-url "$R2_ENDPOINT" \
+              --cache-control "public, max-age=31536000, immutable"
+          done < dist/refs.tsv
+
+          # Rewrite each platform url to the R2 custom domain + versioned path.
+          # Filenames contain spaces, so URL-encode the last segment (@uri); the
+          # R2 object key keeps the raw name and matches on the wire. Signatures
+          # are inlined in the manifest and left untouched.
+          jq --slurpfile r dist/release.json --arg base "$R2_PUBLIC_BASE_URL/$version" '
+            ($r[0].assets | map({(.url): .name}) | add) as $names
+            | .platforms |= map_values(.url = "\($base)/\($names[.url] | @uri)")
+          ' dist/latest.json > dist/latest.r2.json
+
+          # Stable manifest path, short TTL so clients pick up new versions fast.
+          aws s3 cp dist/latest.r2.json "s3://$R2_BUCKET/latest.json" \
+            --endpoint-url "$R2_ENDPOINT" \
+            --content-type "application/json" \
+            --cache-control "public, max-age=60, must-revalidate"
+
+          echo "Mirrored $TAG ($version) to $R2_PUBLIC_BASE_URL/latest.json"
