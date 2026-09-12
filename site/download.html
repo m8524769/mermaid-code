@@ -244,6 +244,21 @@
 
     hr { border: none; border-top: 1px solid var(--border); margin: 0; }
 
+    /* Linux is built but untested — a de-emphasized footnote, not a full card,
+       so it doesn't imply the same support level as macOS/Windows. */
+    .linux-note {
+      margin-top: 24px;
+      text-align: center;
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.7;
+    }
+    .linux-note code {
+      font-family: 'SF Mono', 'Fira Code', Menlo, monospace;
+      font-size: 12px;
+      color: var(--text);
+    }
+
     /* FOOTER */
     footer {
       max-width: var(--max);
@@ -325,6 +340,16 @@
     <strong style="color:var(--text)">macOS note:</strong> The app is not signed with an Apple Developer certificate. On first launch, go to <strong style="color:var(--text)">System Settings → Privacy &amp; Security</strong> and click <em>Open Anyway</em>. If blocked, run:<br>
     <code style="font-family:monospace;font-size:12px">xattr -dr com.apple.quarantine "/Applications/Mermaid Code.app"</code>
   </div>
+
+  <p class="linux-note">
+    <strong style="color:var(--text)">Linux:</strong> <code>.deb</code> and <code>.rpm</code> packages are built automatically but
+    <strong style="color:var(--text)">remain untested</strong> — experimental, provided as-is.
+    <br>
+    Download:
+    <a href="https://releases.mermaid-code.com/latest/Mermaid.Code_amd64.deb">.deb</a>
+    <span aria-hidden="true"> · </span>
+    <a href="https://releases.mermaid-code.com/latest/Mermaid.Code-1.x86_64.rpm">.rpm</a>
+  </p>
 </section>
 
 <hr />
