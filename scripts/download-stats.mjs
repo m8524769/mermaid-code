@@ -234,7 +234,8 @@ const DAY_MS = 864e5;
 
 // Per-path counts for the R2 host over a SINGLE window. Only the adaptive dataset
 // exposes clientRequestPath, and it is sampled, so the true count is
-// count * sampleInterval (≈1 at low volume). 200 + 206 (range) count as downloads.
+// count * sampleInterval (≈1 at low volume). GET only (HEAD probes excluded);
+// 200 + 206 (range) count as downloads.
 async function fetchR2Day(token, zoneTag, since, until) {
   const query = `
     query($zoneTag:String!,$since:Time!,$until:Time!){
@@ -243,6 +244,7 @@ async function fetchR2Day(token, zoneTag, since, until) {
           limit:1000, orderBy:[count_DESC],
           filter:{ datetime_geq:$since, datetime_lt:$until,
             clientRequestHTTPHost:"${R2_HOST}",
+            clientRequestHTTPMethodName:"GET",
             edgeResponseStatus_in:[200,206] }
         ){ count avg{ sampleInterval } sum{ edgeResponseBytes } dimensions{ clientRequestPath clientCountryName } }
       }}
