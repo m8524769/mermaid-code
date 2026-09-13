@@ -119,6 +119,7 @@ const html = `<!DOCTYPE html>
       transition: color 0.15s, background 0.15s;
     }
     .nav-links a:hover { color: var(--text); background: var(--bg3); text-decoration: none; }
+    .nav-links a.active { color: var(--text); }
 
     /* CONTENT */
     main {
@@ -216,7 +217,8 @@ const html = `<!DOCTYPE html>
     <div class="nav-links">
       <a href="/#features">Features</a>
       <a href="/#mcp">MCP</a>
-      <a href="/#install">Install</a>
+      <a href="/download">Download</a>
+      <a href="/changelog" class="active">Changelog</a>
       <a href="https://github.com/m8524769/mermaid-code">GitHub</a>
     </div>
   </div>

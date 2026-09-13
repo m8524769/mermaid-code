@@ -2,6 +2,12 @@
 
 All notable changes to Mermaid Code are documented here.
 
+## [v0.7.5] - 2026-09-13
+
+### Changed
+
+- **Faster, more reliable auto-updates**: the in-app updater now fetches updates from a global CDN (Cloudflare R2) instead of GitHub, so checking for and downloading updates is quicker and more dependable worldwide
+
 ## [v0.7.4] - 2026-09-12
 
 ### Added
