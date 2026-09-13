@@ -6,13 +6,22 @@
 // because they are fetched by already-installed apps, not by new users. The
 // latest.json total is reported separately as an "active install" proxy.
 //
+// Downloads and updater traffic now go through R2 (releases.mermaid-code.com),
+// not GitHub — so GitHub's download_count is mostly the R2 mirror workflow, the
+// Homebrew CI, and bots. If CF_API_TOKEN is set, the script also pulls the real
+// per-file download counts from Cloudflare Analytics (edge traffic) and appends
+// an R2 section. Without the token it behaves exactly as before (GitHub only).
+//
 // Usage:
 //   node scripts/download-stats.mjs            # -> download-stats.html + terminal table
 //   node scripts/download-stats.mjs --out foo.html
 //   node scripts/download-stats.mjs --open     # also open the HTML (macOS)
+//   node scripts/download-stats.mjs --days 7   # R2 window (default 7; Free-plan adaptive retention is ~8d)
 //   GITHUB_TOKEN=... node scripts/download-stats.mjs   # higher API rate limit
+//   CF_API_TOKEN=... node scripts/download-stats.mjs   # add real R2 download stats
 //
-// Repo can be overridden with REPO=owner/name.
+// Repo can be overridden with REPO=owner/name; zone with CF_ZONE=example.com,
+// or CF_ZONE_ID=<zone id> to skip the name lookup (needs only Analytics:Read).
 
 import { writeFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
@@ -20,6 +29,15 @@ import { execFileSync } from 'node:child_process';
 const REPO = process.env.REPO || 'm8524769/mermaid-code';
 const OUT = argValue('--out') || 'download-stats.html';
 const OPEN = process.argv.includes('--open');
+
+// R2 real-download stats (opt-in via CF_API_TOKEN). Users download from this
+// Cloudflare custom domain now, so the edge request counts are the real signal.
+const R2_HOST = 'releases.mermaid-code.com';
+const CF_ZONE = process.env.CF_ZONE || 'mermaid-code.com';
+// Zone id can be given directly (dashboard → zone → Overview → Zone ID) to skip
+// the /zones name lookup, which needs Zone:Read on top of Analytics:Read.
+const CF_ZONE_ID = process.env.CF_ZONE_ID || '';
+const R2_DAYS = Number(argValue('--days') || process.env.R2_DAYS || 7);
 
 // Map an asset filename to an installer-type label, or null to exclude it.
 // Order matters: first match wins.
@@ -193,8 +211,224 @@ function printTable({
   );
 }
 
+// --- R2 (Cloudflare Analytics) --------------------------------------------
+
+// Resolve a zone name to its zone tag (id), which the GraphQL API requires.
+async function resolveZoneTag(token, zoneName) {
+  const res = await fetch(
+    `https://api.cloudflare.com/client/v4/zones?name=${encodeURIComponent(zoneName)}`,
+    { headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' } }
+  );
+  if (!res.ok) throw new Error(`Cloudflare zones API ${res.status} ${res.statusText}`);
+  const json = await res.json();
+  const zone = json.result && json.result[0];
+  if (!zone)
+    throw new Error(
+      `zone "${zoneName}" not found — the token can't read it. Either add Zone:Read to the token, ` +
+        `or set CF_ZONE_ID=<zone id> (dashboard → zone → Overview → Zone ID) to skip this lookup.`
+    );
+  return zone.id;
+}
+
+const DAY_MS = 864e5;
+
+// Per-path counts for the R2 host over a SINGLE window. Only the adaptive dataset
+// exposes clientRequestPath, and it is sampled, so the true count is
+// count * sampleInterval (≈1 at low volume). 200 + 206 (range) count as downloads.
+async function fetchR2Day(token, zoneTag, since, until) {
+  const query = `
+    query($zoneTag:String!,$since:Time!,$until:Time!){
+      viewer{ zones(filter:{zoneTag:$zoneTag}){
+        httpRequestsAdaptiveGroups(
+          limit:1000, orderBy:[count_DESC],
+          filter:{ datetime_geq:$since, datetime_lt:$until,
+            clientRequestHTTPHost:"${R2_HOST}",
+            edgeResponseStatus_in:[200,206] }
+        ){ count avg{ sampleInterval } sum{ edgeResponseBytes } dimensions{ clientRequestPath clientCountryName } }
+      }}
+    }`;
+  const res = await fetch('https://api.cloudflare.com/client/v4/graphql', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ query, variables: { zoneTag, since, until } })
+  });
+  if (!res.ok) throw new Error(`Cloudflare GraphQL ${res.status} ${res.statusText}`);
+  const json = await res.json();
+  if (json.errors && json.errors.length) {
+    throw new Error(`Cloudflare GraphQL: ${json.errors.map((e) => e.message).join('; ')}`);
+  }
+  const groups = json.data?.viewer?.zones?.[0]?.httpRequestsAdaptiveGroups || [];
+  return groups.map((g) => ({
+    path: g.dimensions.clientRequestPath,
+    country: g.dimensions.clientCountryName || 'XX',
+    requests: Math.round(g.count * (g.avg.sampleInterval || 1)),
+    bytes: g.sum.edgeResponseBytes || 0
+  }));
+}
+
+// The adaptive dataset caps a single query at a 1-day span (Free plan), so walk
+// the window one day at a time. Returns one entry per successful day so callers
+// can build a daily trend; days beyond the plan's retention error out and are
+// skipped and summarized, not fatal.
+async function fetchR2Downloads(token, zoneTag, since, until) {
+  const days = []; // [{ date, rows }]
+  const t0 = new Date(since).getTime();
+  const t1 = new Date(until).getTime();
+  let failures = 0;
+  let lastErr = null;
+  for (let start = t0; start < t1; start += DAY_MS) {
+    const end = Math.min(start + DAY_MS, t1);
+    try {
+      const rows = await fetchR2Day(
+        token,
+        zoneTag,
+        new Date(start).toISOString(),
+        new Date(end).toISOString()
+      );
+      days.push({ date: new Date(start).toISOString().slice(0, 10), rows });
+    } catch (err) {
+      failures++;
+      lastErr = err;
+    }
+  }
+  // Every day failing is a real error (bad token / zone), not just old data.
+  if (failures && days.length === 0) throw lastErr;
+  if (failures) {
+    console.warn(
+      `  (${failures} day(s) skipped — likely beyond this plan's analytics retention: ${lastErr?.message})`
+    );
+  }
+  return days;
+}
+
+// Bucket R2 paths the same way as GitHub assets: /latest/* = website/manual
+// downloads, /<version>/* = auto-updater, latest.json = update-checks, and the
+// macOS self-update payload (.app.tar.gz) separately. Reuses classify()/isNonInstall().
+// Also derives a per-day trend (polls vs downloads) and a by-country breakdown of
+// installer downloads from the daily rows.
+function aggregateR2(days) {
+  const manual = {}; // byType
+  const updater = {}; // byType
+  const types = new Set();
+  const byCountry = {}; // installer downloads by country code
+  const daily = []; // [{ date, polls, downloads }]
+  let polls = 0;
+  let macUpdates = 0;
+  for (const { date, rows } of days) {
+    let dPolls = 0;
+    let dDownloads = 0;
+    for (const { path, country, requests } of rows) {
+      const name = path.slice(path.lastIndexOf('/') + 1);
+      if (/^latest\.json$/i.test(name)) {
+        polls += requests;
+        dPolls += requests;
+        continue;
+      }
+      if (/\.app\.tar\.gz$/i.test(name)) {
+        macUpdates += requests;
+        continue;
+      }
+      if (isNonInstall(name)) continue; // .sig etc.
+      const type = classify(name);
+      if (!type) continue; // unknown path -> ignore
+      types.add(type);
+      const bucket = path.startsWith('/latest/') ? manual : updater;
+      bucket[type] = (bucket[type] || 0) + requests;
+      byCountry[country] = (byCountry[country] || 0) + requests;
+      dDownloads += requests;
+    }
+    daily.push({ date, polls: dPolls, downloads: dDownloads });
+  }
+  daily.sort((a, b) => (a.date < b.date ? -1 : 1));
+  const orderedTypes = [...types].sort(
+    (a, b) => (manual[b] || 0) + (updater[b] || 0) - ((manual[a] || 0) + (updater[a] || 0))
+  );
+  const manualTotal = Object.values(manual).reduce((s, n) => s + n, 0);
+  const updaterTotal = Object.values(updater).reduce((s, n) => s + n, 0);
+  const countries = Object.entries(byCountry).sort((a, b) => b[1] - a[1]); // [ [code, n], ... ] desc
+  return {
+    manual,
+    updater,
+    orderedTypes,
+    manualTotal,
+    updaterTotal,
+    polls,
+    macUpdates,
+    daily,
+    countries
+  };
+}
+
+function printR2Table(r2, sinceISO, untilISO) {
+  const { manual, updater, orderedTypes, manualTotal, updaterTotal, polls, macUpdates } = r2;
+  console.log(
+    `\n\n=== R2 real downloads (${sinceISO.slice(0, 10)} → ${untilISO.slice(0, 10)} UTC · ${R2_HOST}) ===`
+  );
+  if (!orderedTypes.length && !polls && !macUpdates) {
+    console.log('(no R2 traffic in window — check token scope / retention / zone)');
+    return;
+  }
+  const tw = Math.max(18, ...orderedTypes.map((t) => t.length));
+  const header = [
+    'type'.padEnd(tw),
+    'Manual /latest/'.padStart(16),
+    'Updater /<ver>/'.padStart(16),
+    'TOTAL'.padStart(9)
+  ];
+  const line = '-'.repeat(header.join('  ').length);
+  console.log(header.join('  '));
+  console.log(line);
+  for (const t of orderedTypes) {
+    const m = manual[t] || 0;
+    const u = updater[t] || 0;
+    console.log(
+      [t.padEnd(tw), String(m).padStart(16), String(u).padStart(16), String(m + u).padStart(9)].join(
+        '  '
+      )
+    );
+  }
+  console.log(line);
+  console.log(
+    [
+      'TOTAL'.padEnd(tw),
+      String(manualTotal).padStart(16),
+      String(updaterTotal).padStart(16),
+      String(manualTotal + updaterTotal).padStart(9)
+    ].join('  ')
+  );
+  console.log(
+    `\nlatest.json update-checks (active-install proxy): ${polls}` +
+      `   |   macOS update payload (.app.tar.gz): ${macUpdates}`
+  );
+
+  // Daily trend: update-checks (active-install proxy) vs installer downloads.
+  const daily = r2.daily.filter((d) => d.polls || d.downloads);
+  if (daily.length) {
+    console.log('\n--- daily trend (date · update-checks · downloads) ---');
+    for (const d of daily) {
+      console.log(
+        `${d.date}  ${String(d.polls).padStart(6)}  ${String(d.downloads).padStart(6)}`
+      );
+    }
+  }
+
+  // Installer downloads by country (top 10).
+  if (r2.countries.length) {
+    const dlTotal = manualTotal + updaterTotal || 1;
+    console.log('\n--- installer downloads by country (top 10) ---');
+    for (const [code, n] of r2.countries.slice(0, 10)) {
+      const pct = ((n / dlTotal) * 100).toFixed(0);
+      console.log(`${code.padEnd(4)} ${String(n).padStart(6)}  (${pct}%)`);
+    }
+  }
+
+  console.log(
+    '\n(edge requests, extrapolated by sampleInterval; 206 range requests may inflate, cache hits included, bots not filtered — upper bound)'
+  );
+}
+
 function renderHtml(data) {
-  const { perVersion, orderedTypes, grandInstalls, grandPolls, grandUpdates, grandHomebrewCI } =
+  const { perVersion, orderedTypes, grandInstalls, grandPolls, grandUpdates, grandHomebrewCI, r2, r2Window } =
     data;
   const rows = perVersion.filter((v) => v.total > 0 || v.updates > 0);
   const labels = rows.map((r) => r.version);
@@ -227,6 +461,84 @@ function renderHtml(data) {
   const typeTotals = orderedTypes.map((t) => totalOf(perVersion, t));
 
   const payload = JSON.stringify({ labels, datasets, orderedTypes, typeTotals, colors: COLORS });
+
+  // Optional R2 section — only rendered when Cloudflare stats were fetched.
+  let r2Cards = '';
+  let r2Script = '';
+  if (r2) {
+    const topCountries = r2.countries.slice(0, 12);
+    const r2Payload = JSON.stringify({
+      labels: r2.orderedTypes,
+      manual: r2.orderedTypes.map((t) => r2.manual[t] || 0),
+      updater: r2.orderedTypes.map((t) => r2.updater[t] || 0),
+      days: r2.daily.map((d) => d.date),
+      dailyPolls: r2.daily.map((d) => d.polls),
+      dailyDownloads: r2.daily.map((d) => d.downloads),
+      countryLabels: topCountries.map((c) => c[0]),
+      countryData: topCountries.map((c) => c[1])
+    });
+    r2Cards = `
+  <h2 style="font-size:16px">R2 real downloads <span style="color:#888">— ${r2Window} UTC · Cloudflare edge</span></h2>
+  <div class="cards">
+    <div class="card"><div class="n">${r2.manualTotal.toLocaleString()}</div><div class="l">Manual downloads<br>(/latest/*, website)</div></div>
+    <div class="card"><div class="n">${r2.updaterTotal.toLocaleString()}</div><div class="l">Updater fetches<br>(/&lt;version&gt;/*)</div></div>
+    <div class="card"><div class="n">${r2.polls.toLocaleString()}</div><div class="l">Update-checks<br>(latest.json)</div></div>
+    <div class="card"><div class="n">${r2.macUpdates.toLocaleString()}</div><div class="l">macOS update payload<br>(.app.tar.gz)</div></div>
+  </div>
+  <div class="chart-wrap"><canvas id="r2ByType"></canvas></div>
+  <h2 style="font-size:16px">Daily trend <span style="color:#888">— update-checks (active-install proxy) vs downloads</span></h2>
+  <div class="chart-wrap"><canvas id="r2Daily"></canvas></div>
+  <h2 style="font-size:16px">Installer downloads by country <span style="color:#888">— top ${topCountries.length}</span></h2>
+  <div class="chart-wrap small"><canvas id="r2Country"></canvas></div>
+  <p class="note"><b>R2 (Cloudflare edge)</b> is where real users download now — the GitHub counts above are
+  historical / mirror-CI / bots. These are edge HTTP requests over the window, extrapolated by Cloudflare's sample
+  interval; <code>206</code> range requests may inflate them, cache hits are included, and bots are not filtered, so
+  treat them as an upper bound. <code>/latest/*</code> = website/manual, <code>/&lt;version&gt;/*</code> = auto-updater.
+  <b>Update-checks</b> (latest.json, polled by every running app) approximate the live install base; the country
+  breakdown counts installer downloads only. Adding the country dimension splits the sampled dataset finer, so
+  low-volume buckets are noisier.</p>`;
+    r2Script = `
+  const R = ${r2Payload};
+  new Chart(document.getElementById('r2ByType'), {
+    type: 'bar',
+    data: { labels: R.labels, datasets: [
+      { label: 'Manual (/latest/)', data: R.manual, backgroundColor: '#5b8def' },
+      { label: 'Updater (/<version>/)', data: R.updater, backgroundColor: '#f0a13b' }
+    ] },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      scales: { y: { beginAtZero: true, title: { display: true, text: 'Downloads (edge requests)' } } },
+      plugins: { tooltip: { mode: 'index' }, legend: { position: 'bottom' } }
+    }
+  });
+  new Chart(document.getElementById('r2Daily'), {
+    data: { labels: R.days, datasets: [
+      { type: 'line', label: 'Update-checks (latest.json)', data: R.dailyPolls,
+        borderColor: '#3ecf8e', backgroundColor: '#3ecf8e', tension: 0.3, pointRadius: 2, yAxisID: 'y' },
+      { type: 'bar', label: 'Downloads', data: R.dailyDownloads, backgroundColor: '#5b8def', yAxisID: 'y1' }
+    ] },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      scales: {
+        y: { beginAtZero: true, position: 'left', title: { display: true, text: 'Update-checks' } },
+        y1: { beginAtZero: true, position: 'right', grid: { drawOnChartArea: false },
+              title: { display: true, text: 'Downloads' }, ticks: { precision: 0 } }
+      },
+      plugins: { tooltip: { mode: 'index' }, legend: { position: 'bottom' } }
+    }
+  });
+  new Chart(document.getElementById('r2Country'), {
+    type: 'bar',
+    data: { labels: R.countryLabels, datasets: [
+      { label: 'Downloads', data: R.countryData, backgroundColor: '#7c5cbf' }
+    ] },
+    options: {
+      indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+      scales: { x: { beginAtZero: true } },
+      plugins: { legend: { display: false } }
+    }
+  });`;
+  }
 
   return `<!doctype html>
 <html lang="en">
@@ -288,7 +600,7 @@ function renderHtml(data) {
   totals as an upper bound. The macOS (.dmg) count is also reduced by ${HOMEBREW_CI_DMG} per version
   (${grandHomebrewCI} downloads total, from ${HOMEBREW_SINCE} onward) to remove Homebrew's release CI,
   which auto-downloads the .dmg to compute its checksum.</p>
-
+${r2Cards}
 <script>
   const D = ${payload};
   new Chart(document.getElementById('perVersion'), {
@@ -318,6 +630,7 @@ function renderHtml(data) {
     },
     options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right' } } }
   });
+${r2Script}
 </script>
 </body>
 </html>`;
@@ -328,6 +641,30 @@ async function main() {
   const releases = await fetchAllReleases();
   const data = aggregate(releases);
   printTable(data);
+
+  // Opt-in: real R2 download stats from Cloudflare Analytics. Isolated in its
+  // own try/catch so any failure (bad token, retention, network) degrades to
+  // GitHub-only output instead of crashing.
+  if (process.env.CF_API_TOKEN) {
+    const until = new Date();
+    const since = new Date(until.getTime() - R2_DAYS * 864e5);
+    const sinceISO = since.toISOString();
+    const untilISO = until.toISOString();
+    try {
+      console.log(`\nFetching R2 downloads from Cloudflare (last ${R2_DAYS}d · ${CF_ZONE})…`);
+      const zoneTag = CF_ZONE_ID || (await resolveZoneTag(process.env.CF_API_TOKEN, CF_ZONE));
+      const rows = await fetchR2Downloads(process.env.CF_API_TOKEN, zoneTag, sinceISO, untilISO);
+      const r2 = aggregateR2(rows);
+      printR2Table(r2, sinceISO, untilISO);
+      data.r2 = r2;
+      data.r2Window = `${sinceISO.slice(0, 10)} → ${untilISO.slice(0, 10)}`;
+    } catch (err) {
+      console.warn(`R2 stats skipped: ${err.message}`);
+    }
+  } else {
+    console.log('\n(Tip: set CF_API_TOKEN to add real R2 download stats from Cloudflare Analytics.)');
+  }
+
   writeFileSync(OUT, renderHtml(data));
   console.log(`\n✓ Chart written to ${OUT}`);
   if (OPEN && process.platform === 'darwin') {

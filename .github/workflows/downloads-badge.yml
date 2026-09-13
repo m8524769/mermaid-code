@@ -1,0 +1,150 @@
+name: Downloads Badge
+
+# Count NEW manual installer downloads from R2 (Cloudflare edge) over each
+# incremental window, keep a cumulative running total on the orphan `stats`
+# branch, and expose a shields endpoint JSON the README badge points at.
+#
+# Cloudflare Free plan keeps the sampled httpRequestsAdaptiveGroups dataset for
+# only ~8 days and caps a query at a 1-day span, so we can't backfill history —
+# we must poll faster than the data expires and accumulate. Runs twice a week
+# (Mon/Thu); the window is ~3-4 days, comfortably inside the ~8-day retention so
+# one missed run still recovers.
+#
+# One-time bootstrap (manual — not done here): create the orphan `stats` branch
+# seeded with downloads.json {total:0,lastCounted:null,updatedAt:null,history:[]}
+# and downloads-badge.json, and add the CF_API_TOKEN repo secret (needs only
+# Zone Analytics:Read, since CF_ZONE_ID is passed in plaintext below).
+
+on:
+  schedule:
+    - cron: '0 3 * * 1,4' # Mon & Thu 03:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write # push the updated JSON back to the `stats` branch
+
+concurrency:
+  group: downloads-badge
+  cancel-in-progress: false # never interrupt a run mid-push (non-fast-forward)
+
+jobs:
+  update-badge:
+    runs-on: ubuntu-latest
+    env:
+      CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+      CF_ZONE_ID: 8bbd475ab24d00c599bc3dd02a28d6a2 # zone id is not secret
+      R2_HOST: releases.mermaid-code.com
+    steps:
+      # Check out the state branch as the working tree. persist-credentials
+      # (default true) lets the final `git push` reuse GITHUB_TOKEN. The branch
+      # must already exist (see bootstrap note above).
+      - uses: actions/checkout@v7
+        with:
+          ref: stats
+
+      - name: Count new downloads and rebuild badge
+        run: |
+          set -euo pipefail
+
+          if [ -z "${CF_API_TOKEN:-}" ]; then
+            echo "CF_API_TOKEN is empty — add it as a repo secret." >&2
+            exit 1
+          fi
+
+          total=$(jq -r '.total // 0' downloads.json)
+          last=$(jq -r '.lastCounted // empty' downloads.json)
+
+          until_ts=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+          if [ -n "$last" ]; then
+            since_ts="$last"
+          else
+            since_ts=$(date -u -d '7 days ago' +%Y-%m-%dT%H:%M:%SZ)
+          fi
+          echo "Window: $since_ts -> $until_ts"
+
+          # The adaptive dataset is sampled (true count = count * sampleInterval)
+          # and a single query is capped at a 1-day span on the Free plan, so walk
+          # the window one UTC day at a time. Days beyond retention error out and
+          # are skipped; if EVERY day fails it's a token/zone problem, not old
+          # data, so we abort rather than falsely advancing lastCounted.
+          query='query($zoneTag:String!,$since:Time!,$until:Time!){viewer{zones(filter:{zoneTag:$zoneTag}){httpRequestsAdaptiveGroups(limit:1000,orderBy:[count_DESC],filter:{datetime_geq:$since,datetime_lt:$until,clientRequestHTTPHost:"'"$R2_HOST"'",edgeResponseStatus_in:[200,206]}){count avg{sampleInterval} dimensions{clientRequestPath}}}}}'
+
+          new=0
+          ok=0
+          fail=0
+          DAY=86400
+          s=$(date -u -d "$since_ts" +%s)
+          u=$(date -u -d "$until_ts" +%s)
+          while [ "$s" -lt "$u" ]; do
+            e=$(( s + DAY ))
+            if [ "$e" -gt "$u" ]; then e=$u; fi
+            s_iso=$(date -u -d "@$s" +%Y-%m-%dT%H:%M:%SZ)
+            e_iso=$(date -u -d "@$e" +%Y-%m-%dT%H:%M:%SZ)
+
+            body=$(jq -n --arg q "$query" --arg zt "$CF_ZONE_ID" --arg si "$s_iso" --arg ui "$e_iso" \
+              '{query:$q, variables:{zoneTag:$zt, since:$si, until:$ui}}')
+            resp=$(curl -sS -X POST https://api.cloudflare.com/client/v4/graphql \
+              -H "Authorization: Bearer $CF_API_TOKEN" \
+              -H 'Content-Type: application/json' \
+              --data "$body")
+
+            if [ "$(echo "$resp" | jq '.errors // [] | length')" != "0" ]; then
+              echo "  $s_iso skipped: $(echo "$resp" | jq -r '[.errors[].message] | join("; ")')" >&2
+              fail=$(( fail + 1 ))
+              s=$e
+              continue
+            fi
+
+            # Manual installer downloads = /latest/* minus the updater manifest
+            # (latest.json), macOS self-update payload (.app.tar.gz) and sigs.
+            # Round per group to match the reference download-stats.mjs.
+            day=$(echo "$resp" | jq '
+              [ .data.viewer.zones[0].httpRequestsAdaptiveGroups[]
+                | select(.dimensions.clientRequestPath | startswith("/latest/"))
+                | (.dimensions.clientRequestPath | sub(".*/"; "")) as $n
+                | select($n | test("^latest\\.json$|\\.sig$|\\.app\\.tar\\.gz$") | not)
+                | (.count * (.avg.sampleInterval // 1) | round)
+              ] | add // 0')
+            echo "  $s_iso: +$day"
+            new=$(( new + day ))
+            ok=$(( ok + 1 ))
+            s=$e
+          done
+
+          if [ "$ok" -eq 0 ] && [ "$fail" -gt 0 ]; then
+            echo "All day queries failed — likely a token/zone error. Aborting." >&2
+            exit 1
+          fi
+
+          newTotal=$(( total + new ))
+          echo "New this window: $new | cumulative total: $newTotal"
+
+          # State file: cumulative total + last counted boundary + append history.
+          jq -n \
+            --argjson total "$newTotal" \
+            --argjson count "$new" \
+            --arg last "$until_ts" \
+            --arg since "$since_ts" \
+            --argjson prev "$(cat downloads.json)" \
+            '{total:$total, lastCounted:$last, updatedAt:$last,
+              history: (($prev.history // []) + [{since:$since, until:$last, count:$count, total:$total}])}' \
+            > downloads.json.tmp && mv downloads.json.tmp downloads.json
+
+          # shields endpoint schema; message gets thousands separators.
+          msg=$(printf '%d' "$newTotal" | sed -e ':a' -e 's/\([0-9]\+\)\([0-9]\{3\}\)/\1,\2/;ta')
+          jq -n --arg msg "$msg" \
+            '{schemaVersion:1, label:"downloads", message:$msg, color:"brightgreen", cacheSeconds:3600}' \
+            > downloads-badge.json
+
+      - name: Commit and push if changed
+        run: |
+          set -euo pipefail
+          git config user.email "action@github.com"
+          git config user.name "GitHub Action"
+          git add downloads.json downloads-badge.json
+          if git diff --cached --quiet; then
+            echo "No change — nothing to commit."
+          else
+            git commit -m "chore(stats): update downloads badge ($(date -u +%F))"
+            git push
+          fi
