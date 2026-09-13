@@ -1,1 +1,7 @@
-{ "schemaVersion":1, "label":"downloads", "message":"0", "color":"brightgreen" }
+{
+  "schemaVersion": 1,
+  "label": "downloads",
+  "message": "48",
+  "color": "brightgreen",
+  "cacheSeconds": 3600
+}
