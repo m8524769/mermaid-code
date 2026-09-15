@@ -115,7 +115,7 @@
     "mode-watcher": "^1.1.0",
     "monaco-editor": "0.55.1",
     "monaco-vim": "^0.4.4",
-    "pako": "3.0.1",
+    "pako": "3.0.2",
     "shiki": "^4.4.3",
     "svg-pan-zoom": "3.6.2",
     "svg2roughjs": "^3.2.3",
