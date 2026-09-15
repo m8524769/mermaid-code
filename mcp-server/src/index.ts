@@ -96,7 +96,7 @@ Bun.serve({
       return transport.handleRequest(req);
     }
     if (url.pathname === '/shutdown') {
-      setTimeout(() => Bun.exit(0), 100);
+      setTimeout(() => process.exit(0), 100);
       return new Response('Shutting down', { status: 200 });
     }
     return new Response('Mermaid Code MCP Server', { status: 200 });
