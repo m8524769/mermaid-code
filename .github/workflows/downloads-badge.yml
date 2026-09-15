@@ -67,7 +67,7 @@ jobs:
           # the window one UTC day at a time. Days beyond retention error out and
           # are skipped; if EVERY day fails it's a token/zone problem, not old
           # data, so we abort rather than falsely advancing lastCounted.
-          query='query($zoneTag:String!,$since:Time!,$until:Time!){viewer{zones(filter:{zoneTag:$zoneTag}){httpRequestsAdaptiveGroups(limit:1000,orderBy:[count_DESC],filter:{datetime_geq:$since,datetime_lt:$until,clientRequestHTTPHost:"'"$R2_HOST"'",clientRequestHTTPMethodName:"GET",edgeResponseStatus_in:[200,206]}){count avg{sampleInterval} dimensions{clientRequestPath}}}}}'
+          query='query($zoneTag:String!,$since:Time!,$until:Time!){viewer{zones(filter:{zoneTag:$zoneTag}){httpRequestsAdaptiveGroups(limit:1000,orderBy:[count_DESC],filter:{datetime_geq:$since,datetime_lt:$until,clientRequestHTTPHost:"'"$R2_HOST"'",clientRequestHTTPMethodName:"GET",edgeResponseStatus_in:[200]}){count avg{sampleInterval} dimensions{clientRequestPath}}}}}'
 
           new=0
           ok=0

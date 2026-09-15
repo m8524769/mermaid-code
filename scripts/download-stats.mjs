@@ -235,7 +235,9 @@ const DAY_MS = 864e5;
 // Per-path counts for the R2 host over a SINGLE window. Only the adaptive dataset
 // exposes clientRequestPath, and it is sampled, so the true count is
 // count * sampleInterval (≈1 at low volume). GET only (HEAD probes excluded);
-// 200 + 206 (range) count as downloads.
+// 200 only — 206 (range) responses are excluded because a single download can
+// fan out into many range requests, which double-counts. Trade-off: a download
+// served entirely via range (no 200) is missed, so this leans conservative.
 async function fetchR2Day(token, zoneTag, since, until) {
   const query = `
     query($zoneTag:String!,$since:Time!,$until:Time!){
@@ -245,7 +247,7 @@ async function fetchR2Day(token, zoneTag, since, until) {
           filter:{ datetime_geq:$since, datetime_lt:$until,
             clientRequestHTTPHost:"${R2_HOST}",
             clientRequestHTTPMethodName:"GET",
-            edgeResponseStatus_in:[200,206] }
+            edgeResponseStatus_in:[200] }
         ){ count avg{ sampleInterval } sum{ edgeResponseBytes } dimensions{ clientRequestPath clientCountryName } }
       }}
     }`;
@@ -425,7 +427,7 @@ function printR2Table(r2, sinceISO, untilISO) {
   }
 
   console.log(
-    '\n(edge requests, extrapolated by sampleInterval; 206 range requests may inflate, cache hits included, bots not filtered — upper bound)'
+    '\n(edge requests, extrapolated by sampleInterval; 200-only GET, so 206 range requests are excluded; cache hits included, bots not filtered — upper bound)'
   );
 }
 
@@ -494,7 +496,8 @@ function renderHtml(data) {
   <div class="chart-wrap small"><canvas id="r2Country"></canvas></div>
   <p class="note"><b>R2 (Cloudflare edge)</b> is where real users download now — the GitHub counts above are
   historical / mirror-CI / bots. These are edge HTTP requests over the window, extrapolated by Cloudflare's sample
-  interval; <code>206</code> range requests may inflate them, cache hits are included, and bots are not filtered, so
+  interval; only <code>200</code> GET responses are counted (<code>206</code> range requests are excluded to
+  avoid double-counting a single download), cache hits are included, and bots are not filtered, so
   treat them as an upper bound. <code>/latest/*</code> = website/manual, <code>/&lt;version&gt;/*</code> = auto-updater.
   <b>Update-checks</b> (latest.json, polled by every running app) approximate the live install base; the country
   breakdown counts installer downloads only. Adding the country dimension splits the sampled dataset finer, so
