@@ -36,7 +36,7 @@ brew install --cask mermaid-code
 
 > 由于该应用未经 Apple Developer 证书签名，macOS 可能在首次启动时加以阻止。
 > 请前往 **系统设置 → 隐私与安全性**，然后点击 Mermaid Code 旁的 **Open Anyway**。
-> 若该方法无效（例如在 macOS 27 Beta 上），请在终端中执行以下命令：
+> 若该方法无效，请在终端中执行以下命令：
 >
 > ```sh
 > xattr -dr com.apple.quarantine "/Applications/Mermaid Code.app"
