@@ -43,7 +43,9 @@
     'neo',
     'neo-dark',
     'redux',
-    'redux-dark'
+    'redux-dark',
+    'redux-color',
+    'redux-dark-color'
   ];
   const LOOKS = ['classic', 'neo'];
   const LAYOUTS = ['dagre', 'elk', 'tidy-tree'];
@@ -146,7 +148,7 @@
             class="flex-1 rounded border bg-background px-1.5 py-0.5 text-xs"
             value={String(parsedConfig.theme ?? '')}
             onchange={(e) => setConfigField('theme', e.currentTarget.value)}>
-            <option value="">{m.config_opt_default({ value: 'default' })}</option>
+            <option value="">{m.config_opt_auto()}</option>
             {#each THEMES as t}
               <option value={t}>{t}</option>
             {/each}
@@ -165,7 +167,7 @@
             class="flex-1 rounded border bg-background px-1.5 py-0.5 text-xs"
             value={String(parsedConfig.look ?? '')}
             onchange={(e) => setConfigField('look', e.currentTarget.value)}>
-            <option value="">{m.config_opt_default({ value: 'classic' })}</option>
+            <option value="">{m.config_opt_auto()}</option>
             {#each LOOKS as l}
               <option value={l}>{l}</option>
             {/each}

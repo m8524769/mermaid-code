@@ -345,14 +345,16 @@ export const toggleDarkTheme = (dark: boolean): void => {
       neutral: 'dark',
       base: 'dark',
       neo: 'neo-dark',
-      redux: 'redux-dark'
+      redux: 'redux-dark',
+      'redux-color': 'redux-dark-color'
     };
     const darkToLight: Record<string, string> = {
       dark: 'default',
       'neo-dark': 'neo',
-      'redux-dark': 'redux'
+      'redux-dark': 'redux',
+      'redux-dark-color': 'redux-color'
     };
-    const current = config.theme ?? 'default';
+    const current = config.theme ?? 'redux-color';
     if (dark && current in lightToDark) {
       config.theme = lightToDark[current] as MermaidConfig['theme'];
     } else if (!dark && current in darkToLight) {
