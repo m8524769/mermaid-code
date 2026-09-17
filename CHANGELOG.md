@@ -2,6 +2,17 @@
 
 All notable changes to Mermaid Code are documented here.
 
+## [v0.8.0] - 2026-09-17
+
+### Changed
+
+- **Updated to Mermaid 12, changing default diagram appearance**: diagrams that don't set `theme`, `look`, or `layout` explicitly now render with Mermaid 12's new defaults — a refreshed theme/look and the ELK layout engine (previously Dagre). See the [Mermaid 12.0.0 release notes](https://github.com/mermaid-js/mermaid/releases#release-mermaid@12.0.0) for details and the full list of affected types. To keep the previous appearance, set `theme: default`, `look: classic`, and `layout: dagre` in the diagram config (front matter or the Config panel).
+- **Dark mode covers the new theme**: switching between light and dark now maps the new `redux-color` theme to its dark variant (`redux-dark-color`), alongside the existing theme pairings.
+
+### Removed
+
+- **ZenUML support**: the ZenUML diagram type is no longer supported
+
 ## [v0.7.5] - 2026-09-13
 
 ### Changed
