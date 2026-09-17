@@ -95,7 +95,6 @@
     "@fontsource-variable/recursive": "^5.3.0",
     "@mermaid-js/examples": "^2.0.0",
     "@mermaid-js/layout-tidy-tree": "^1.0.0",
-    "@mermaid-js/mermaid-zenuml": "^1.0.0",
     "@mermanjs/tree-sitter-mermaid": "^0.1.0",
     "@tauri-apps/plugin-dialog": "^2.7.3",
     "@tauri-apps/plugin-fs": "^2.5.2",

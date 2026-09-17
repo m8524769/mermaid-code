@@ -85,9 +85,6 @@
     xychart: {
       code: '/syntax/xyChart.html',
       config: '/syntax/xyChart.html#chart-configurations'
-    },
-    zenuml: {
-      code: '/syntax/zenuml.html'
     }
   } as const satisfies DocumentationConfig;
 

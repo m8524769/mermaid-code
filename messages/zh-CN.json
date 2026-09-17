@@ -70,7 +70,6 @@
   "ext_opens_in": "打开你的图表于",
   "ext_will_send": "你的图表将被发送到外部服务",
   "ext_not_shared": "你的图表不会被分享",
-  "ext_type_unsupported": "此图表类型在 {domain} 中不受支持",
   "doc_view_for": "查看 {type} 图表的文档",
   "docs_label": "文档",
   "config_overridden": "已被代码覆盖：{value}",

@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { validatedState } from '$/util/state.svelte';
   import { m } from '$/paraglide/messages';
   import * as Tooltip from '$lib/components/ui/tooltip';
   import type { ComponentProps, Snippet } from 'svelte';
@@ -8,7 +7,6 @@
   let {
     children,
     domain,
-    shouldCheckDiagramType = true,
     side = 'bottom',
     labelPrefix,
     isVisible = true,
@@ -17,24 +15,19 @@
   }: {
     children: Snippet;
     domain: string;
-    shouldCheckDiagramType?: boolean;
     side?: ComponentProps<typeof Tooltip.Content>['side'];
     labelPrefix?: string;
     isVisible?: boolean;
     sharesData?: boolean;
     showPopup?: boolean;
   } = $props();
-
-  let shouldDisableComponent = $derived(
-    shouldCheckDiagramType && validatedState.current.diagramType === 'zenuml'
-  );
 </script>
 
 {#if isVisible}
   <Tooltip.Provider>
     <Tooltip.Root delayDuration={100}>
       <Tooltip.Trigger>
-        <div class={[shouldDisableComponent && 'pointer-events-none cursor-not-allowed grayscale']}>
+        <div>
           {@render children()}
         </div>
       </Tooltip.Trigger>
@@ -43,17 +36,11 @@
           <div
             class="flex cursor-help items-center gap-2"
             title={sharesData ? m.ext_will_send() : m.ext_not_shared()}>
-            {#if shouldDisableComponent}
-              <div class="text-muted-foreground">
-                {m.ext_type_unsupported({ domain })}
-              </div>
-            {:else}
-              <ExternalLinkIcon />
-              <span class="flex items-center gap-1">
-                {labelPrefix ?? m.ext_opens_in()}
-                <div class="text-accent">{domain}</div>
-              </span>
-            {/if}
+            <ExternalLinkIcon />
+            <span class="flex items-center gap-1">
+              {labelPrefix ?? m.ext_opens_in()}
+              <div class="text-accent">{domain}</div>
+            </span>
           </div>
         </Tooltip.Content>
       {/if}
