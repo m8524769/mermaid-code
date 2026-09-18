@@ -1,61 +1,42 @@
 {
-  "total": 120,
-  "lastCounted": "2026-09-18T05:13:27Z",
-  "updatedAt": "2026-09-18T05:13:27Z",
-  "history": [
+  "total": 57,
+  "totalUpdateChecks": 106,
+  "updatedAt": "2026-09-18T13:28:25Z",
+  "days": [
     {
-      "since": "2026-09-06T07:40:35Z",
-      "until": "2026-09-13T07:40:35Z",
-      "count": 48,
-      "total": 48
+      "date": "2026-09-12",
+      "count": 33,
+      "updateChecks": 3
     },
     {
-      "since": "2026-09-13T07:40:35Z",
-      "until": "2026-09-13T16:23:34Z",
-      "count": 1,
-      "total": 49
+      "date": "2026-09-13",
+      "count": 2,
+      "updateChecks": 2
     },
     {
-      "since": "2026-09-13T16:23:34Z",
-      "until": "2026-09-14T03:23:44Z",
-      "count": 52,
-      "total": 101
-    },
-    {
-      "since": "2026-09-14T03:23:44Z",
-      "until": "2026-09-14T08:28:45Z",
+      "date": "2026-09-14",
       "count": 13,
-      "total": 114
+      "updateChecks": 6
     },
     {
-      "since": "2026-09-14T08:28:45Z",
-      "until": "2026-09-15T12:35:28Z",
-      "count": 2,
-      "total": 116
-    },
-    {
-      "since": "2026-09-15T12:35:28Z",
-      "until": "2026-09-16T04:49:21Z",
-      "count": 2,
-      "total": 118
-    },
-    {
-      "since": "2026-09-16T04:49:21Z",
-      "until": "2026-09-17T08:19:40Z",
+      "date": "2026-09-15",
       "count": 1,
-      "total": 119
+      "updateChecks": 17
     },
     {
-      "since": "2026-09-17T08:19:40Z",
-      "until": "2026-09-17T13:09:01Z",
-      "count": 0,
-      "total": 119
-    },
-    {
-      "since": "2026-09-17T13:09:01Z",
-      "until": "2026-09-18T05:13:27Z",
+      "date": "2026-09-16",
       "count": 1,
-      "total": 120
+      "updateChecks": 18
+    },
+    {
+      "date": "2026-09-17",
+      "count": 1,
+      "updateChecks": 41
+    },
+    {
+      "date": "2026-09-18",
+      "count": 6,
+      "updateChecks": 19
     }
   ]
 }
