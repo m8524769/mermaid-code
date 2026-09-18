@@ -9,9 +9,15 @@ name: Downloads Badge
 # HOT_DAYS+1 days are RE-counted each run and overwritten, so sampling noise
 # self-heals and same-day re-runs converge. A day freezes once it ages past that
 # window (it can no longer be queried, so its last count sticks). State:
-# {total, totalUpdateChecks, updatedAt, days:[{date,count,updateChecks}]};
+# {total, totalUpdateChecks, updatedAt,
+#  days:[{date, count, updateChecks, byPlatform:{macOS,Windows,Linux}}]};
 # total = sum(days[].count), totalUpdateChecks = sum(days[].updateChecks). The
 # last day (date == today, UTC) is thus a partial 00:00->now count.
+#
+# `byPlatform` splits the day's `count` into macOS (.dmg) / Windows (.msi,.exe) /
+# Linux (.deb,.AppImage,.rpm) so the reference download-stats.mjs can draw a
+# per-platform daily trend; absent platforms are simply omitted, and days
+# recorded before this field was added carry no byPlatform (drawn as ungrouped).
 #
 # `count` = manual installer downloads (/latest/* files); `updateChecks` = Tauri
 # auto-updater hits on the manifest /latest.json (root path, distinct from the
@@ -119,10 +125,11 @@ jobs:
               # it to 0 (a transient/aged-out query must not erase real downloads).
               prev=$(jq -r --arg d "$d" '(.days // []) | map(select(.date==$d)) | .[0].count // empty' downloads.json)
               prevck=$(jq -r --arg d "$d" '(.days // []) | map(select(.date==$d)) | .[0].updateChecks // 0' downloads.json)
+              prevbp=$(jq -c --arg d "$d" '(.days // []) | map(select(.date==$d)) | .[0].byPlatform // {}' downloads.json)
               echo "  $d query failed: $(echo "$resp" | jq -r '[.errors[].message] | join("; ")')${prev:+ (keeping $prev)}" >&2
               fail=$(( fail + 1 ))
               if [ -n "$prev" ]; then
-                recomputed=$(echo "$recomputed" | jq --arg d "$d" --argjson c "$prev" --argjson ck "$prevck" '. + [{date:$d, count:$c, updateChecks:$ck}]')
+                recomputed=$(echo "$recomputed" | jq --arg d "$d" --argjson c "$prev" --argjson ck "$prevck" --argjson bp "$prevbp" '. + [{date:$d, count:$c, updateChecks:$ck, byPlatform:$bp}]')
               fi
               d="$next"
               continue
@@ -139,6 +146,20 @@ jobs:
                 | select($n | test("^latest\\.json$|\\.sig$|\\.app\\.tar\\.gz$") | not)
                 | (.count * (.avg.sampleInterval // 1) | round)
               ] | add // 0')
+            # Split the same /latest/* installers by platform (subset of $c);
+            # unknown extensions are dropped, so byPlatform sums to <= count.
+            bp=$(echo "$resp" | jq -c '
+              [ .data.viewer.zones[0].httpRequestsAdaptiveGroups[]
+                | (.dimensions.clientRequestPath) as $p
+                | select($p | startswith("/latest/"))
+                | ($p | sub(".*/"; "")) as $n
+                | (.count * (.avg.sampleInterval // 1) | round) as $v
+                | (if   $n | test("\\.dmg$"; "i")               then "macOS"
+                   elif $n | test("\\.(msi|exe)$"; "i")         then "Windows"
+                   elif $n | test("\\.(deb|appimage|rpm)$"; "i") then "Linux"
+                   else empty end) as $plat
+                | {plat:$plat, v:$v}
+              ] | reduce .[] as $x ({}; .[$x.plat] += $x.v)')
             # Update checks = auto-updater hits on the root manifest /latest.json
             # (not under /latest/, so disjoint from the download count above).
             ck=$(echo "$resp" | jq '
@@ -146,8 +167,9 @@ jobs:
                 | select(.dimensions.clientRequestPath == "/latest.json")
                 | (.count * (.avg.sampleInterval // 1) | round)
               ] | add // 0')
-            [ "$d" = "$today" ] && echo "  $d: $c dl / $ck checks (partial 00:00->now)" || echo "  $d: $c dl / $ck checks"
-            recomputed=$(echo "$recomputed" | jq --arg d "$d" --argjson c "$c" --argjson ck "$ck" '. + [{date:$d, count:$c, updateChecks:$ck}]')
+            bp_str=$(echo "$bp" | jq -r 'to_entries | map("\(.key):\(.value)") | join(" ")')
+            [ "$d" = "$today" ] && echo "  $d: $c dl / $ck checks${bp_str:+ [$bp_str]} (partial 00:00->now)" || echo "  $d: $c dl / $ck checks${bp_str:+ [$bp_str]}"
+            recomputed=$(echo "$recomputed" | jq --arg d "$d" --argjson c "$c" --argjson ck "$ck" --argjson bp "$bp" '. + [{date:$d, count:$c, updateChecks:$ck, byPlatform:$bp}]')
             ok=$(( ok + 1 ))
             d="$next"
           done

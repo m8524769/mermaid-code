@@ -39,6 +39,14 @@ const CF_ZONE = process.env.CF_ZONE || 'mermaid-code.com';
 const CF_ZONE_ID = process.env.CF_ZONE_ID || '';
 const R2_DAYS = Number(argValue('--days') || process.env.R2_DAYS || 7);
 
+// Full per-day download history lives on the stats branch (downloads.json:
+// {date,count,updateChecks} per day), written by the downloads-badge workflow.
+// Cloudflare only retains ~8 days, so this JSON is the only source for the
+// long-term trend. Fetched read-only from GitHub raw; failure is non-fatal.
+const STATS_BRANCH = process.env.STATS_BRANCH || 'stats';
+const STATS_URL =
+  process.env.STATS_URL || `https://raw.githubusercontent.com/${REPO}/${STATS_BRANCH}/downloads.json`;
+
 // Map an asset filename to an installer-type label, or null to exclude it.
 // Order matters: first match wins.
 const TYPE_RULES = [
@@ -79,6 +87,13 @@ function argValue(flag) {
 function classify(name) {
   for (const rule of TYPE_RULES) if (rule[0].test(name)) return rule[1];
   return null;
+}
+
+// Collapse an installer-type label ("macOS (.dmg)", "Windows (.msi)") to its
+// platform ("macOS" / "Windows" / "Linux") for the per-platform daily trend,
+// matching the byPlatform buckets the downloads-badge workflow records.
+function platformOf(type) {
+  return type ? type.split(' ')[0] : null;
 }
 
 function isNonInstall(name) {
@@ -308,8 +323,9 @@ async function fetchR2Downloads(token, zoneTag, since, until) {
 // Bucket R2 paths the same way as GitHub assets: /latest/* = website/manual
 // downloads, /<version>/* = auto-updater, latest.json = update-checks, and the
 // macOS self-update payload (.app.tar.gz) separately. Reuses classify()/isNonInstall().
-// Also derives a per-day trend (polls vs downloads) and a by-country breakdown of
-// installer downloads from the daily rows.
+// The "downloads" figure (daily trend + by-country) uses the SAME caliber as the
+// downloads badge: /latest/* installers only. Updater (/<version>/*) fetches keep
+// their own bucket but are never folded into downloads.
 function aggregateR2(days) {
   const manual = {}; // byType
   const updater = {}; // byType
@@ -321,6 +337,7 @@ function aggregateR2(days) {
   for (const { date, rows } of days) {
     let dPolls = 0;
     let dDownloads = 0;
+    const dByPlatform = {}; // this day's /latest/* downloads split by platform
     for (const { path, country, requests } of rows) {
       const name = path.slice(path.lastIndexOf('/') + 1);
       if (/^latest\.json$/i.test(name)) {
@@ -338,10 +355,17 @@ function aggregateR2(days) {
       types.add(type);
       const bucket = path.startsWith('/latest/') ? manual : updater;
       bucket[type] = (bucket[type] || 0) + requests;
-      byCountry[country] = (byCountry[country] || 0) + requests;
-      dDownloads += requests;
+      // "Downloads" use the badge caliber: /latest/* installers only. Updater
+      // fetches (/<version>/*) stay in their own bucket but are NOT counted as
+      // downloads, nor in the per-country new-install breakdown.
+      if (bucket === manual) {
+        byCountry[country] = (byCountry[country] || 0) + requests;
+        dDownloads += requests;
+        const plat = platformOf(type);
+        if (plat) dByPlatform[plat] = (dByPlatform[plat] || 0) + requests;
+      }
     }
-    daily.push({ date, polls: dPolls, downloads: dDownloads });
+    daily.push({ date, polls: dPolls, downloads: dDownloads, byPlatform: dByPlatform });
   }
   daily.sort((a, b) => (a.date < b.date ? -1 : 1));
   const orderedTypes = [...types].sort(
@@ -405,10 +429,10 @@ function printR2Table(r2, sinceISO, untilISO) {
       `   |   macOS update payload (.app.tar.gz): ${macUpdates}`
   );
 
-  // Daily trend: update-checks (active-install proxy) vs installer downloads.
+  // Daily trend: update-checks (active-install proxy) vs manual downloads (/latest/).
   const daily = r2.daily.filter((d) => d.polls || d.downloads);
   if (daily.length) {
-    console.log('\n--- daily trend (date · update-checks · downloads) ---');
+    console.log('\n--- daily trend (date · update-checks · downloads /latest/) ---');
     for (const d of daily) {
       console.log(
         `${d.date}  ${String(d.polls).padStart(6)}  ${String(d.downloads).padStart(6)}`
@@ -416,10 +440,10 @@ function printR2Table(r2, sinceISO, untilISO) {
     }
   }
 
-  // Installer downloads by country (top 10).
+  // Manual (/latest/) downloads by country (top 10).
   if (r2.countries.length) {
-    const dlTotal = manualTotal + updaterTotal || 1;
-    console.log('\n--- installer downloads by country (top 10) ---');
+    const dlTotal = manualTotal || 1; // percentages are over manual (/latest/) downloads
+    console.log('\n--- manual downloads (/latest/) by country (top 10) ---');
     for (const [code, n] of r2.countries.slice(0, 10)) {
       const pct = ((n / dlTotal) * 100).toFixed(0);
       console.log(`${code.padEnd(4)} ${String(n).padStart(6)}  (${pct}%)`);
@@ -432,7 +456,7 @@ function printR2Table(r2, sinceISO, untilISO) {
 }
 
 function renderHtml(data) {
-  const { perVersion, orderedTypes, grandInstalls, grandPolls, grandUpdates, grandHomebrewCI, r2, r2Window } =
+  const { perVersion, orderedTypes, grandInstalls, grandPolls, grandUpdates, grandHomebrewCI, r2, r2Window, history } =
     data;
   const rows = perVersion.filter((v) => v.total > 0 || v.updates > 0);
   const labels = rows.map((r) => r.version);
@@ -471,13 +495,36 @@ function renderHtml(data) {
   let r2Script = '';
   if (r2) {
     const topCountries = r2.countries.slice(0, 12);
+    // Daily trend spans the full merged history (stats branch backbone + fresh CF
+    // window overwriting the days it covers) when the stats branch carries a
+    // per-day history; otherwise it falls back to the CF-only window.
+    const trend = history?.daily?.length
+      ? history.daily
+      : r2.daily.map((d) => ({ date: d.date, downloads: d.downloads, updateChecks: d.polls, byPlatform: d.byPlatform }));
+    const trendRange = `${trend[0].date} → ${trend[trend.length - 1].date}`;
+    const trendScope = history?.daily?.length ? 'full history' : r2Window;
+    // Split each day's downloads into macOS/Windows/Linux; anything not covered
+    // by byPlatform (days recorded before per-platform tracking, or an unknown
+    // installer) becomes "Other" so every stacked bar still sums to the day's
+    // download total.
+    const platRows = trend.map((d) => {
+      const bp = d.byPlatform || {};
+      const mac = bp.macOS || 0;
+      const win = bp.Windows || 0;
+      const lin = bp.Linux || 0;
+      return { mac, win, lin, other: Math.max(0, (d.downloads || 0) - (mac + win + lin)) };
+    });
     const r2Payload = JSON.stringify({
       labels: r2.orderedTypes,
       manual: r2.orderedTypes.map((t) => r2.manual[t] || 0),
       updater: r2.orderedTypes.map((t) => r2.updater[t] || 0),
-      days: r2.daily.map((d) => d.date),
-      dailyPolls: r2.daily.map((d) => d.polls),
-      dailyDownloads: r2.daily.map((d) => d.downloads),
+      days: trend.map((d) => d.date),
+      dailyPolls: trend.map((d) => d.updateChecks),
+      mac: platRows.map((r) => r.mac),
+      win: platRows.map((r) => r.win),
+      linux: platRows.map((r) => r.lin),
+      other: platRows.map((r) => r.other),
+      hasOther: platRows.some((r) => r.other > 0),
       countryLabels: topCountries.map((c) => c[0]),
       countryData: topCountries.map((c) => c[1])
     });
@@ -490,9 +537,9 @@ function renderHtml(data) {
     <div class="card"><div class="n">${r2.macUpdates.toLocaleString()}</div><div class="l">macOS update payload<br>(.app.tar.gz)</div></div>
   </div>
   <div class="chart-wrap"><canvas id="r2ByType"></canvas></div>
-  <h2 style="font-size:16px">Daily trend <span style="color:#888">— update-checks (active-install proxy) vs downloads</span></h2>
+  <h2 style="font-size:16px">Daily trend <span style="color:#888">— ${trendScope} · ${trendRange} UTC · downloads by platform vs update-checks (active-install proxy)</span></h2>
   <div class="chart-wrap"><canvas id="r2Daily"></canvas></div>
-  <h2 style="font-size:16px">Installer downloads by country <span style="color:#888">— top ${topCountries.length}</span></h2>
+  <h2 style="font-size:16px">Manual downloads by country <span style="color:#888">— /latest/ · top ${topCountries.length}</span></h2>
   <div class="chart-wrap small"><canvas id="r2Country"></canvas></div>
   <p class="note"><b>R2 (Cloudflare edge)</b> is where real users download now — the GitHub counts above are
   historical / mirror-CI / bots. These are edge HTTP requests over the window, extrapolated by Cloudflare's sample
@@ -500,8 +547,13 @@ function renderHtml(data) {
   avoid double-counting a single download), cache hits are included, and bots are not filtered, so
   treat them as an upper bound. <code>/latest/*</code> = website/manual, <code>/&lt;version&gt;/*</code> = auto-updater.
   <b>Update-checks</b> (latest.json, polled by every running app) approximate the live install base; the country
-  breakdown counts installer downloads only. Adding the country dimension splits the sampled dataset finer, so
-  low-volume buckets are noisier.</p>`;
+  breakdown and the daily "downloads" trend count manual <code>/latest/*</code> downloads only (the badge caliber),
+  not updater <code>/&lt;version&gt;/*</code> fetches. Adding the country dimension splits the sampled dataset finer, so
+  low-volume buckets are noisier. The daily trend extends back over the full history stored on the
+  <code>stats</code> branch (updated twice a week by the downloads-badge workflow), with this fresh CF window
+  overwriting the recent days it covers; the most recent day is a partial 00:00→now count. The daily download bars
+  are stacked by platform (macOS / Windows / Linux); <b>Other</b> covers days recorded before per-platform tracking
+  began.</p>`;
     r2Script = `
   const R = ${r2Payload};
   new Chart(document.getElementById('r2ByType'), {
@@ -518,15 +570,23 @@ function renderHtml(data) {
   });
   new Chart(document.getElementById('r2Daily'), {
     data: { labels: R.days, datasets: [
+      { type: 'bar', label: 'macOS', data: R.mac, backgroundColor: '#5b8def', stack: 'dl', yAxisID: 'y1', order: 2 },
+      { type: 'bar', label: 'Windows', data: R.win, backgroundColor: '#3ecf8e', stack: 'dl', yAxisID: 'y1', order: 2 },
+      { type: 'bar', label: 'Linux', data: R.linux, backgroundColor: '#f0a13b', stack: 'dl', yAxisID: 'y1', order: 2 },
+      ...(R.hasOther ? [{ type: 'bar', label: 'Other', data: R.other, backgroundColor: '#aaa', stack: 'dl', yAxisID: 'y1', order: 2 }] : []),
+      // order 1 < the bars' order 2, so the line is drawn last (on top); a white
+      // point halo keeps it legible where it crosses a tall stacked column.
       { type: 'line', label: 'Update-checks (latest.json)', data: R.dailyPolls,
-        borderColor: '#3ecf8e', backgroundColor: '#3ecf8e', tension: 0.3, pointRadius: 2, yAxisID: 'y' },
-      { type: 'bar', label: 'Downloads', data: R.dailyDownloads, backgroundColor: '#5b8def', yAxisID: 'y1' }
+        borderColor: '#e5484d', backgroundColor: '#e5484d', borderWidth: 2, tension: 0.3,
+        pointRadius: 3, pointBackgroundColor: '#e5484d', pointBorderColor: '#fff', pointBorderWidth: 1.5,
+        yAxisID: 'y', order: 1 }
     ] },
     options: {
       responsive: true, maintainAspectRatio: false,
       scales: {
+        x: { stacked: true },
         y: { beginAtZero: true, position: 'left', title: { display: true, text: 'Update-checks' } },
-        y1: { beginAtZero: true, position: 'right', grid: { drawOnChartArea: false },
+        y1: { beginAtZero: true, stacked: true, position: 'right', grid: { drawOnChartArea: false },
               title: { display: true, text: 'Downloads' }, ticks: { precision: 0 } }
       },
       plugins: { tooltip: { mode: 'index' }, legend: { position: 'bottom' } }
@@ -641,6 +701,42 @@ ${r2Script}
 </html>`;
 }
 
+// Read the per-day history the downloads-badge workflow keeps on the stats branch.
+// Returns { total, totalUpdateChecks, updatedAt, days:[{date,count,updateChecks}] },
+// or null if the branch still holds a pre-per-day schema (no `days` array).
+async function fetchStatsHistory() {
+  const res = await fetch(STATS_URL, { headers: { 'User-Agent': 'download-stats' } });
+  if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+  const json = await res.json();
+  if (!Array.isArray(json.days)) return null; // pre-per-day schema — nothing to merge
+  return {
+    total: json.total || 0,
+    totalUpdateChecks: json.totalUpdateChecks || 0,
+    updatedAt: json.updatedAt || null,
+    days: json.days.map((d) => ({
+      date: d.date,
+      count: d.count || 0,
+      updateChecks: d.updateChecks || 0,
+      byPlatform: d.byPlatform || null // absent on days recorded before per-platform tracking
+    }))
+  };
+}
+
+// Merge the long-term history (stats branch) with the fresh Cloudflare window into
+// one daily series. History is the backbone; the CF window overwrites the dates it
+// covers (fresher — its past days are full 00:00->00:00, today is 00:00->now), and
+// history alone supplies everything older than CF's ~8-day retention.
+function mergeDailyHistory(history, r2) {
+  const byDate = new Map();
+  for (const d of history?.days || []) {
+    byDate.set(d.date, { date: d.date, downloads: d.count, updateChecks: d.updateChecks, byPlatform: d.byPlatform });
+  }
+  for (const d of r2?.daily || []) {
+    byDate.set(d.date, { date: d.date, downloads: d.downloads, updateChecks: d.polls, byPlatform: d.byPlatform });
+  }
+  return [...byDate.values()].sort((a, b) => (a.date < b.date ? -1 : 1));
+}
+
 async function main() {
   console.log(`Fetching releases for ${REPO}…`);
   const releases = await fetchAllReleases();
@@ -651,8 +747,15 @@ async function main() {
   // own try/catch so any failure (bad token, retention, network) degrades to
   // GitHub-only output instead of crashing.
   if (process.env.CF_API_TOKEN) {
+    // Align the window to UTC calendar days so per-day rows line up with the
+    // downloads badge (workflow), which slices strictly on 00:00 UTC. `since` is
+    // the UTC midnight R2_DAYS-1 days back; `until` stays "now", so the day-walk
+    // yields (R2_DAYS-1) complete 00:00->00:00 days plus today's partial
+    // [00:00, now) — exactly the badge's model. (UTC has no DST, so stepping by
+    // DAY_MS from a midnight always lands on the next midnight.)
     const until = new Date();
-    const since = new Date(until.getTime() - R2_DAYS * 864e5);
+    const startOfToday = Date.UTC(until.getUTCFullYear(), until.getUTCMonth(), until.getUTCDate());
+    const since = new Date(startOfToday - (R2_DAYS - 1) * DAY_MS);
     const sinceISO = since.toISOString();
     const untilISO = until.toISOString();
     try {
@@ -668,6 +771,28 @@ async function main() {
     }
   } else {
     console.log('\n(Tip: set CF_API_TOKEN to add real R2 download stats from Cloudflare Analytics.)');
+  }
+
+  // Full download history from the stats branch (default-on, read-only). Merged
+  // with the CF window into one long-term daily trend; any failure is non-fatal.
+  try {
+    const history = await fetchStatsHistory();
+    if (history) {
+      const daily = mergeDailyHistory(history, data.r2);
+      data.history = { ...history, daily };
+      const first = daily[0]?.date || '?';
+      const last = daily[daily.length - 1]?.date || '?';
+      console.log(
+        `\n=== Full history (${STATS_BRANCH} branch) ===\n` +
+          `cumulative downloads: ${history.total.toLocaleString()}   |   ` +
+          `cumulative update-checks: ${history.totalUpdateChecks.toLocaleString()}   |   ` +
+          `${daily.length} day(s) ${first} → ${last}`
+      );
+    } else {
+      console.log('\n(stats branch has no per-day history yet — daily trend shows the CF window only.)');
+    }
+  } catch (err) {
+    console.warn(`Full history skipped: ${err.message}`);
   }
 
   writeFileSync(OUT, renderHtml(data));
