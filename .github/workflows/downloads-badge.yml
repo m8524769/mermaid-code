@@ -262,7 +262,7 @@ jobs:
             },
             config:{view:{stroke:null}, scale:{bandPaddingInner:0.35}}
           }')
-          echo "$spec" | npx -y -p vega-lite@6 -p vega@6 vl2svg > downloads-chart.svg.tmp \
+          echo "$spec" | npx -y -p vega-lite@6.4.3 -p vega@6.4.0 vl2svg > downloads-chart.svg.tmp \
             && mv downloads-chart.svg.tmp downloads-chart.svg \
             && echo "Rendered downloads-chart.svg ($(wc -c < downloads-chart.svg) bytes)" \
             || { echo "::warning::chart render failed — keeping previous downloads-chart.svg"; rm -f downloads-chart.svg.tmp; }
@@ -307,7 +307,7 @@ jobs:
             ],
             config:{view:{stroke:null}}
           }')
-          echo "$cspec" | npx -y -p vega-lite@6 -p vega@6 vl2svg > downloads-country.svg.tmp \
+          echo "$cspec" | npx -y -p vega-lite@6.4.3 -p vega@6.4.0 vl2svg > downloads-country.svg.tmp \
             && mv downloads-country.svg.tmp downloads-country.svg \
             && echo "Rendered downloads-country.svg ($(wc -c < downloads-country.svg) bytes)" \
             || { echo "::warning::country chart render failed — keeping previous downloads-country.svg"; rm -f downloads-country.svg.tmp; }
