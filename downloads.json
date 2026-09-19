@@ -1,7 +1,7 @@
 {
-  "total": 65,
-  "totalUpdateChecks": 111,
-  "updatedAt": "2026-09-19T08:01:20Z",
+  "total": 66,
+  "totalUpdateChecks": 113,
+  "updatedAt": "2026-09-19T13:54:03Z",
   "days": [
     {
       "date": "2026-09-12",
@@ -100,12 +100,14 @@
     },
     {
       "date": "2026-09-19",
-      "count": 2,
-      "updateChecks": 2,
+      "count": 3,
+      "updateChecks": 4,
       "byPlatform": {
+        "Windows": 1,
         "macOS": 2
       },
       "byCountry": {
+        "CN": 1,
         "US": 2
       }
     }
