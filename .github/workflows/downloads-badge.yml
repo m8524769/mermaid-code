@@ -312,6 +312,50 @@ jobs:
             && echo "Rendered downloads-country.svg ($(wc -c < downloads-country.svg) bytes)" \
             || { echo "::warning::country chart render failed — keeping previous downloads-country.svg"; rm -f downloads-country.svg.tmp; }
 
+          # (3) downloads-share.svg — all-time platform share as a donut. Sum
+          # byPlatform across every day plus the same "Other" residual as chart
+          # (1), so the ring sums to the all-time attributed count. Percentage
+          # labels are derived in-spec; slices under 4% hide their label to avoid
+          # overlap. Non-fatal, same as the charts above.
+          share=$(jq -c '
+            ( [ .days[] | (.byPlatform // {}) | to_entries[] ]
+              | group_by(.key) | map({platform:.[0].key, downloads:(map(.value)|add)}) )
+            + ( ([ .days[] | (.count - ((.byPlatform // {} | [.[]] | add) // 0)) ] | add // 0)
+                | if . > 0 then [{platform:"Other", downloads:.}] else [] end )
+          ' downloads.json)
+          sspec=$(jq -n --argjson share "$share" '{
+            "$schema":"https://vega.github.io/schema/vega-lite/v6.json",
+            background:"white", width:360, height:300, padding:12,
+            title:{text:"Mermaid Code — platform share (all-time)", anchor:"start",
+                   fontSize:15, fontWeight:600,
+                   subtitle:"share of manual installer downloads by platform",
+                   subtitleFontSize:11, subtitleColor:"#888", offset:12},
+            data:{values:$share},
+            transform:[
+              {joinaggregate:[{op:"sum", field:"downloads", as:"tot"}]},
+              {calculate:"datum.downloads/datum.tot", as:"frac"}
+            ],
+            encoding:{
+              theta:{field:"downloads", type:"quantitative", stack:true},
+              order:{field:"downloads", sort:"descending"},
+              color:{field:"platform", type:"nominal",
+                     scale:{domain:["macOS","Windows","Linux","Other"],
+                            range:["#3ecf8e","#5b8def","#f0a13b","#c4c4c4"]},
+                     legend:{title:null, orient:"right", labelColor:"#444", symbolType:"square"}}
+            },
+            layer:[
+              {mark:{type:"arc", innerRadius:70, outerRadius:110, stroke:"white", strokeWidth:2}},
+              {mark:{type:"text", radius:135, fontSize:11.5, fontWeight:600, fill:"#555"},
+               encoding:{text:{field:"frac", type:"quantitative", format:".0%"},
+                         opacity:{condition:{test:"datum.frac >= 0.04", value:1}, value:0}}}
+            ],
+            config:{view:{stroke:null}}
+          }')
+          echo "$sspec" | npx -y -p vega-lite@6.4.3 -p vega@6.4.0 vl2svg > downloads-share.svg.tmp \
+            && mv downloads-share.svg.tmp downloads-share.svg \
+            && echo "Rendered downloads-share.svg ($(wc -c < downloads-share.svg) bytes)" \
+            || { echo "::warning::share chart render failed — keeping previous downloads-share.svg"; rm -f downloads-share.svg.tmp; }
+
       - name: Commit and push if changed
         run: |
           set -euo pipefail
@@ -320,6 +364,7 @@ jobs:
           git add downloads.json downloads-badge.json
           [ -f downloads-chart.svg ] && git add downloads-chart.svg || true
           [ -f downloads-country.svg ] && git add downloads-country.svg || true
+          [ -f downloads-share.svg ] && git add downloads-share.svg || true
           if git diff --cached --quiet; then
             echo "No change — nothing to commit."
           else
