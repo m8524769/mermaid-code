@@ -25,7 +25,7 @@ Mermaid Code 额外还内置了轻量化的 AI 对话窗口，可让您在应用
 
 所有数据均存于本地 —— 架构图、数据库 schemas、业务流程图等，无需担心任何服务条款或数据保留政策。
 
-请从 [Releases](https://github.com/m8524769/mermaid-code/releases) 页面下载适用于 macOS 或 Windows 的最新安装包。
+请从[官方下载页](https://mermaid-code.com/download)下载适用于 macOS 或 Windows 的最新安装包，所有构建产物及历史版本也可在 [GitHub Releases](https://github.com/m8524769/mermaid-code/releases) 页面获取。
 
 ### 通过 Homebrew 安装（macOS）
 

@@ -27,7 +27,7 @@ The built-in file watcher detects changes instantly and refreshes the preview, c
 
 Everything stays local — architecture diagrams, database schemas, and business flows never leave your machine. No terms of service, no data retention policies to worry about.
 
-Download the latest installer for macOS or Windows from the [Releases](https://github.com/m8524769/mermaid-code/releases) page.
+Download the latest installer for macOS or Windows from the [official download page](https://mermaid-code.com/download). All builds and past versions are also available on the [GitHub Releases](https://github.com/m8524769/mermaid-code/releases) page.
 
 ### Install via Homebrew (macOS)
 
