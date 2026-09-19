@@ -10,14 +10,18 @@ name: Downloads Badge
 # self-heals and same-day re-runs converge. A day freezes once it ages past that
 # window (it can no longer be queried, so its last count sticks). State:
 # {total, totalUpdateChecks, updatedAt,
-#  days:[{date, count, updateChecks, byPlatform:{macOS,Windows,Linux}}]};
+#  days:[{date, count, updateChecks,
+#         byPlatform:{macOS,Windows,Linux}, byCountry:{CC:n,...}}]};
 # total = sum(days[].count), totalUpdateChecks = sum(days[].updateChecks). The
 # last day (date == today, UTC) is thus a partial 00:00->now count.
 #
 # `byPlatform` splits the day's `count` into macOS (.dmg) / Windows (.msi,.exe) /
-# Linux (.deb,.AppImage,.rpm) so the reference download-stats.mjs can draw a
-# per-platform daily trend; absent platforms are simply omitted, and days
-# recorded before this field was added carry no byPlatform (drawn as ungrouped).
+# Linux (.deb,.AppImage,.rpm); `byCountry` splits the same `count` by client
+# country (ISO code, "XX" if unknown), so download-stats.mjs can draw per-platform
+# and per-country daily trends. Both are derived from the same query (the country
+# dimension makes the sampled dataset finer, hence slightly noisier at low
+# volume); absent buckets are omitted, and days recorded before these fields were
+# added carry neither (drawn as ungrouped).
 #
 # `count` = manual installer downloads (/latest/* files); `updateChecks` = Tauri
 # auto-updater hits on the manifest /latest.json (root path, distinct from the
@@ -28,8 +32,8 @@ name: Downloads Badge
 #
 # Cloudflare Free plan keeps the sampled httpRequestsAdaptiveGroups dataset for
 # only ~8 days and caps a query at a 1-day span, so we can't backfill — HOT_DAYS
-# stays under retention and we run twice a week (Mon/Thu, <=4-day gap) so every
-# day is recomputed while still queryable before it freezes.
+# stays under retention and we run daily so every day is recomputed several times
+# while still queryable before it freezes.
 #
 # Bootstrap: the `stats` branch already exists from a previous schema; the first
 # run of this version resets it to {total:0,totalUpdateChecks:0,updatedAt:null,days:[]}
@@ -39,7 +43,7 @@ name: Downloads Badge
 
 on:
   schedule:
-    - cron: '0 3 * * 1,4' # Mon & Thu 03:00 UTC
+    - cron: '17 3 * * *' # daily 03:17 UTC (off the hour to dodge GitHub's cron congestion)
   workflow_dispatch:
 
 permissions:
@@ -85,13 +89,13 @@ jobs:
           # ---- Decide which UTC days to (re)count -----------------------------
           # Recompute today + the previous HOT_DAYS days, all inside CF retention.
           # Older days are already frozen in `days`.
-          HOT_DAYS=6
+          HOT_DAYS=7 # TEMP: 8-day window probe; revert to 6 after one online run
           now_ts=$(date -u +%Y-%m-%dT%H:%M:%SZ)
           today=$(date -u +%Y-%m-%d)
           countStart=$(date -u -d "$today -$HOT_DAYS days" +%Y-%m-%d)
           echo "Recompute range: $countStart .. $today"
 
-          query='query($zoneTag:String!,$since:Time!,$until:Time!){viewer{zones(filter:{zoneTag:$zoneTag}){httpRequestsAdaptiveGroups(limit:1000,orderBy:[count_DESC],filter:{datetime_geq:$since,datetime_lt:$until,clientRequestHTTPHost:"'"$R2_HOST"'",clientRequestHTTPMethodName:"GET",edgeResponseStatus_in:[200]}){count avg{sampleInterval} dimensions{clientRequestPath}}}}}'
+          query='query($zoneTag:String!,$since:Time!,$until:Time!){viewer{zones(filter:{zoneTag:$zoneTag}){httpRequestsAdaptiveGroups(limit:1000,orderBy:[count_DESC],filter:{datetime_geq:$since,datetime_lt:$until,clientRequestHTTPHost:"'"$R2_HOST"'",clientRequestHTTPMethodName:"GET",edgeResponseStatus_in:[200]}){count avg{sampleInterval} dimensions{clientRequestPath clientCountryName}}}}}'
 
           # Days older than the recompute range stay frozen exactly as stored.
           frozen=$(jq -c --arg cs "$countStart" '[(.days // [])[] | select(.date < $cs)]' downloads.json)
@@ -126,10 +130,11 @@ jobs:
               prev=$(jq -r --arg d "$d" '(.days // []) | map(select(.date==$d)) | .[0].count // empty' downloads.json)
               prevck=$(jq -r --arg d "$d" '(.days // []) | map(select(.date==$d)) | .[0].updateChecks // 0' downloads.json)
               prevbp=$(jq -c --arg d "$d" '(.days // []) | map(select(.date==$d)) | .[0].byPlatform // {}' downloads.json)
+              prevbc=$(jq -c --arg d "$d" '(.days // []) | map(select(.date==$d)) | .[0].byCountry // {}' downloads.json)
               echo "  $d query failed: $(echo "$resp" | jq -r '[.errors[].message] | join("; ")')${prev:+ (keeping $prev)}" >&2
               fail=$(( fail + 1 ))
               if [ -n "$prev" ]; then
-                recomputed=$(echo "$recomputed" | jq --arg d "$d" --argjson c "$prev" --argjson ck "$prevck" --argjson bp "$prevbp" '. + [{date:$d, count:$c, updateChecks:$ck, byPlatform:$bp}]')
+                recomputed=$(echo "$recomputed" | jq --arg d "$d" --argjson c "$prev" --argjson ck "$prevck" --argjson bp "$prevbp" --argjson bc "$prevbc" '. + [{date:$d, count:$c, updateChecks:$ck, byPlatform:$bp, byCountry:$bc}]')
               fi
               d="$next"
               continue
@@ -160,6 +165,17 @@ jobs:
                    else empty end) as $plat
                 | {plat:$plat, v:$v}
               ] | reduce .[] as $x ({}; .[$x.plat] += $x.v)')
+            # Same /latest/* installers grouped by client country (same caliber
+            # as $c, so byCountry sums to count). "XX" for unknown geo.
+            bc=$(echo "$resp" | jq -c '
+              [ .data.viewer.zones[0].httpRequestsAdaptiveGroups[]
+                | (.dimensions.clientRequestPath) as $p
+                | select($p | startswith("/latest/"))
+                | ($p | sub(".*/"; "")) as $n
+                | select($n | test("^latest\\.json$|\\.sig$|\\.app\\.tar\\.gz$") | not)
+                | { c: (.dimensions.clientCountryName // "XX"),
+                    v: (.count * (.avg.sampleInterval // 1) | round) }
+              ] | reduce .[] as $x ({}; .[$x.c] += $x.v)')
             # Update checks = auto-updater hits on the root manifest /latest.json
             # (not under /latest/, so disjoint from the download count above).
             ck=$(echo "$resp" | jq '
@@ -168,8 +184,8 @@ jobs:
                 | (.count * (.avg.sampleInterval // 1) | round)
               ] | add // 0')
             bp_str=$(echo "$bp" | jq -r 'to_entries | map("\(.key):\(.value)") | join(" ")')
-            [ "$d" = "$today" ] && echo "  $d: $c dl / $ck checks${bp_str:+ [$bp_str]} (partial 00:00->now)" || echo "  $d: $c dl / $ck checks${bp_str:+ [$bp_str]}"
-            recomputed=$(echo "$recomputed" | jq --arg d "$d" --argjson c "$c" --argjson ck "$ck" --argjson bp "$bp" '. + [{date:$d, count:$c, updateChecks:$ck, byPlatform:$bp}]')
+            [ "$d" = "$today" ] && echo "  $d: $c dl / $ck checks${bp_str:+ [$bp_str]} ($(echo "$bc" | jq 'length') countries) (partial 00:00->now)" || echo "  $d: $c dl / $ck checks${bp_str:+ [$bp_str]} ($(echo "$bc" | jq 'length') countries)"
+            recomputed=$(echo "$recomputed" | jq --arg d "$d" --argjson c "$c" --argjson ck "$ck" --argjson bp "$bp" --argjson bc "$bc" '. + [{date:$d, count:$c, updateChecks:$ck, byPlatform:$bp, byCountry:$bc}]')
             ok=$(( ok + 1 ))
             d="$next"
           done
