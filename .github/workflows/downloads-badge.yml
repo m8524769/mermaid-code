@@ -1,8 +1,9 @@
 name: Downloads Badge
 
 # Count manual installer downloads from R2 (Cloudflare edge) per UTC day, keep a
-# per-day breakdown plus a cumulative total on the orphan `stats` branch, and
-# expose a shields endpoint JSON the README badge points at.
+# per-day breakdown plus a cumulative total on the orphan `stats` branch, expose a
+# shields endpoint JSON the README badge points at, and render a per-platform daily
+# trend to downloads-chart.svg for the branch README to embed.
 #
 # Model — one record per UTC day. Complete past days are counted 00:00->00:00;
 # today is counted 00:00->now and refreshes on every run. The last
@@ -215,12 +216,59 @@ jobs:
             '{schemaVersion:1, label:"downloads", message:$msg, color:"brightgreen", cacheSeconds:3600}' \
             > downloads-badge.json
 
+      - name: Render downloads chart (SVG)
+        run: |
+          set -euo pipefail
+          # Build a Vega-Lite spec straight from downloads.json (piped, no spec
+          # file) and render it to a standalone SVG with Vega's SVG renderer —
+          # pure JS, so no node-canvas / system libs are needed (unlike PNG).
+          # The README on this branch embeds downloads-chart.svg. Stacked bars per
+          # UTC day split by platform; an "Other" bucket carries any count not
+          # attributed to a platform (e.g. days recorded before byPlatform existed),
+          # so each bar's height equals that day's `count`.
+          plat=$(jq -c '
+            [ .days[] | .date as $d | (.byPlatform // {}) | to_entries[]
+              | {date:$d, platform:.key, downloads:.value} ]
+            + [ .days[]
+              | {date:.date, platform:"Other",
+                 downloads:(.count - ((.byPlatform // {} | [.[]] | add) // 0))}
+              | select(.downloads > 0) ]
+          ' downloads.json)
+          spec=$(jq -n --argjson plat "$plat" '{
+            "$schema":"https://vega.github.io/schema/vega-lite/v6.json",
+            background:"white", width:700, height:320, padding:12,
+            title:{text:"Mermaid Code — daily downloads by platform", anchor:"start",
+                   fontSize:15, fontWeight:600,
+                   subtitle:"manual installer downloads from the release CDN, per UTC day",
+                   subtitleFontSize:11, subtitleColor:"#888", offset:12},
+            data:{values:$plat},
+            mark:{type:"bar", cornerRadiusEnd:3},
+            encoding:{
+              x:{field:"date", type:"ordinal", title:null,
+                 axis:{labelExpr:"substring(datum.value, 5)", labelAngle:0, labelOverlap:true,
+                       labelColor:"#666", tickColor:"#ddd", domainColor:"#ddd"}},
+              y:{field:"downloads", type:"quantitative", aggregate:"sum", title:"Downloads",
+                 axis:{grid:true, gridColor:"#eee", tickMinStep:1, domain:false, ticks:false,
+                       labelColor:"#666", titleColor:"#666"}},
+              color:{field:"platform", type:"nominal",
+                     scale:{domain:["macOS","Windows","Linux","Other"],
+                            range:["#5b8def","#3ecf8e","#f0a13b","#c4c4c4"]},
+                     legend:{title:null, orient:"top", labelColor:"#444", symbolType:"square"}}
+            },
+            config:{view:{stroke:null}, scale:{bandPaddingInner:0.35}}
+          }')
+          echo "$spec" | npx -y -p vega-lite@6 -p vega@6 vl2svg > downloads-chart.svg.tmp \
+            && mv downloads-chart.svg.tmp downloads-chart.svg \
+            && echo "Rendered downloads-chart.svg ($(wc -c < downloads-chart.svg) bytes)" \
+            || { echo "::warning::chart render failed — keeping previous downloads-chart.svg"; rm -f downloads-chart.svg.tmp; }
+
       - name: Commit and push if changed
         run: |
           set -euo pipefail
           git config user.email "action@github.com"
           git config user.name "GitHub Action"
           git add downloads.json downloads-badge.json
+          [ -f downloads-chart.svg ] && git add downloads-chart.svg || true
           if git diff --cached --quiet; then
             echo "No change — nothing to commit."
           else
