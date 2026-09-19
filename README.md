@@ -2,3 +2,4 @@
 
 ![Mermaid Code downloads by platform](downloads-chart.svg)
 ![Mermaid Code downloads by country](downloads-country.svg)
+![Mermaid Code downloads platform share](downloads-share.svg)
