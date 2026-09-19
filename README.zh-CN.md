@@ -162,6 +162,18 @@ pnpm tauri:build
 
 ---
 
+## Star 历史
+
+<a href="https://www.star-history.com/?repos=m8524769%2Fmermaid-code&type=date&legend=bottom-right">
+ <picture>
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=m8524769/mermaid-code&type=date&theme=dark&legend=top-left" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=m8524769/mermaid-code&type=date&legend=top-left" />
+   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=m8524769/mermaid-code&type=date&legend=top-left" />
+ </picture>
+</a>
+
+---
+
 ## 原始项目
 
 本仓库 fork 自 [mermaid-live-editor](https://github.com/mermaid-js/mermaid-live-editor)，纯网页版本请访问：[mermaid.live](https://mermaid.live)
