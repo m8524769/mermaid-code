@@ -222,10 +222,18 @@ const openFolderPath = async (path: string): Promise<void> => {
   if (!raw) return;
   try {
     const { paths, activePath } = JSON.parse(raw) as PersistedTabs;
+    // Restore each tab WITHOUT activating it, so the shared editor state (and
+    // thus the View render) is not pushed once per tab. Activate exactly once
+    // below, so the diagram renders a single time on startup.
     for (const p of paths) {
-      await fileState.openFile(p, { recordRecent: false });
+      await fileState.openFile(p, { recordRecent: false, activate: false });
     }
-    const activeTab = tabs.find((t) => t.path === activePath);
+    // Activate the persisted active file if it's still open; otherwise fall
+    // back to the first real tab. (The draft is never a meaningful active tab
+    // after restart — its content isn't persisted — and the empty draft is
+    // dropped once the first real file opens, so activeTabId would otherwise
+    // dangle. When no real tabs exist, the draft stays active from above.)
+    const activeTab = tabs.find((t) => t.path === activePath) ?? tabs.find((t) => !t.isDraft);
     if (activeTab) fileState.switchTab(activeTab.id);
   } catch {
     localStorage.removeItem(tabsStorageKey(path));
@@ -358,12 +366,12 @@ export const fileState = {
 
   async openFile(
     path: string,
-    { recordRecent = true }: { recordRecent?: boolean } = {}
+    { recordRecent = true, activate = true }: { recordRecent?: boolean; activate?: boolean } = {}
   ): Promise<void> {
     // Switch to existing tab if already open
     const existing = tabs.find((t) => t.path === path);
     if (existing) {
-      fileState.switchTab(existing.id);
+      if (activate) fileState.switchTab(existing.id);
       return;
     }
     // Only open text-based files
@@ -388,7 +396,7 @@ export const fileState = {
       tabs = tabs.filter((t) => !t.isDraft);
     }
     tabs = [...tabs, tab];
-    fileState.switchTab(tab.id);
+    if (activate) fileState.switchTab(tab.id);
     saveTabsToStorage();
     if (recordRecent) saveRecentFile(path);
     // Watch the file's parent directory if not already watched (covers subdirs in grid view)
