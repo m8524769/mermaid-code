@@ -89,7 +89,7 @@ jobs:
           # ---- Decide which UTC days to (re)count -----------------------------
           # Recompute today + the previous HOT_DAYS days, all inside CF retention.
           # Older days are already frozen in `days`.
-          HOT_DAYS=7 # TEMP: 8-day window probe; revert to 6 after one online run
+          HOT_DAYS=6
           now_ts=$(date -u +%Y-%m-%dT%H:%M:%SZ)
           today=$(date -u +%Y-%m-%d)
           countStart=$(date -u -d "$today -$HOT_DAYS days" +%Y-%m-%d)
