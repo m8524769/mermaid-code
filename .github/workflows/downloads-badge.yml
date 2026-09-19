@@ -282,7 +282,7 @@ jobs:
           cmax=$(echo "$byc" | jq '[.[].downloads] | max // 0')
           cspec=$(jq -n --argjson byc "$byc" --argjson order "$corder" --argjson maxv "$cmax" '{
             "$schema":"https://vega.github.io/schema/vega-lite/v6.json",
-            background:"white", width:600, height:{step:30}, padding:{left:8,right:24,top:8,bottom:8},
+            background:"white", width:600, height:{step:30}, padding:{left:12,right:24,top:12,bottom:12},
             title:{text:"Mermaid Code — downloads by country/region (all-time)", anchor:"start",
                    fontSize:15, fontWeight:600,
                    subtitle:"manual installer downloads from the release CDN, by client country/region",
