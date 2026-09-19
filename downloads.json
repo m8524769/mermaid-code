@@ -1,7 +1,7 @@
 {
-  "total": 57,
-  "totalUpdateChecks": 107,
-  "updatedAt": "2026-09-18T14:38:21Z",
+  "total": 65,
+  "totalUpdateChecks": 111,
+  "updatedAt": "2026-09-19T07:00:19Z",
   "days": [
     {
       "date": "2026-09-12",
@@ -9,8 +9,18 @@
       "updateChecks": 3,
       "byPlatform": {
         "macOS": 13,
-        "Linux": 10,
-        "Windows": 10
+        "Windows": 10,
+        "Linux": 10
+      },
+      "byCountry": {
+        "CN": 15,
+        "HU": 6,
+        "US": 2,
+        "FR": 4,
+        "SG": 1,
+        "DE": 2,
+        "BR": 1,
+        "KR": 2
       }
     },
     {
@@ -19,6 +29,9 @@
       "updateChecks": 2,
       "byPlatform": {
         "Windows": 2
+      },
+      "byCountry": {
+        "US": 2
       }
     },
     {
@@ -29,6 +42,11 @@
         "Windows": 9,
         "Linux": 2,
         "macOS": 2
+      },
+      "byCountry": {
+        "CN": 4,
+        "US": 8,
+        "HK": 1
       }
     },
     {
@@ -37,6 +55,9 @@
       "updateChecks": 17,
       "byPlatform": {
         "Windows": 1
+      },
+      "byCountry": {
+        "CN": 1
       }
     },
     {
@@ -45,6 +66,9 @@
       "updateChecks": 18,
       "byPlatform": {
         "Windows": 1
+      },
+      "byCountry": {
+        "CN": 1
       }
     },
     {
@@ -53,14 +77,36 @@
       "updateChecks": 41,
       "byPlatform": {
         "Windows": 1
+      },
+      "byCountry": {
+        "CN": 1
       }
     },
     {
       "date": "2026-09-18",
-      "count": 6,
-      "updateChecks": 20,
+      "count": 12,
+      "updateChecks": 22,
       "byPlatform": {
-        "Windows": 6
+        "Windows": 8,
+        "Linux": 2,
+        "macOS": 2
+      },
+      "byCountry": {
+        "CN": 6,
+        "TW": 1,
+        "US": 4,
+        "GN": 1
+      }
+    },
+    {
+      "date": "2026-09-19",
+      "count": 2,
+      "updateChecks": 2,
+      "byPlatform": {
+        "macOS": 2
+      },
+      "byCountry": {
+        "US": 2
       }
     }
   ]
