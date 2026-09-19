@@ -2,6 +2,12 @@
 
 All notable changes to Mermaid Code are documented here.
 
+## [v0.8.1] - 2026-09-19
+
+### Fixed
+
+- **Faster startup when reopening multiple tabs**: restoring a folder with several open tabs no longer renders every tab's diagram one after another — only the active diagram renders on launch, so the app becomes responsive noticeably sooner when many diagrams were left open
+
 ## [v0.8.0] - 2026-09-17
 
 ### Changed
