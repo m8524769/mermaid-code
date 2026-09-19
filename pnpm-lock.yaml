@@ -15,8 +15,8 @@ importers:
         specifier: ^2.0.0
         version: 2.0.0
       '@mermaid-js/layout-tidy-tree':
-        specifier: ^1.0.0
-        version: 1.0.0(mermaid@12.0.0)
+        specifier: ^1.0.1
+        version: 1.0.1(mermaid@12.0.0)
       '@mermanjs/tree-sitter-mermaid':
         specifier: ^0.1.0
         version: 0.1.0
@@ -307,6 +307,11 @@ packages:
     engines: {node: '>=6.0.0'}
     hasBin: true
 
+  '@babel/parser@7.29.9':
+    resolution: {integrity: sha512-CjXrNHTnvqBVqHgdBysY3vk2T8tpJHb5/RMeHJBTyVa9xgugCB0CJTx/3oO8RV2QRQP391RWpB7D6hLjm8V9uA==}
+    engines: {node: '>=6.0.0'}
+    hasBin: true
+
   '@babel/types@7.29.8':
     resolution: {integrity: sha512-Vj1jF3cPfxg7OAfoI7QnVKLoILlm2JF9pnVHrX8qx7AHMiYWT+NDAA7jChlNgRS4WTLc/fD1lXLmPixluj+3Gg==}
     engines: {node: '>=6.9.0'}
@@ -577,11 +582,11 @@ packages:
     resolution: {integrity: sha512-5qXKOb+UiAfYz6SnXSrfEwjLRom0fB4ACN55npjNhuXcM/MEKWJYTmDDd7hKfsRt+pLlPrdhB8m5NEglzDoRVw==}
     engines: {node: '>=22.12.0'}
 
-  '@mermaid-js/layout-tidy-tree@1.0.0':
-    resolution: {integrity: sha512-oRAURF7kyxh1x9DaRtJLm+F6TkC8EMcNapjt1G61/DcVgNMmBRsoLevXCq1Ir6KuEro/czmHTUfGNPAcPJVV3w==}
+  '@mermaid-js/layout-tidy-tree@1.0.1':
+    resolution: {integrity: sha512-suZgFgQQHYuAxiEiNVgPJwOoXi/keXV6DghCL3rT4K9DmX7xYQ2XZI2suiBVs/fj1gn/OoXIWB2DFSmeY7trvw==}
     engines: {node: '>=22.12.0'}
     peerDependencies:
-      mermaid: ^11.0.2
+      mermaid: ^11.0.2 || ^12.0.0
 
   '@mermaid-js/parser@2.0.0':
     resolution: {integrity: sha512-K8BeapFUfrfxbRAUQAG5oBOCwo1+bNWzaVnPxTCutkfrTBn6T/j91FIhqxWJ32SUeQ9T3iy1zcmPZ5ROZEvDrg==}
@@ -3572,6 +3577,11 @@ snapshots:
     dependencies:
       '@babel/types': 7.29.8
 
+  '@babel/parser@7.29.9':
+    dependencies:
+      '@babel/types': 7.29.8
+    optional: true
+
   '@babel/types@7.29.8':
     dependencies:
       '@babel/helper-string-parser': 7.29.7
@@ -3839,7 +3849,7 @@ snapshots:
 
   '@mermaid-js/examples@2.0.0': {}
 
-  '@mermaid-js/layout-tidy-tree@1.0.0(mermaid@12.0.0)':
+  '@mermaid-js/layout-tidy-tree@1.0.1(mermaid@12.0.0)':
     dependencies:
       d3: 7.9.0
       mermaid: 12.0.0
@@ -4498,7 +4508,7 @@ snapshots:
 
   '@vue/compiler-core@3.5.13':
     dependencies:
-      '@babel/parser': 7.29.8
+      '@babel/parser': 7.29.9
       '@vue/shared': 3.5.13
       entities: 4.5.0
       estree-walker: 2.0.2
@@ -4513,7 +4523,7 @@ snapshots:
 
   '@vue/compiler-sfc@3.5.13':
     dependencies:
-      '@babel/parser': 7.29.8
+      '@babel/parser': 7.29.9
       '@vue/compiler-core': 3.5.13
       '@vue/compiler-dom': 3.5.13
       '@vue/compiler-ssr': 3.5.13
