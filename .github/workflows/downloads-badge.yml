@@ -257,7 +257,7 @@ jobs:
                        labelColor:"#666", titleColor:"#666"}},
               color:{field:"platform", type:"nominal",
                      scale:{domain:["macOS","Windows","Linux","Other"],
-                            range:["#5b8def","#3ecf8e","#f0a13b","#c4c4c4"]},
+                            range:["#3ecf8e","#5b8def","#f0a13b","#c4c4c4"]},
                      legend:{title:null, orient:"top", labelColor:"#444", symbolType:"square"}}
             },
             config:{view:{stroke:null}, scale:{bandPaddingInner:0.35}}
@@ -284,9 +284,9 @@ jobs:
             "$schema":"https://vega.github.io/schema/vega-lite/v6.json",
             background:"white", width:600, height:{step:30}, padding:{left:8,right:24,top:8,bottom:8},
             title:{text:"Mermaid Code — downloads by country/region (all-time)", anchor:"start",
-                   fontSize:16, fontWeight:700, color:"#1a1a1a",
+                   fontSize:15, fontWeight:600,
                    subtitle:"manual installer downloads from the release CDN, by client country/region",
-                   subtitleFontSize:11.5, subtitleColor:"#8a8a8a", offset:14},
+                   subtitleFontSize:11, subtitleColor:"#888", offset:12},
             data:{values:$byc},
             encoding:{
               y:{field:"country", type:"nominal", sort:$order, title:null,
