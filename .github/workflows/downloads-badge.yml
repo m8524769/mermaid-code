@@ -2,8 +2,9 @@ name: Downloads Badge
 
 # Count manual installer downloads from R2 (Cloudflare edge) per UTC day, keep a
 # per-day breakdown plus a cumulative total on the orphan `stats` branch, expose a
-# shields endpoint JSON the README badge points at, and render a per-platform daily
-# trend to downloads-chart.svg for the branch README to embed.
+# shields endpoint JSON the README badge points at, and render two SVGs for the
+# branch README to embed: a per-platform daily trend (downloads-chart.svg) and an
+# all-time per-country breakdown (downloads-country.svg).
 #
 # Model — one record per UTC day. Complete past days are counted 00:00->00:00;
 # today is counted 00:00->now and refreshes on every run. The last
@@ -216,16 +217,20 @@ jobs:
             '{schemaVersion:1, label:"downloads", message:$msg, color:"brightgreen", cacheSeconds:3600}' \
             > downloads-badge.json
 
-      - name: Render downloads chart (SVG)
+      - name: Render downloads charts (SVG)
         run: |
           set -euo pipefail
-          # Build a Vega-Lite spec straight from downloads.json (piped, no spec
-          # file) and render it to a standalone SVG with Vega's SVG renderer —
+          # Build Vega-Lite specs straight from downloads.json (piped, no spec
+          # file) and render them to standalone SVGs with Vega's SVG renderer —
           # pure JS, so no node-canvas / system libs are needed (unlike PNG).
-          # The README on this branch embeds downloads-chart.svg. Stacked bars per
-          # UTC day split by platform; an "Other" bucket carries any count not
-          # attributed to a platform (e.g. days recorded before byPlatform existed),
-          # so each bar's height equals that day's `count`.
+          # The README on this branch embeds these. Each render is non-fatal: a
+          # transient npm/network failure must not block the data/badge commit,
+          # so on failure we warn and keep the previously committed SVG.
+          #
+          # (1) downloads-chart.svg — stacked bars per UTC day split by platform;
+          # an "Other" bucket carries any count not attributed to a platform (e.g.
+          # days recorded before byPlatform existed), so each bar's height equals
+          # that day's `count`.
           plat=$(jq -c '
             [ .days[] | .date as $d | (.byPlatform // {}) | to_entries[]
               | {date:$d, platform:.key, downloads:.value} ]
@@ -262,6 +267,51 @@ jobs:
             && echo "Rendered downloads-chart.svg ($(wc -c < downloads-chart.svg) bytes)" \
             || { echo "::warning::chart render failed — keeping previous downloads-chart.svg"; rm -f downloads-chart.svg.tmp; }
 
+          # (2) downloads-country.svg — all-time downloads per client country.
+          # Aggregate byCountry across every day, keep the top 12 and roll the long
+          # tail into "Other"; horizontal bars sorted by volume. The sort is passed
+          # as an explicit domain array (not sort:"-x") so the layered bar+label
+          # share one domain order without Vega-Lite's union-sort warning.
+          byc=$(jq -c '
+            (reduce (.days[] | (.byCountry // {}) | to_entries[]) as $e ({}; .[$e.key] += $e.value))
+            | to_entries | sort_by(-.value)
+            | (.[0:12] | map({country:.key, downloads:.value}))
+              + (.[12:] | if length>0 then [{country:"Other", downloads:(map(.value)|add)}] else [] end)
+          ' downloads.json)
+          corder=$(echo "$byc" | jq -c '[.[].country]')
+          cmax=$(echo "$byc" | jq '[.[].downloads] | max // 0')
+          cspec=$(jq -n --argjson byc "$byc" --argjson order "$corder" --argjson maxv "$cmax" '{
+            "$schema":"https://vega.github.io/schema/vega-lite/v6.json",
+            background:"white", width:600, height:{step:30}, padding:{left:8,right:24,top:8,bottom:8},
+            title:{text:"Mermaid Code — downloads by country/region (all-time)", anchor:"start",
+                   fontSize:16, fontWeight:700, color:"#1a1a1a",
+                   subtitle:"manual installer downloads from the release CDN, by client country/region",
+                   subtitleFontSize:11.5, subtitleColor:"#8a8a8a", offset:14},
+            data:{values:$byc},
+            encoding:{
+              y:{field:"country", type:"nominal", sort:$order, title:null,
+                 axis:{labelColor:"#333", labelFontSize:12.5, labelFontWeight:500, labelPadding:8,
+                       domain:false, ticks:false}},
+              x:{field:"downloads", type:"quantitative", title:"Downloads",
+                 scale:{domain:[0, ($maxv + ($maxv / 12 | ceil))]},
+                 axis:{grid:true, gridColor:"#f0f0f0", tickMinStep:1, domain:false, ticks:false,
+                       labelColor:"#999", titleColor:"#999", titleFontSize:11, titleFontWeight:500}}
+            },
+            layer:[
+              {mark:{type:"bar", cornerRadiusEnd:4, height:{band:0.7}},
+               encoding:{color:{field:"downloads", type:"quantitative", legend:null,
+                                scale:{range:["#aec5f2","#3b6fd6"]}}}},
+              {mark:{type:"text", align:"left", dx:6, color:"#555", fontSize:12, fontWeight:600,
+                     baseline:"middle"},
+               encoding:{text:{field:"downloads", type:"quantitative"}}}
+            ],
+            config:{view:{stroke:null}}
+          }')
+          echo "$cspec" | npx -y -p vega-lite@6 -p vega@6 vl2svg > downloads-country.svg.tmp \
+            && mv downloads-country.svg.tmp downloads-country.svg \
+            && echo "Rendered downloads-country.svg ($(wc -c < downloads-country.svg) bytes)" \
+            || { echo "::warning::country chart render failed — keeping previous downloads-country.svg"; rm -f downloads-country.svg.tmp; }
+
       - name: Commit and push if changed
         run: |
           set -euo pipefail
@@ -269,6 +319,7 @@ jobs:
           git config user.name "GitHub Action"
           git add downloads.json downloads-badge.json
           [ -f downloads-chart.svg ] && git add downloads-chart.svg || true
+          [ -f downloads-country.svg ] && git add downloads-country.svg || true
           if git diff --cached --quiet; then
             echo "No change — nothing to commit."
           else
