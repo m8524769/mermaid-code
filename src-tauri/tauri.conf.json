@@ -54,6 +54,11 @@
     "macOS": {
       "infoPlist": "./Info.plist"
     },
+    "windows": {
+      "nsis": {
+        "installerHooks": "./installer-hooks.nsh"
+      }
+    },
     "fileAssociations": [
       {
         "ext": ["mmd", "mermaid"],

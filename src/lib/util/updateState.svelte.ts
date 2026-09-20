@@ -52,6 +52,15 @@ export const updateState = {
   },
   async installDownloaded(): Promise<void> {
     if (!pendingUpdate || downloadProgress !== 101) return;
+    // Stop the MCP sidecar before installing. It runs as an independent process
+    // that the NSIS installer won't close on its own, and the updater hard-exits
+    // via std::process::exit(0) without triggering the app's own sidecar kill —
+    // so a running sidecar would keep mermaid-code-mcp.exe locked and fail the
+    // install with "Error opening file for writing". stop_mcp_server kills and
+    // reaps the child synchronously; mcpState is left enabled so it auto-restarts
+    // after the update relaunches. (The NSIS pre-install hook is the backstop.)
+    const { invoke } = await import('@tauri-apps/api/core');
+    await invoke('stop_mcp_server').catch(() => {});
     await pendingUpdate.install();
     // On macOS, install() doesn't relaunch automatically — do it manually
     const { platform } = await import('@tauri-apps/plugin-os');
