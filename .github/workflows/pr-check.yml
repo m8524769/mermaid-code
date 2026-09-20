@@ -4,6 +4,9 @@ on:
   pull_request:
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 # Cancel superseded runs when a PR is updated with new commits.
 concurrency:
   group: pr-check-${{ github.ref }}
