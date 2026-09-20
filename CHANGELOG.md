@@ -2,6 +2,12 @@
 
 All notable changes to Mermaid Code are documented here.
 
+## [v0.8.2] - 2026-09-20
+
+### Fixed
+
+- **Windows updates no longer fail when the MCP server is enabled**: if the built-in MCP server was turned on, updating on Windows could stop with an "Error opening file for writing" error because the MCP background process was still running and holding a lock on its own file. The updater now shuts that process down before installing — and the installer clears any leftover instance as a safeguard — so updates complete cleanly. The MCP server restarts automatically after the update if it was enabled.
+
 ## [v0.8.1] - 2026-09-19
 
 ### Fixed

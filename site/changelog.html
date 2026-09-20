@@ -190,6 +190,11 @@
 <main class="changelog">
 <h1>Changelog</h1>
 <p>All notable changes to Mermaid Code are documented here.</p>
+<h2>[v0.8.2] - 2026-09-20</h2>
+<h3>Fixed</h3>
+<ul>
+<li><strong>Windows updates no longer fail when the MCP server is enabled</strong>: if the built-in MCP server was turned on, updating on Windows could stop with an &quot;Error opening file for writing&quot; error because the MCP background process was still running and holding a lock on its own file. The updater now shuts that process down before installing — and the installer clears any leftover instance as a safeguard — so updates complete cleanly. The MCP server restarts automatically after the update if it was enabled.</li>
+</ul>
 <h2>[v0.8.1] - 2026-09-19</h2>
 <h3>Fixed</h3>
 <ul>
