@@ -231,13 +231,23 @@ jobs:
           # an "Other" bucket carries any count not attributed to a platform (e.g.
           # days recorded before byPlatform existed), so each bar's height equals
           # that day's `count`.
+          # Zero-download days: keep interior ones as gaps (a placeholder row with
+          # downloads 0 preserves their x-axis slot so the timeline stays truthful
+          # instead of silently collapsing), but drop the trailing day when it is
+          # still 0 — that is an incomplete "today" whose zero is not-yet-counted,
+          # not a real zero, and would otherwise sit as a fake empty slot at the
+          # right edge on every first run of a UTC day.
           plat=$(jq -c '
-            [ .days[] | .date as $d | (.byPlatform // {}) | to_entries[]
-              | {date:$d, platform:.key, downloads:.value} ]
-            + [ .days[]
-              | {date:.date, platform:"Other",
-                 downloads:(.count - ((.byPlatform // {} | [.[]] | add) // 0))}
-              | select(.downloads > 0) ]
+            (.days | (map(.date) | max)) as $last
+            | [ .days[] | select(.date != $last or .count > 0) ] as $days
+            | [ $days[] | .date as $d | (.byPlatform // {}) | to_entries[]
+                | {date:$d, platform:.key, downloads:.value} ]
+            + [ $days[]
+                | {date:.date, platform:"Other",
+                   downloads:(.count - ((.byPlatform // {} | [.[]] | add) // 0))}
+                | select(.downloads > 0) ]
+            + [ $days[] | select(.count == 0)
+                | {date:.date, platform:"Other", downloads:0} ]
           ' downloads.json)
           spec=$(jq -n --argjson plat "$plat" '{
             "$schema":"https://vega.github.io/schema/vega-lite/v6.json",
