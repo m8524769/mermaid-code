@@ -21,7 +21,7 @@ tauri = { version = "2", features = [] }
 tauri-plugin-dialog = "2"
 tauri-plugin-fs = { version = "2", features = ["watch"] }
 tauri-plugin-shell = "2"
-arboard = { version = "3", features = ["image-data"] }
+arboard = { version = "3.6.1", features = ["image-data"] }
 base64 = "0.22"
 image = { version = "0.25", default-features = false, features = ["png"] }
 serde = { version = "1", features = ["derive"] }
