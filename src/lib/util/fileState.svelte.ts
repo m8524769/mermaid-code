@@ -364,6 +364,33 @@ export const fileState = {
     }
   },
 
+  /**
+   * Re-grant fs scope for paths persisted across restarts (last folder + its
+   * tabs). Dynamic scope allows (granted by native dialog picks or the Rust
+   * side for OS file-association launches) are per-run only — without this,
+   * restoring a session rooted outside the static capability scope ($HOME)
+   * fails and the app opens empty instead.
+   */
+  async regrantStartupScope(): Promise<void> {
+    try {
+      const { invoke } = await import('@tauri-apps/api/core');
+      const folder = localStorage.getItem(LAST_FOLDER_KEY);
+      if (!folder) return;
+      const paths = [folder];
+      const raw = localStorage.getItem(tabsStorageKey(folder));
+      if (raw) {
+        try {
+          paths.push(...(JSON.parse(raw) as PersistedTabs).paths);
+        } catch {
+          // Corrupted entry — restoreLastFolder drops it below
+        }
+      }
+      await invoke('allow_fs_paths', { paths });
+    } catch {
+      // Not running under Tauri (web dev) — nothing to re-grant
+    }
+  },
+
   async openFile(
     path: string,
     { recordRecent = true, activate = true }: { recordRecent?: boolean; activate?: boolean } = {}

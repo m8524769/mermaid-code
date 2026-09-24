@@ -159,9 +159,39 @@ fn filter_mmd_paths(paths: Vec<std::path::PathBuf>) -> Vec<String> {
         .collect()
 }
 
+/// Extend the fs scope with OS-delivered paths (file-association launches,
+/// single-instance forwards, macOS "Open with", startup restores, drag-drop).
+/// Native dialog picks are auto-allowed by tauri-plugin-dialog, but these paths
+/// are not — without this, frontend read/watch calls fail for anything outside
+/// the static capability scope (fs:scope-home-recursive covers only $HOME).
+fn allow_paths_in_fs_scope(app: &tauri::AppHandle, paths: &[String]) {
+    use tauri_plugin_fs::FsExt;
+    let Some(scope) = app.try_fs_scope() else { return };
+    for p in paths {
+        let path = std::path::Path::new(p);
+        if path.is_dir() {
+            // Folders need recursive access (sidebar tree, thumbnails) — the same
+            // granularity the dialog plugin grants for directory picks.
+            let _ = scope.allow_directory(path, true);
+            continue;
+        }
+        let _ = scope.allow_file(path);
+        // Parent dir: fileState.openFile watches it for external changes.
+        if let Some(parent) = path.parent() {
+            let _ = scope.allow_directory(parent, false);
+        }
+    }
+}
+
+#[tauri::command]
+fn allow_fs_paths(app: tauri::AppHandle, paths: Vec<String>) {
+    allow_paths_in_fs_scope(&app, &paths);
+}
+
 fn emit_open_files(app: &tauri::AppHandle, paths: Vec<std::path::PathBuf>) {
     let filtered = filter_mmd_paths(paths);
     if !filtered.is_empty() {
+        allow_paths_in_fs_scope(app, &filtered);
         let _ = app.emit("open-files", filtered);
     }
 }
@@ -257,6 +287,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             copy_image_to_clipboard,
             get_opened_files,
+            allow_fs_paths,
             start_mcp_server,
             stop_mcp_server,
             get_mcp_port,
@@ -424,6 +455,7 @@ pub fn run() {
                     .collect();
                 let filtered = filter_mmd_paths(paths);
                 if !filtered.is_empty() {
+                    allow_paths_in_fs_scope(app.handle(), &filtered);
                     app.state::<OpenedFiles>().0.lock().unwrap().extend(filtered);
                 }
             }
@@ -457,6 +489,7 @@ pub fn run() {
                 if !filtered.is_empty() {
                     // Store in state — frontend pulls via get_opened_files() on mount.
                     // Also emit for the case where the app is already running and fully loaded.
+                    allow_paths_in_fs_scope(app, &filtered);
                     app.state::<OpenedFiles>().0.lock().unwrap().extend(filtered.clone());
                     let _ = app.emit("open-files", filtered);
                 }

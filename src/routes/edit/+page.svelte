@@ -108,13 +108,20 @@
         if (id.startsWith('open-recent-folder-')) {
           const idx = parseInt(id.split('-').at(-1)!, 10);
           const path = fileState.recentFolders[idx];
-          if (path) await fileState.openFolderByPath(path);
+          if (path) {
+            // Recents survive restarts but their fs scope grants don't — re-grant
+            await invoke('allow_fs_paths', { paths: [path] }).catch(() => {});
+            await fileState.openFolderByPath(path);
+          }
           return;
         }
         if (id.startsWith('open-recent-file-')) {
           const idx = parseInt(id.split('-').at(-1)!, 10);
           const path = fileState.recentFiles[idx];
-          if (path) await fileState.openFile(path);
+          if (path) {
+            await invoke('allow_fs_paths', { paths: [path] }).catch(() => {});
+            await fileState.openFile(path);
+          }
           return;
         }
         switch (id) {
@@ -183,6 +190,8 @@
         isDraggingOver = true;
       } else if (event.payload.type === 'drop') {
         isDraggingOver = false;
+        // Dropped paths don't get the dialog plugin's automatic fs scope grant
+        await invoke('allow_fs_paths', { paths: event.payload.paths }).catch(() => {});
         for (const path of event.payload.paths) {
           try {
             const info = await stat(path);

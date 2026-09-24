@@ -33,6 +33,7 @@
   onMount(() => {
     // Delay restore to after full component tree mount
     setTimeout(async () => {
+      await fileState.regrantStartupScope();
       await fileState.restoreLastFolder();
       // After restoring last folder, open any files passed via "Open with" on startup
       const { invoke } = await import('@tauri-apps/api/core');
