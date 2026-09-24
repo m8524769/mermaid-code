@@ -2,7 +2,7 @@
   import { m } from '$/paraglide/messages';
   import type { EditorProps } from '$/types';
   import { env } from '$/util/env';
-  import { validatedState } from '$/util/state.svelte';
+  import { inputState, validatedState } from '$/util/state.svelte';
   import { fileState } from '$/util/fileState.svelte';
   import { saveFileAs } from '$/util/fileSystem';
   import { initEditor } from '$lib/util/monacoExtra';
@@ -158,7 +158,7 @@
           const date = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
           const time = `${pad(now.getHours())}.${pad(now.getMinutes())}.${pad(now.getSeconds())}`;
           const defaultName = `Diagram ${date} at ${time}.mmd`;
-          void saveFileAs(validatedState.current.code, defaultName).then((handle) => {
+          void saveFileAs(inputState.code, defaultName).then((handle) => {
             if (handle) {
               fileState.clearDraft();
               void fileState.openFile(handle.path);
@@ -194,7 +194,7 @@
           const date = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
           const time = `${pad(now.getHours())}.${pad(now.getMinutes())}.${pad(now.getSeconds())}`;
           const defaultName = `Diagram ${date} at ${time}.mmd`;
-          const handle = await saveFileAs(validatedState.current.code, defaultName);
+          const handle = await saveFileAs(inputState.code, defaultName);
           if (handle) {
             fileState.clearDraft();
             void fileState.openFile(handle.path);
