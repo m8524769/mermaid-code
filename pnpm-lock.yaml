@@ -121,9 +121,6 @@ importers:
       '@inlang/paraglide-js':
         specifier: ^2.25.2
         version: 2.25.2(typescript@6.0.3)(vite@8.0.16(@types/node@24.13.3)(jiti@2.7.0)(yaml@2.9.0))
-      '@lucide/svelte':
-        specifier: ^1.46.0
-        version: 1.46.0(svelte@5.57.0(@typescript-eslint/types@8.60.1))
       '@sveltejs/adapter-static':
         specifier: ^3.0.10
         version: 3.0.10(@sveltejs/kit@2.63.1(@sveltejs/vite-plugin-svelte@7.1.2(svelte@5.57.0(@typescript-eslint/types@8.60.1))(vite@8.0.16(@types/node@24.13.3)(jiti@2.7.0)(yaml@2.9.0)))(svelte@5.57.0(@typescript-eslint/types@8.60.1))(typescript@6.0.3)(vite@8.0.16(@types/node@24.13.3)(jiti@2.7.0)(yaml@2.9.0)))
@@ -576,11 +573,6 @@ packages:
 
   '@lix-js/sdk@0.16.1':
     resolution: {integrity: sha512-TphGW47tPJ52n8Umk46j56veeaz/uLoS9m1pWYWs0UnnbItsntu6hW/alxW/OX1WZA7vXk7d1OP6qIbmluc+kA==}
-
-  '@lucide/svelte@1.46.0':
-    resolution: {integrity: sha512-Ru8jDjoCVLJ7J7pPRUdY+odSBV2BI6rj68JTmT+ENq/ZwYOPGPAiKVvKz+XLyAoK4HAwlRTzZHpsMvrHfsetqg==}
-    peerDependencies:
-      svelte: ^5
 
   '@mermaid-js/examples@2.0.0':
     resolution: {integrity: sha512-5qXKOb+UiAfYz6SnXSrfEwjLRom0fB4ACN55npjNhuXcM/MEKWJYTmDDd7hKfsRt+pLlPrdhB8m5NEglzDoRVw==}
@@ -3840,10 +3832,6 @@ snapshots:
       '@lix-js/sdk-linux-arm64': 0.16.1
       '@lix-js/sdk-linux-x64': 0.16.1
       '@lix-js/sdk-win32-x64': 0.16.1
-
-  '@lucide/svelte@1.46.0(svelte@5.57.0(@typescript-eslint/types@8.60.1))':
-    dependencies:
-      svelte: 5.57.0(@typescript-eslint/types@8.60.1)
 
   '@mermaid-js/examples@2.0.0': {}
 

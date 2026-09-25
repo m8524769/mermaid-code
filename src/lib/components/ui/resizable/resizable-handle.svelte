@@ -1,16 +1,12 @@
 <script lang="ts">
   import { cn, type WithoutChildrenOrChild } from '$lib/utils.js';
-  import GripVertical from '@lucide/svelte/icons/grip-vertical';
   import * as ResizablePrimitive from 'paneforge';
 
   let {
     ref = $bindable(null),
     class: className,
-    withHandle = false,
     ...restProps
-  }: WithoutChildrenOrChild<ResizablePrimitive.PaneResizerProps> & {
-    withHandle?: boolean;
-  } = $props();
+  }: WithoutChildrenOrChild<ResizablePrimitive.PaneResizerProps> = $props();
 </script>
 
 <ResizablePrimitive.PaneResizer
@@ -20,9 +16,4 @@
     className
   )}
   {...restProps}>
-  {#if withHandle}
-    <div class="z-10 flex h-4 w-3 items-center justify-center rounded-sm border bg-border">
-      <GripVertical class="size-2.5" />
-    </div>
-  {/if}
 </ResizablePrimitive.PaneResizer>
