@@ -69,7 +69,6 @@
   "hide_code": "Hide code",
   "ext_opens_in": "Opens your diagram in",
   "ext_will_send": "Your diagram will be sent to the external service",
-  "ext_not_shared": "Your diagram is not shared",
   "doc_view_for": "View documentation for {type} diagram",
   "docs_label": "Docs",
   "config_overridden": "Overridden in code: {value}",

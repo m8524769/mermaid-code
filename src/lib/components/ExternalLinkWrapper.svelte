@@ -10,7 +10,6 @@
     side = 'bottom',
     labelPrefix,
     isVisible = true,
-    sharesData = true,
     showPopup = true
   }: {
     children: Snippet;
@@ -18,7 +17,6 @@
     side?: ComponentProps<typeof Tooltip.Content>['side'];
     labelPrefix?: string;
     isVisible?: boolean;
-    sharesData?: boolean;
     showPopup?: boolean;
   } = $props();
 </script>
@@ -33,9 +31,7 @@
       </Tooltip.Trigger>
       {#if showPopup}
         <Tooltip.Content {side} class="bg-secondary shadow-xl">
-          <div
-            class="flex cursor-help items-center gap-2"
-            title={sharesData ? m.ext_will_send() : m.ext_not_shared()}>
+          <div class="flex cursor-help items-center gap-2" title={m.ext_will_send()}>
             <ExternalLinkIcon />
             <span class="flex items-center gap-1">
               {labelPrefix ?? m.ext_opens_in()}
