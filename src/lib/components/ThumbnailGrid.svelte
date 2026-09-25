@@ -213,17 +213,14 @@
 
 <div
   bind:this={containerEl}
-  class={[
-    'grid gap-2 overflow-y-auto p-2 pt-0.5',
-    containerWidth >= 240 ? 'grid-cols-2' : 'grid-cols-1'
-  ]}>
+  class={['grid gap-2 p-2 pt-0.5', containerWidth >= 240 ? 'grid-cols-2' : 'grid-cols-1']}>
   {#each flatFiles.filter((p) => !query || basename(p)
         .toLowerCase()
         .includes(query.toLowerCase())) as path (path)}
     {@const entry = thumbnailCache.get(path)}
     <div
       class={[
-        'group relative cursor-pointer rounded border p-1 text-left hover:bg-muted/60',
+        'group cursor-pointer rounded border p-1 text-left hover:bg-muted/60',
         isActive(path) && 'ring-2 ring-primary'
       ]}
       data-path={path}

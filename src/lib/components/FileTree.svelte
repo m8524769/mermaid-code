@@ -78,7 +78,7 @@
   onkeydown={(e) => e.key === 'Escape' && (menuPath = null)} />
 
 {#each nodes.filter((n) => nodeMatchesQuery(n, query)) as node (node.path)}
-  <div class="group relative">
+  <div class="group">
     <div
       class={[
         'flex cursor-pointer items-center gap-1 rounded px-1 py-0.5 text-sm text-muted-foreground hover:bg-muted hover:text-foreground',

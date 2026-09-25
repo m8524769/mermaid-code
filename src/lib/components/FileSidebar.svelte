@@ -156,7 +156,7 @@
     </div>
   {/if}
 
-  <div class="flex-1 overflow-y-auto py-1">
+  <div class="flex-1 overflow-x-hidden overflow-y-auto py-1">
     {#if !fileState.rootPath}
       <div class="flex flex-col items-center gap-3 px-4 py-8">
         <p class="text-center text-xs text-muted-foreground">
