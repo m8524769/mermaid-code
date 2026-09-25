@@ -190,6 +190,13 @@
 <main class="changelog">
 <h1>Changelog</h1>
 <p>All notable changes to Mermaid Code are documented here.</p>
+<h2>[v0.8.3] - 2026-09-25</h2>
+<h3>Fixed</h3>
+<ul>
+<li><strong>Files opened from the OS now work anywhere on disk</strong>: double-click, &quot;Open with&quot;, drag-and-drop, and Open Recent failed to open files outside your home folder. Such paths are now granted filesystem access, so they open reliably. Thanks to <a href="https://github.com/slb1988">@slb1988</a> for <a href="https://github.com/m8524769/mermaid-code/pull/34">#34</a></li>
+<li><strong>Vim Save / Save As on a new draft keeps what you typed</strong>: saving an unsaved draft from Vim mode (<code>:w</code>, <code>:wq</code>, or Save As) now writes the current editor contents instead of an earlier validated snapshot, so your most recent edits aren&#39;t lost</li>
+<li><strong>macOS: the file sidebar scrollbar is no longer hidden behind content</strong>: on macOS the auto-hiding overlay scrollbar in the file sidebar painted behind the tree rows and thumbnail cards, so it looked covered; it now appears on top of them while scrolling</li>
+</ul>
 <h2>[v0.8.2] - 2026-09-20</h2>
 <h3>Fixed</h3>
 <ul>
