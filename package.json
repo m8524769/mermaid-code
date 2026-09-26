@@ -37,7 +37,7 @@
     "@iconify-json/logos": "^1.2.14",
     "@iconify-json/material-symbols": "^1.2.92",
     "@iconify-json/mdi": "^1.2.3",
-    "@inlang/paraglide-js": "^2.25.2",
+    "@inlang/paraglide-js": "^2.25.4",
     "@sveltejs/adapter-static": "^3.0.10",
     "@sveltejs/kit": "^2.63.1",
     "@sveltejs/vite-plugin-svelte": "^7.3.1",
