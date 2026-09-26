@@ -1,7 +1,6 @@
 import { includeIgnoreFile } from '@eslint/compat';
 import js from '@eslint/js';
 import prettier from 'eslint-config-prettier';
-import sortKeysPlugin from 'eslint-plugin-sort-keys';
 import svelte from 'eslint-plugin-svelte';
 import eslintPluginUnicorn from 'eslint-plugin-unicorn';
 import { defineConfig } from 'eslint/config';
@@ -40,15 +39,6 @@ export default defineConfig(
     }
   },
   {
-    files: ['src/**'],
-    plugins: {
-      'sort-keys': sortKeysPlugin
-    },
-    rules: {
-      'sort-keys/sort-keys-fix': ['error', 'asc', { minKeys: 5 }]
-    }
-  },
-  {
     files: ['**/*.svelte', '**/*.svelte.ts', '**/*.svelte.js'],
     languageOptions: {
       parserOptions: {
@@ -67,8 +57,7 @@ export default defineConfig(
     rules: {
       'unicorn/prefer-export-from': 'off',
       'unicorn/prevent-abbreviations': 'off',
-      'unicorn/explicit-length-check': 'off',
-      'sort-keys/sort-keys-fix': 'off'
+      'unicorn/explicit-length-check': 'off'
     }
   }
 );

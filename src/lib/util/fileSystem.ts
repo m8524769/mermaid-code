@@ -24,10 +24,7 @@ export const openFile = async (): Promise<FileResult | null> => {
   return { handle: { path: path as string, name }, code };
 };
 
-export const saveFile = async (
-  handle: FileHandle & { _fsHandle?: any },
-  content: string
-): Promise<boolean> => {
+export const saveFile = async (handle: FileHandle, content: string): Promise<boolean> => {
   const { writeTextFile } = await import('@tauri-apps/plugin-fs');
   await writeTextFile(handle.path, content);
   return true;

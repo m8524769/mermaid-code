@@ -190,9 +190,6 @@ importers:
       eslint-plugin-no-only-tests:
         specifier: ^3.4.0
         version: 3.4.0
-      eslint-plugin-sort-keys:
-        specifier: ^2.3.5
-        version: 2.3.5
       eslint-plugin-svelte:
         specifier: ^3.19.0
         version: 3.19.0(eslint@10.4.1(jiti@2.7.0))(svelte@5.57.0(@typescript-eslint/types@8.60.1))
@@ -1805,9 +1802,6 @@ packages:
   eslint-plugin-no-only-tests@3.4.0:
     resolution: {integrity: sha512-4S3/9Nb7A2tiMcpzEQE9bQSlpeOz6WJkgryBuou/SA8W2x2c8Zf4j0NvTKBjv6qNhF9T79tmkecm/0CHqV0UGg==}
     engines: {node: '>=5.0.0'}
-
-  eslint-plugin-sort-keys@2.3.5:
-    resolution: {integrity: sha512-2j/XKQ9sNJwK8kIp/U0EvuF6stS6/8aIc53/NskE4C5NRNh4dt3xzbZyOdrVC11cTH6Zo59/pdzA0Kb+2fQGWg==}
 
   eslint-plugin-svelte@3.19.0:
     resolution: {integrity: sha512-t3rNaZeXz4d2gG4uJyMEYfJCFKf22+SWbSizIIXIWKu4wM+XPLiMWuSSr/C5821JmFeN9ogK+eExbG+z+twyxw==}
@@ -5057,10 +5051,6 @@ snapshots:
       regexpp: 3.2.0
 
   eslint-plugin-no-only-tests@3.4.0: {}
-
-  eslint-plugin-sort-keys@2.3.5:
-    dependencies:
-      natural-compare: 1.4.0
 
   eslint-plugin-svelte@3.19.0(eslint@10.4.1(jiti@2.7.0))(svelte@5.57.0(@typescript-eslint/types@8.60.1)):
     dependencies:

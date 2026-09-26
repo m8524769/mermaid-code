@@ -61,7 +61,6 @@
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-es": "^4.1.0",
     "eslint-plugin-no-only-tests": "^3.4.0",
-    "eslint-plugin-sort-keys": "^2.3.5",
     "eslint-plugin-svelte": "^3.19.0",
     "eslint-plugin-tailwindcss": "^3.18.3",
     "eslint-plugin-unicorn": "^65.0.1",

@@ -45,7 +45,8 @@ const R2_DAYS = Number(argValue('--days') || process.env.R2_DAYS || 7);
 // long-term trend. Fetched read-only from GitHub raw; failure is non-fatal.
 const STATS_BRANCH = process.env.STATS_BRANCH || 'stats';
 const STATS_URL =
-  process.env.STATS_URL || `https://raw.githubusercontent.com/${REPO}/${STATS_BRANCH}/downloads.json`;
+  process.env.STATS_URL ||
+  `https://raw.githubusercontent.com/${REPO}/${STATS_BRANCH}/downloads.json`;
 
 // Map an asset filename to an installer-type label, or null to exclude it.
 // Order matters: first match wins.
@@ -410,9 +411,12 @@ function printR2Table(r2, sinceISO, untilISO) {
     const m = manual[t] || 0;
     const u = updater[t] || 0;
     console.log(
-      [t.padEnd(tw), String(m).padStart(16), String(u).padStart(16), String(m + u).padStart(9)].join(
-        '  '
-      )
+      [
+        t.padEnd(tw),
+        String(m).padStart(16),
+        String(u).padStart(16),
+        String(m + u).padStart(9)
+      ].join('  ')
     );
   }
   console.log(line);
@@ -434,9 +438,7 @@ function printR2Table(r2, sinceISO, untilISO) {
   if (daily.length) {
     console.log('\n--- daily trend (date · update-checks · downloads /latest/) ---');
     for (const d of daily) {
-      console.log(
-        `${d.date}  ${String(d.polls).padStart(6)}  ${String(d.downloads).padStart(6)}`
-      );
+      console.log(`${d.date}  ${String(d.polls).padStart(6)}  ${String(d.downloads).padStart(6)}`);
     }
   }
 
@@ -456,8 +458,17 @@ function printR2Table(r2, sinceISO, untilISO) {
 }
 
 function renderHtml(data) {
-  const { perVersion, orderedTypes, grandInstalls, grandPolls, grandUpdates, grandHomebrewCI, r2, r2Window, history } =
-    data;
+  const {
+    perVersion,
+    orderedTypes,
+    grandInstalls,
+    grandPolls,
+    grandUpdates,
+    grandHomebrewCI,
+    r2,
+    r2Window,
+    history
+  } = data;
   const rows = perVersion.filter((v) => v.total > 0 || v.updates > 0);
   const labels = rows.map((r) => r.version);
   const datasets = orderedTypes.map((type) => ({
@@ -500,7 +511,12 @@ function renderHtml(data) {
     // per-day history; otherwise it falls back to the CF-only window.
     const trend = history?.daily?.length
       ? history.daily
-      : r2.daily.map((d) => ({ date: d.date, downloads: d.downloads, updateChecks: d.polls, byPlatform: d.byPlatform }));
+      : r2.daily.map((d) => ({
+          date: d.date,
+          downloads: d.downloads,
+          updateChecks: d.polls,
+          byPlatform: d.byPlatform
+        }));
     const trendRange = `${trend[0].date} → ${trend[trend.length - 1].date}`;
     const trendScope = history?.daily?.length ? 'full history' : r2Window;
     // Split each day's downloads into macOS/Windows/Linux; anything not covered
@@ -729,10 +745,20 @@ async function fetchStatsHistory() {
 function mergeDailyHistory(history, r2) {
   const byDate = new Map();
   for (const d of history?.days || []) {
-    byDate.set(d.date, { date: d.date, downloads: d.count, updateChecks: d.updateChecks, byPlatform: d.byPlatform });
+    byDate.set(d.date, {
+      date: d.date,
+      downloads: d.count,
+      updateChecks: d.updateChecks,
+      byPlatform: d.byPlatform
+    });
   }
   for (const d of r2?.daily || []) {
-    byDate.set(d.date, { date: d.date, downloads: d.downloads, updateChecks: d.polls, byPlatform: d.byPlatform });
+    byDate.set(d.date, {
+      date: d.date,
+      downloads: d.downloads,
+      updateChecks: d.polls,
+      byPlatform: d.byPlatform
+    });
   }
   return [...byDate.values()].sort((a, b) => (a.date < b.date ? -1 : 1));
 }
@@ -770,7 +796,9 @@ async function main() {
       console.warn(`R2 stats skipped: ${err.message}`);
     }
   } else {
-    console.log('\n(Tip: set CF_API_TOKEN to add real R2 download stats from Cloudflare Analytics.)');
+    console.log(
+      '\n(Tip: set CF_API_TOKEN to add real R2 download stats from Cloudflare Analytics.)'
+    );
   }
 
   // Full download history from the stats branch (default-on, read-only). Merged
@@ -789,7 +817,9 @@ async function main() {
           `${daily.length} day(s) ${first} → ${last}`
       );
     } else {
-      console.log('\n(stats branch has no per-day history yet — daily trend shows the CF window only.)');
+      console.log(
+        '\n(stats branch has no per-day history yet — daily trend shows the CF window only.)'
+      );
     }
   } catch (err) {
     console.warn(`Full history skipped: ${err.message}`);

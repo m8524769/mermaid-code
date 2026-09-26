@@ -722,7 +722,7 @@ const handleWatchEvent = async (event: import('$/util/fileSystem').WatchEvent): 
   // Check if any open tab was affected
   const kind = event.type;
   if (typeof kind === 'object' && 'modify' in kind) {
-    if ((kind as any).modify?.kind === 'rename') {
+    if (kind.modify?.kind === 'rename') {
       const { exists } = await import('@tauri-apps/plugin-fs');
       for (const p of event.paths) {
         if (await exists(p)) {
