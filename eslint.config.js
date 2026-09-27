@@ -1,4 +1,4 @@
-import { includeIgnoreFile } from '@eslint/compat';
+import { includeIgnoreFile } from 'eslint/config';
 import js from '@eslint/js';
 import prettier from 'eslint-config-prettier';
 import svelte from 'eslint-plugin-svelte';
@@ -34,8 +34,10 @@ export default defineConfig(
       unicorn: eslintPluginUnicorn
     },
     rules: {
+      ...eslintPluginUnicorn.configs.unopinionated.rules,
       'unicorn/no-null': 'off',
-      'unicorn/filename-case': 'off'
+      'unicorn/filename-case': 'off',
+      'unicorn/name-replacements': 'off'
     }
   },
   {
