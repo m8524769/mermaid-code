@@ -17,7 +17,7 @@ import { errorDebug, formatJSON } from './util';
 export const defaultState: State = {
   code: '',
   grid: true,
-  mermaid: formatJSON({}),
+  mermaid: '{}',
   panZoom: true,
   rough: false,
   updateDiagram: true

@@ -106,7 +106,8 @@
   variant="ghost"
   href={doc.url}
   target="_blank"
-  title={m.doc_view_for({ type: doc.key.replace('Diagram', '') })}>
+  title={m.doc_view_for({ type: doc.key.replace('Diagram', '') })}
+  class="mb-1 p-2">
   <BookIcon />
   {m.docs_label()}
 </Button>
