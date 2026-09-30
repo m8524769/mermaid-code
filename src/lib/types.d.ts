@@ -44,14 +44,6 @@ export interface ValidatedState extends State {
   serialized: string;
 }
 
-export type DocumentationConfig = Record<
-  string,
-  {
-    code: string;
-    config?: string;
-  }
->;
-
 export type EditorMode = 'code' | 'config';
 
 export type Loader = (url: string) => Promise<State>;

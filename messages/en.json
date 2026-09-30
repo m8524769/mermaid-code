@@ -70,6 +70,7 @@
   "ext_opens_in": "Opens your diagram in",
   "ext_will_send": "Your diagram will be sent to the external service",
   "doc_view_for": "View documentation for {type} diagram",
+  "doc_view": "View documentation",
   "docs_label": "Docs",
   "config_overridden": "Overridden in code: {value}",
   "config_reset": "Reset config to default",

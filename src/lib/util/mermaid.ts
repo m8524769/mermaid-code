@@ -24,24 +24,6 @@ export const parse = async (code: string) => {
  */
 export const defaultMermaidConfig = mermaid.mermaidAPI.defaultConfig ?? {};
 
-export const standardizeDiagramType = (diagramType: string) => {
-  switch (diagramType) {
-    case 'class':
-    case 'classDiagram': {
-      return 'classDiagram';
-    }
-    case 'graph':
-    case 'flowchart':
-    case 'flowchart-elk':
-    case 'flowchart-v2': {
-      return 'flowchart';
-    }
-    default: {
-      return diagramType;
-    }
-  }
-};
-
 type DiagramDefinition = (typeof diagramData)[number];
 
 export type SampleExample = DiagramDefinition['examples'][number];
