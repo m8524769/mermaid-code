@@ -2,6 +2,16 @@
 
 All notable changes to Mermaid Code are documented here.
 
+## [v0.8.4] - 2026-10-01
+
+### Added
+
+- **Localized diagram type names in Chinese**: with the app language set to Simplified Chinese, the diagram names in the Sample Diagrams panel and the Docs button tooltip are now translated, covering all diagram types
+
+### Fixed
+
+- **The Docs button opens the right page for each diagram type**: ports the upstream fix ([mermaid-live-editor#2055](https://github.com/mermaid-js/mermaid-live-editor/pull/2055))
+
 ## [v0.8.3] - 2026-09-25
 
 ### Fixed
