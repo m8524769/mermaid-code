@@ -69,7 +69,7 @@
   "hide_code": "Hide code",
   "ext_opens_in": "Opens your diagram in",
   "ext_will_send": "Your diagram will be sent to the external service",
-  "doc_view_for": "View documentation for {type}",
+  "doc_view_for": "View documentation for {type} diagram",
   "doc_view": "View documentation",
   "diagram_name_flowchart": "Flowchart",
   "diagram_name_class": "Class",
