@@ -37,7 +37,11 @@ const names: Record<string, () => string> = {
   railroad: m.diagram_name_railroad,
   railroadEbnf: m.diagram_name_railroadEbnf,
   railroadAbnf: m.diagram_name_railroadAbnf,
-  railroadPeg: m.diagram_name_railroadPeg
+  railroadPeg: m.diagram_name_railroadPeg,
+  swimlane: m.diagram_name_swimlane,
+  agentflow: m.diagram_name_agentflow,
+  c4: m.diagram_name_c4,
+  gitGraph: m.diagram_name_gitGraph
 };
 
 /**
