@@ -77,11 +77,15 @@ const catalog: Record<string, DiagramDocs> = {
   xychart: { code: '/syntax/xyChart.html', config: '/syntax/xyChart.html#chart-configurations' }
 };
 
+/** Fold a detector id (e.g. `flowchart-v2`) to its canonical id (e.g. `flowchart`). */
+export const canonicalDiagramId = (detectedType: string): string =>
+  aliases[detectedType] ?? detectedType;
+
 export const describeDiagram = (detectedType: string | undefined): DiagramInfo | undefined => {
   if (!detectedType) {
     return undefined;
   }
-  const id = aliases[detectedType] ?? detectedType;
+  const id = canonicalDiagramId(detectedType);
   const docs = catalog[id];
   return { id, ...(docs && { docs }) };
 };

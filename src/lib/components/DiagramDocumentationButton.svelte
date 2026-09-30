@@ -3,6 +3,7 @@
   import { Button } from '$/components/ui/button';
   import { getDiagramDocumentationUrl } from '$/util/diagramDocs';
   import { describeDiagram } from '$/util/diagramTypes';
+  import { diagramDisplayName } from '$/util/diagramNames';
   import { validatedState } from '$/util/state.svelte';
   import BookIcon from '~icons/material-symbols/book-2-outline-rounded';
 
@@ -19,7 +20,7 @@
   variant="ghost"
   href={doc.url}
   target="_blank"
-  title={doc.key ? m.doc_view_for({ type: doc.key.replace('Diagram', '') }) : m.doc_view()}
+  title={doc.key ? m.doc_view_for({ type: diagramDisplayName(doc.key) }) : m.doc_view()}
   class="mb-1 p-2">
   <BookIcon />
   {m.docs_label()}

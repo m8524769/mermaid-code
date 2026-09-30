@@ -2,6 +2,7 @@ import { diagramData } from '@mermaid-js/examples';
 import tidyTreeLayouts from '@mermaid-js/layout-tidy-tree';
 import type { MermaidConfig, RenderResult } from 'mermaid';
 import mermaid from 'mermaid';
+import { canonicalDiagramId } from './diagramTypes';
 
 mermaid.registerLayoutLoaders(tidyTreeLayouts);
 
@@ -32,14 +33,20 @@ const isValidDiagram = (diagram: DiagramDefinition): diagram is Required<Diagram
   return Boolean(diagram.name && diagram.examples && diagram.examples.length > 0);
 };
 
-export const getSampleDiagrams = (): Record<string, SampleExample[]> => {
-  const samples: Record<string, SampleExample[]> = {};
+export const getSampleDiagrams = (): Record<
+  string,
+  { name: string; examples: SampleExample[] }
+> => {
+  const samples: Record<string, { name: string; examples: SampleExample[] }> = {};
   for (const diagram of diagramData.filter((d) => isValidDiagram(d))) {
     // The default example comes first, so it is loaded when clicking the
     // diagram name and shown at the top of the example dropdown.
-    samples[diagram.name.replace(/ (Diagram|Chart|Graph)/, '')] = [...diagram.examples].sort(
-      (a, b) => Number(b.isDefault ?? false) - Number(a.isDefault ?? false)
-    );
+    samples[canonicalDiagramId(diagram.id)] = {
+      name: diagram.name.replace(/ (Diagram|Chart|Graph)/, ''),
+      examples: [...diagram.examples].sort(
+        (a, b) => Number(b.isDefault ?? false) - Number(a.isDefault ?? false)
+      )
+    };
   }
   return samples;
 };
