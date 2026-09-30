@@ -33,7 +33,7 @@
     "@fortawesome/fontawesome-free": "^7.2.0",
     "@iconify-json/hugeicons": "^1.2.35",
     "@iconify-json/logos": "^1.2.14",
-    "@iconify-json/material-symbols": "^1.2.92",
+    "@iconify-json/material-symbols": "^1.2.93",
     "@iconify-json/mdi": "^1.2.3",
     "@inlang/paraglide-js": "^2.25.2",
     "@sveltejs/adapter-static": "^3.0.10",
