@@ -31,6 +31,9 @@ jobs:
 
     runs-on: ${{ matrix.os }}
 
+    env:
+      HUSKY: 0 # skip git-hook install during `pnpm install` in CI
+
     steps:
       - uses: actions/checkout@v7
 
