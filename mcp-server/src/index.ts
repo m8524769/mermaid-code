@@ -33,6 +33,16 @@ async function callMermaidCode(endpoint: string, body?: unknown): Promise<unknow
   }
 }
 
+// Shape of GET /context on the Tauri side (src-tauri/src/mcp.rs `ContextData`).
+// Keys are snake_case (no serde rename) and Option fields serialize as null.
+const contextSchema = z.object({
+  folder: z.string().nullable(),
+  files: z.array(z.object({ path: z.string(), name: z.string() })),
+  active_tab: z
+    .object({ path: z.string().nullable(), name: z.string(), is_draft: z.boolean() })
+    .nullable()
+});
+
 function createMcpServer(): McpServer {
   const server = new McpServer(
     { name: 'mermaid-code-mcp', version },
@@ -66,11 +76,16 @@ function createMcpServer(): McpServer {
       description:
         'Get the current context of the Mermaid Code app: the opened folder, list of .mmd files, and the active tab (path and name). Call this first to understand what diagrams exist and which file is currently active before creating or modifying diagrams.',
       inputSchema: z.object({}),
+      outputSchema: contextSchema,
       annotations: { readOnlyHint: true }
     },
     async () => {
       const ctx = await callMermaidCode('/context');
-      return { content: [{ type: 'text', text: JSON.stringify(ctx, null, 2) }] };
+      const structuredContent = contextSchema.parse(ctx);
+      return {
+        structuredContent,
+        content: [{ type: 'text', text: JSON.stringify(structuredContent, null, 2) }]
+      };
     }
   );
 
