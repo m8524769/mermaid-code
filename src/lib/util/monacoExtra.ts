@@ -63,8 +63,27 @@ const colorToHex = ({ red, green, blue, alpha }: Monaco.languages.IColor): strin
   return alpha < 1 ? `${base}${byte(alpha)}` : base;
 };
 
+// Make Monaco's cmd/ctrl+click "open link" work in the Tauri webview. Monaco's
+// default opener uses window.open (a new window), which Tauri blocks, so links
+// do nothing. Open the URL via the shell plugin instead.
+// registerLinkOpener is global, so register it only once.
+let linkOpenerRegistered = false;
+
 export const initEditor = (monacoEditor: typeof Monaco): void => {
   monacoEditor.languages.register({ id: 'mermaid' });
+
+  if (!linkOpenerRegistered) {
+    linkOpenerRegistered = true;
+    monacoEditor.editor.registerLinkOpener({
+      async open(resource) {
+        const url = resource.toString();
+        if (!/^https?:\/\//i.test(url)) return false; // let Monaco handle non-http(s)
+        const { open } = await import('@tauri-apps/plugin-shell');
+        await open(url);
+        return true;
+      }
+    });
+  }
   const requirementDiagrams = [
     'requirement',
     'functionalRequirement',
