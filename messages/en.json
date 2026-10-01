@@ -63,6 +63,7 @@
   "share_markdown_title": "Markdown embed",
   "share_markdown_note": "The embedded image is rendered by mermaid.ink — the diagram is sent to that service.",
   "error_syntax": "Syntax error",
+  "copy_error_message": "Copy error message",
   "toggle_vim": "Toggle Vim mode",
   "reset_view": "Reset view",
   "show_code": "Show code",

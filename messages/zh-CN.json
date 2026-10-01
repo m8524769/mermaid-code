@@ -63,6 +63,7 @@
   "share_markdown_title": "Markdown 嵌入码",
   "share_markdown_note": "嵌入的图片由 mermaid.ink 渲染 —— 图表会被发送到该服务器。",
   "error_syntax": "语法错误",
+  "copy_error_message": "复制错误信息",
   "toggle_vim": "切换 Vim 模式",
   "reset_view": "重置视图",
   "show_code": "显示代码",

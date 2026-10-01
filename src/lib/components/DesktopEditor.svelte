@@ -15,12 +15,25 @@
   import { initVimMode, VimMode } from 'monaco-vim';
   import { onMount } from 'svelte';
   import ExclamationCircleIcon from '~icons/material-symbols/error-outline-rounded';
+  import CheckIcon from '~icons/material-symbols/check-rounded';
+  import CopyIcon from '~icons/material-symbols/content-copy-outline-rounded';
 
   const { onUpdate }: EditorProps = $props();
   const debouncedOnUpdate = debounce((text: string) => onUpdate(text), 100);
 
   let divElement: HTMLDivElement | undefined = $state();
   let editor: monaco.editor.IStandaloneCodeEditor | undefined;
+
+  let errorMessageCopied = $state(false);
+  const copyErrorMessage = async () => {
+    try {
+      await navigator.clipboard.writeText(validatedState.current.error?.toString() ?? '');
+      errorMessageCopied = true;
+      setTimeout(() => (errorMessageCopied = false), 1000);
+    } catch {
+      // clipboard unavailable — ignore
+    }
+  };
 
   // Characters that can form Fira Code arrow/link ligatures in Mermaid
   // (--> -.-> ==> ->> --|> <--> ~~~ ...). Used to locate the ligature run
@@ -455,6 +468,18 @@
       <div class="flex items-center gap-2 bg-slate-900 p-2 text-white">
         <ExclamationCircleIcon class="size-5 shrink-0 text-destructive" aria-hidden="true" />
         <p>{m.error_syntax()}</p>
+        <button
+          type="button"
+          class="ml-auto flex shrink-0 items-center rounded p-1 text-white/80 transition-colors hover:bg-white/10 hover:text-white"
+          aria-label={m.copy_error_message()}
+          title={m.copy_error_message()}
+          onclick={copyErrorMessage}>
+          {#if errorMessageCopied}
+            <CheckIcon class="size-4" aria-hidden="true" />
+          {:else}
+            <CopyIcon class="size-4" aria-hidden="true" />
+          {/if}
+        </button>
       </div>
       <output class="overflow-auto bg-muted p-2 text-xs" name="mermaid-error" for="editor">
         <pre
