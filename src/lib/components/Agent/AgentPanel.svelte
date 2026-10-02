@@ -318,7 +318,7 @@
             folder_path: workingFolder,
             agent_type: selectedAgentId,
             resume_session_id: activeSessionId ?? null,
-            permission_mode: permissionMode === 'manual' ? null : permissionMode,
+            permission_mode: permissionMode,
             run_id: newRunId
           }
         });
