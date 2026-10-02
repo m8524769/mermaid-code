@@ -14,6 +14,8 @@
   import { untrack } from 'svelte';
   import ClaudeIcon from '~icons/logos/claude-icon';
   import OpenAIIcon from '~icons/logos/openai-icon';
+  import ClaudeCodeLogo from '~icons/logos/claude-code';
+  import CodexLogo from '~icons/logos/codex';
   import SelectAgentIcon from '~icons/material-symbols/expand-more-rounded';
   import CheckIcon from '~icons/material-symbols/check-rounded';
   import HistoryIcon from '~icons/material-symbols/history-rounded';
@@ -36,11 +38,29 @@
     // Extra classes for the icon. The OpenAI logo is a fixed black mark (no
     // currentColor), so it's invisible on the dark theme — invert it to white.
     iconClass?: string;
+    // Larger product logo for the empty-state placeholder, with its sizing
+    // class. Sized by height (h-* w-auto) so logos with differing viewBox
+    // aspects still share a visual height.
+    emptyStateIcon: Component<any>;
+    emptyStateIconClass: string;
   }
 
   const agents: AgentOption[] = [
-    { id: 'claude-code', label: 'Claude Code', icon: ClaudeIcon },
-    { id: 'codex', label: 'Codex', icon: OpenAIIcon, iconClass: 'dark:invert' }
+    {
+      id: 'claude-code',
+      label: 'Claude Code',
+      icon: ClaudeIcon,
+      emptyStateIcon: ClaudeCodeLogo,
+      emptyStateIconClass: 'h-10 w-auto'
+    },
+    {
+      id: 'codex',
+      label: 'Codex',
+      icon: OpenAIIcon,
+      iconClass: 'dark:invert',
+      emptyStateIcon: CodexLogo,
+      emptyStateIconClass: 'h-10 w-auto dark:invert'
+    }
   ];
 
   // Start event listener for agent events
@@ -64,6 +84,8 @@
   const selectedAgent = $derived(agents.find((a) => a.id === selectedAgentId) ?? agents[0]);
   const selectedAgentIcon = $derived(selectedAgent.icon);
   const selectedAgentIconClass = $derived(selectedAgent.iconClass);
+  const selectedAgentEmptyStateIcon = $derived(selectedAgent.emptyStateIcon);
+  const selectedAgentEmptyStateIconClass = $derived(selectedAgent.emptyStateIconClass);
 
   // Working folder: restore from localStorage, then fall back to file explorer or home dir
   let workingFolder = $state<string | null>(
@@ -683,11 +705,9 @@
       }}>
       {#if messages.length === 0}
         <div class="flex flex-1 flex-col items-center justify-center gap-3 text-center select-none">
-          <div class="rounded-2xl bg-muted p-4">
-            {#each [selectedAgentIcon] as AgentIcon}
-              <AgentIcon class={['size-8 opacity-40', selectedAgentIconClass]} />
-            {/each}
-          </div>
+          {#each [selectedAgentEmptyStateIcon] as AgentIcon}
+            <AgentIcon class={['opacity-40', selectedAgentEmptyStateIconClass]} />
+          {/each}
           <div class="flex flex-col gap-1">
             <p class="text-sm font-medium text-foreground/60">{selectedAgent.label}</p>
             <p class="text-xs text-muted-foreground">
