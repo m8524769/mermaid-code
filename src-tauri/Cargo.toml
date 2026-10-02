@@ -25,7 +25,7 @@ tauri-plugin-os = "2"
 tauri-plugin-process = "2"
 tauri-plugin-shell = "2"
 tauri-plugin-single-instance = "2"
-tauri-plugin-updater = "2"
+tauri-plugin-updater = "2.13.0"
 tauri-plugin-window-state = "2"
 arboard = { version = "3", features = ["image-data"] }
 base64 = "0.23"
