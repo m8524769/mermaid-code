@@ -3,5 +3,5 @@ allowBuilds:
   '@mermanjs/tree-sitter-mermaid': false
   svelte-preprocess: false
 overrides:
-  dompurify: ^3.4.15
+  dompurify: ^3.4.16
   lodash-es: ^4.18.1
