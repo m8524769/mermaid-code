@@ -1,5 +1,7 @@
 {
   "extends": ["config:recommended"],
+  "minimumReleaseAge": "3 days",
+  "internalChecksFilter": "strict",
   "packageRules": [
     {
       "matchPackageNames": ["mermaid", "@mermaid-js/**"],
