@@ -343,7 +343,7 @@ importers:
         specifier: ^76.0.0
         version: 76.0.0(eslint@10.11.0(jiti@2.7.0)(supports-color@7.2.0))
       globals:
-        specifier: ^17.6.0
+        specifier: ^17.12.0
         version: 17.12.0
       husky:
         specifier: ^9.1.7
