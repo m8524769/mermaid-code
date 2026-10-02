@@ -1,7 +1,7 @@
 {
-  "total": 100,
-  "totalUpdateChecks": 425,
-  "updatedAt": "2026-10-01T17:03:00Z",
+  "total": 101,
+  "totalUpdateChecks": 426,
+  "updatedAt": "2026-10-02T00:55:04Z",
   "days": [
     {
       "date": "2026-09-12",
@@ -244,8 +244,19 @@
     },
     {
       "date": "2026-10-01",
+      "count": 1,
+      "updateChecks": 23,
+      "byPlatform": {
+        "Linux": 1
+      },
+      "byCountry": {
+        "IR": 1
+      }
+    },
+    {
+      "date": "2026-10-02",
       "count": 0,
-      "updateChecks": 22,
+      "updateChecks": 0,
       "byPlatform": {},
       "byCountry": {}
     }
