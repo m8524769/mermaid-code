@@ -28,10 +28,8 @@
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@fortawesome/fontawesome-free": "^7.3.1",
-    "@iconify-json/hugeicons": "^1.2.35",
     "@iconify-json/logos": "^1.2.15",
     "@iconify-json/material-symbols": "^1.2.93",
-    "@iconify-json/mdi": "^1.2.3",
     "@inlang/paraglide-js": "^2.25.2",
     "@sveltejs/adapter-static": "^3.0.10",
     "@sveltejs/kit": "^2.70.3",
