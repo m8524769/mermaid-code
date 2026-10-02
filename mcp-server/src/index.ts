@@ -52,7 +52,10 @@ function createMcpServer(): McpServer {
         'Use list_diagrams to get the currently open folder and active file before making changes. ' +
         'When modifying or creating .mmd/.mermaid files on the filesystem, do NOT call preview_diagram — ' +
         'Mermaid Code automatically detects file changes and refreshes the preview. ' +
-        'Use preview_diagram only for temporary, unsaved previews in the Draft tab.'
+        'Use preview_diagram only for temporary, unsaved previews in the Draft tab. ' +
+        // Keep in sync with registerIconPacks in src/lib/util/mermaid.ts.
+        'Available Iconify icon packs for `pack:name` diagram icons: ' +
+        'logos, fa/fas/far/fab (Font Awesome 7).'
     }
   );
 
