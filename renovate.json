@@ -6,6 +6,10 @@
     {
       "matchPackageNames": ["mermaid", "@mermaid-js/**"],
       "groupName": "Mermaid packages"
+    },
+    {
+      "matchManagers": ["cargo"],
+      "rangeStrategy": "update-lockfile"
     }
   ],
   "dependencyDashboard": true,
