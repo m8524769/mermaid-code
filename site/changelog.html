@@ -190,6 +190,19 @@
 <main class="changelog">
 <h1>Changelog</h1>
 <p>All notable changes to Mermaid Code are documented here.</p>
+<h2>[v0.9.0] - 2026-10-04</h2>
+<h3>Added</h3>
+<ul>
+<li><strong>Diagram icons that render offline</strong>: the <a href="https://icon-sets.iconify.design/logos">SVG Logos</a> and <a href="https://icon-sets.iconify.design/fa7-solid">Font Awesome 7</a> icon packs are now bundled and registered out of the box, so flowchart icon shapes (e.g. <code>@{ icon: &quot;logos:aws&quot; }</code>) render with no CDN fetch. Use them via the <code>logos:</code>, <code>fas:</code>/<code>far:</code>/<code>fab:</code> prefixes.</li>
+<li><strong><code>search_icons</code> MCP tool</strong>: AI agents connected to the built-in MCP server can look up the exact icon name for a concept (e.g. &quot;kubernetes&quot;, &quot;aws s3&quot;) before adding it to a diagram, instead of guessing names that may not exist.</li>
+<li><strong>Copy button on the syntax error panel</strong>: copy the parser error message in one click when a diagram fails to render.</li>
+<li><strong>Syntax highlighting for Agentflow and Usecase diagrams</strong>: the editor&#39;s Mermaid grammar was updated to <a href="https://github.com/Latias94/merman/releases/tag/tree-sitter-mermaid-v0.2.0">tree-sitter-mermaid 0.2.0</a>, adding accurate highlighting for Mermaid 12&#39;s new Agentflow and Usecase diagram types.</li>
+</ul>
+<h3>Fixed</h3>
+<ul>
+<li><strong>The AI agent now uses the permission mode you select</strong>: picking a specific mode (such as manual approval) could previously send no mode at all, letting the agent fall back to its own default — possibly a more permissive one than you chose. The selected mode is now always sent explicitly.</li>
+<li><strong>cmd/ctrl-click opens editor links in your browser</strong>: modifier-clicking a URL in the editor now opens it externally, instead of doing nothing.</li>
+</ul>
 <h2>[v0.8.4] - 2026-10-01</h2>
 <h3>Added</h3>
 <ul>

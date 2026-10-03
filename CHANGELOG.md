@@ -2,6 +2,20 @@
 
 All notable changes to Mermaid Code are documented here.
 
+## [v0.9.0] - 2026-10-04
+
+### Added
+
+- **Diagram icons that render offline**: the [SVG Logos](https://icon-sets.iconify.design/logos) and [Font Awesome 7](https://icon-sets.iconify.design/fa7-solid) icon packs are now bundled and registered out of the box, so flowchart icon shapes (e.g. `@{ icon: "logos:aws" }`) render with no CDN fetch. Use them via the `logos:`, `fas:`/`far:`/`fab:` prefixes.
+- **`search_icons` MCP tool**: AI agents connected to the built-in MCP server can look up the exact icon name for a concept (e.g. "kubernetes", "aws s3") before adding it to a diagram, instead of guessing names that may not exist.
+- **Copy button on the syntax error panel**: copy the parser error message in one click when a diagram fails to render.
+- **Syntax highlighting for Agentflow and Usecase diagrams**: the editor's Mermaid grammar was updated to [tree-sitter-mermaid 0.2.0](https://github.com/Latias94/merman/releases/tag/tree-sitter-mermaid-v0.2.0), adding accurate highlighting for Mermaid 12's new Agentflow and Usecase diagram types.
+
+### Fixed
+
+- **The AI agent now uses the permission mode you select**: picking a specific mode (such as manual approval) could previously send no mode at all, letting the agent fall back to its own default — possibly a more permissive one than you chose. The selected mode is now always sent explicitly.
+- **cmd/ctrl-click opens editor links in your browser**: modifier-clicking a URL in the editor now opens it externally, instead of doing nothing.
+
 ## [v0.8.4] - 2026-10-01
 
 ### Added
