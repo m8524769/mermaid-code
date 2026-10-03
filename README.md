@@ -80,6 +80,10 @@ brew install --cask mermaid-code
 - **Visual form** — set theme, layout, and font family without editing JSON directly
 - **Pin to code** — inserts the current config as a YAML frontmatter block at the top of the diagram code; re-clicking replaces the existing block
 
+### Diagram Icons
+
+- **Bundled Iconify icon packs** — [SVG Logos](https://icon-sets.iconify.design/logos) and [Font Awesome 7](https://icon-sets.iconify.design/fa7-solid) are registered out of the box and render **offline** with no CDN fetch; use them in flowchart icon shapes and `architecture-beta` via the `logos:`, `fa:`/`fas:`/`far:`/`fab:` prefixes
+
 ---
 
 ## MCP Server Integration
