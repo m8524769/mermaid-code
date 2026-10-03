@@ -82,7 +82,7 @@ brew install --cask mermaid-code
 
 ### Diagram Icons
 
-- **Bundled Iconify icon packs** — [SVG Logos](https://icon-sets.iconify.design/logos) and [Font Awesome 7](https://icon-sets.iconify.design/fa7-solid) are registered out of the box and render **offline** with no CDN fetch; use them in flowchart icon shapes and `architecture-beta` via the `logos:`, `fas:`/`far:`/`fab:` prefixes
+- **Bundled Iconify icon packs** — [SVG Logos](https://icon-sets.iconify.design/logos) and [Font Awesome 7](https://icon-sets.iconify.design/fa7-solid) are registered out of the box and render **offline** with no CDN fetch; use them in flowchart icon shapes via the `logos:`, `fas:`/`far:`/`fab:` prefixes
 
 ---
 

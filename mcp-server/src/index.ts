@@ -122,7 +122,7 @@ function createMcpServer(): McpServer {
         'Use preview_diagram only for temporary, unsaved previews in the Draft tab. ' +
         // Keep in sync with registerIconPacks in src/lib/util/mermaid.ts.
         'Available Iconify icon packs for `pack:name` diagram icons: ' +
-        'logos, fa/fas/far/fab (Font Awesome 7). Call search_icons to resolve exact names.'
+        'logos, fas/far/fab (Font Awesome 7). When adding icons, call search_icons to resolve exact names.'
     }
   );
 
@@ -164,7 +164,7 @@ function createMcpServer(): McpServer {
     {
       description:
         "Resolve icon concepts to exact `pack:name` references that render in this app's diagrams " +
-        '(flowchart icon shapes, architecture-beta). Pass all concepts for a diagram in one call. ' +
+        '(flowchart icon shapes). Pass all concepts for a diagram in one call. ' +
         'For each concept put the likely names/aliases in `terms` ' +
         '(e.g. { label: "Kubernetes", terms: "kubernetes k8s" }). Each returned match is a ' +
         'complete, ready-to-use reference like "logos:kubernetes" — use it verbatim; it already ' +

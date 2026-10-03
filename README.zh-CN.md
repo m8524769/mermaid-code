@@ -76,7 +76,7 @@ brew install --cask mermaid-code
 
 ### 内置图标包
 
-- 内置常用 Iconify 图标包 —— 开箱注册 [SVG Logos](https://icon-sets.iconify.design/logos) 与 [Font Awesome 7](https://icon-sets.iconify.design/fa7-solid)，离线渲染、无需从 CDN 拉取；在 flowchart 的 icon shape 与 `architecture-beta` 中通过 `logos:`、`fas:`/`far:`/`fab:` 前缀使用
+- 内置常用 Iconify 图标包 —— 开箱注册 [SVG Logos](https://icon-sets.iconify.design/logos) 与 [Font Awesome 7](https://icon-sets.iconify.design/fa7-solid)，离线渲染、无需从 CDN 拉取；在 flowchart 的 icon shape 中通过 `logos:`、`fas:`/`far:`/`fab:` 前缀使用
 
 ---
 
