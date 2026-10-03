@@ -7,35 +7,35 @@ import { canonicalDiagramId } from './diagramTypes';
 mermaid.registerLayoutLoaders(tidyTreeLayouts);
 
 // Icon packs for diagram icon shapes (`@{ icon: "pack:name" }`) and architecture
-// diagrams. Mermaid ships none, so each pack is registered here. Bundled (not
-// CDN-fetched) to work offline; every loader is lazy, so Vite pulls a pack's icon
-// JSON only when a diagram actually uses that pack.
-//   logos                → brand/tech/cloud logos (also a dep for the Agent UI icons)
-//   fa / fas / far / fab → Font Awesome 7 (fa == fas == solid; far regular; fab brands)
-// Note: separate from inline `[fa:fa-user]` labels, which use the Font Awesome
-// webfont (see FontAwesome.svelte), not these Iconify packs.
-mermaid.registerIconPacks([
+// diagrams. Mermaid ships none, so they're registered here — bundled (not
+// CDN-fetched) to work offline, and lazily loaded so Vite pulls a pack's JSON
+// only on first use. Each pack lists every name it answers to: the common
+// prefix(es) plus the canonical Iconify prefix, so names copied from
+// icon-sets.iconify.design resolve too.
+// (Separate from inline `[fa:fa-user]` labels, which use the Font Awesome
+// webfont — see FontAwesome.svelte — not these Iconify packs.)
+const ICON_PACKS: { names: string[]; loader: () => Promise<any> }[] = [
   {
-    name: 'logos',
-    loader: () => import('@iconify-json/logos/icons.json').then((m) => m.default as any)
+    names: ['logos'],
+    loader: () => import('@iconify-json/logos/icons.json').then((m) => m.default)
   },
   {
-    name: 'fa',
-    loader: () => import('@iconify-json/fa7-solid/icons.json').then((m) => m.default as any)
+    names: ['fa', 'fas', 'fa7-solid'],
+    loader: () => import('@iconify-json/fa7-solid/icons.json').then((m) => m.default)
   },
   {
-    name: 'fas',
-    loader: () => import('@iconify-json/fa7-solid/icons.json').then((m) => m.default as any)
+    names: ['far', 'fa7-regular'],
+    loader: () => import('@iconify-json/fa7-regular/icons.json').then((m) => m.default)
   },
   {
-    name: 'far',
-    loader: () => import('@iconify-json/fa7-regular/icons.json').then((m) => m.default as any)
-  },
-  {
-    name: 'fab',
-    loader: () => import('@iconify-json/fa7-brands/icons.json').then((m) => m.default as any)
+    names: ['fab', 'fa7-brands'],
+    loader: () => import('@iconify-json/fa7-brands/icons.json').then((m) => m.default)
   }
-]);
+];
+
+mermaid.registerIconPacks(
+  ICON_PACKS.flatMap(({ names, loader }) => names.map((name) => ({ name, loader })))
+);
 
 export const render = async (
   config: MermaidConfig,
