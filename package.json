@@ -44,8 +44,8 @@
     "@types/hammerjs": "^2.0.46",
     "@types/lodash-es": "^4.17.12",
     "@types/node": "^24.13.3",
-    "@vitest/coverage-v8": "^5.0.2",
-    "@vitest/ui": "^5.0.2",
+    "@vitest/coverage-v8": "^5.0.3",
+    "@vitest/ui": "^5.0.3",
     "autoprefixer": "^10.5.6",
     "bits-ui": "^2.19.2",
     "clsx": "^2.1.1",
@@ -76,7 +76,7 @@
     "unplugin-icons": "^23.0.1",
     "vite": "^8.3.1",
     "vite-plugin-devtools-json": "^1.1.0",
-    "vitest": "^5.0.2"
+    "vitest": "^5.0.3"
   },
   "dependencies": {
     "@fontsource-variable/recursive": "^5.3.0",
