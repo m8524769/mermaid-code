@@ -76,7 +76,7 @@ brew install --cask mermaid-code
 
 ### 内置图标包
 
-- 内置常用 Iconify 图标包 —— 开箱注册 [SVG Logos](https://icon-sets.iconify.design/logos) 与 [Font Awesome 7](https://icon-sets.iconify.design/fa7-solid)，离线渲染、无需从 CDN 拉取；在 flowchart 的 icon shape 与 `architecture-beta` 中通过 `logos:`、`fa:`/`fas:`/`far:`/`fab:` 前缀使用
+- 内置常用 Iconify 图标包 —— 开箱注册 [SVG Logos](https://icon-sets.iconify.design/logos) 与 [Font Awesome 7](https://icon-sets.iconify.design/fa7-solid)，离线渲染、无需从 CDN 拉取；在 flowchart 的 icon shape 与 `architecture-beta` 中通过 `logos:`、`fas:`/`far:`/`fab:` 前缀使用
 
 ---
 
@@ -112,6 +112,7 @@ claude mcp add --transport http mermaid-code-mcp http://localhost:37079/mcp
 | ----------------- | ----------------------------------------------------------------------------------------------------- |
 | `list_diagrams`   | 获取当前 Mermaid Code 中的上下文信息，包括打开的文件夹位置、`.mmd` 文件列表以及当前展示的标签页信息。 |
 | `preview_diagram` | 在 Draft 标签页中预览生成的图表                                                                       |
+| `search_icons`    | 搜索可用图标（如 "kubernetes"、"aws s3"），获取可直接用在图表中的图标名称                             |
 
 **使用样例 —— 编辑现有图表：**
 
@@ -129,6 +130,15 @@ claude mcp add --transport http mermaid-code-mcp http://localhost:37079/mcp
 "生成一个关于用户注册流程的图表"
 → Agent 生成 Mermaid 代码并调用 preview_diagram
 → Mermaid Code 直接展示生成的图表（Mermaid 代码位于 Draft 标签页中，用户可自行选择是否需要将其保存到文件）
+```
+
+**使用样例 —— 为图表添加图标：**
+
+```
+"为这张架构图里的各个服务添加图标"
+→ Agent 用 "postgres"、"redis"、"nginx" 等关键词调用 search_icons
+→ search_icons 返回可直接使用的图标名称（如 logos:postgresql、logos:redis）
+→ Agent 将这些名称写入图表并刷新预览
 ```
 
 > 若您的提示词触发了其他 MCP 的工具（例如 Figma MCP），这是正常现象 —— Mermaid Code MCP 不会强制要求 AI Agent 使用它，如果遇到工具冲突，可以尝试将提示词强调为：“在 Mermaid Code 中生成 mmd 图表”。

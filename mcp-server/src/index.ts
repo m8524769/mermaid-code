@@ -1,6 +1,7 @@
 import { McpServer, WebStandardStreamableHTTPServerTransport } from '@modelcontextprotocol/server';
 import { z } from 'zod';
 import { version } from '../package.json';
+import iconIndex from './icon-index.generated.json';
 
 const MCP_HTTP_PORT = 37079;
 const TAURI_PORT = 37078;
@@ -43,6 +44,72 @@ const contextSchema = z.object({
     .nullable()
 });
 
+// ── Icon search ──────────────────────────────────────────────────────────────
+// Resolves icon concepts to exact `pack:name` refs from a names-only index built
+// from the packs registered in the app (icon-index.generated.json ← gen-icon-index.ts).
+type IconPack = { prefix: string; icons: string[] };
+const ICON_PACKS = (iconIndex as { packs: IconPack[] }).packs;
+// Pack priority for tie-breaks = order in the index (logos first, then fas/far/fab),
+// so a tech query surfaces logos:kubernetes above fab:kubernetes, fas:user above far:user.
+const PACK_RANK = new Map(ICON_PACKS.map((p, i) => [p.prefix, i] as const));
+
+// Score an icon against a normalized term: 0 exact, 1 prefix, 2 substring, null = no
+// match. A `*` makes it an ordered-substring glob (linear scan, no backtracking).
+function scoreTerm(icon: string, term: string): number | null {
+  if (term.includes('*')) {
+    let idx = 0;
+    let matched = false;
+    for (const seg of term.split('*')) {
+      if (!seg) continue;
+      matched = true;
+      const at = icon.indexOf(seg, idx);
+      if (at === -1) return null;
+      idx = at + seg.length;
+    }
+    return matched ? 2 : null; // a lone "*" has no literal to match → matches nothing
+  }
+  if (icon === term) return 0;
+  if (icon.startsWith(term)) return 1;
+  return icon.includes(term) ? 2 : null;
+}
+
+function searchIcons(terms: string, limit: number) {
+  // Split the term string on any non-name character (whitespace, comma, pipe, slash, …)
+  // into standalone words, keeping hyphens and `*` which are valid in icon names / globs.
+  // LLMs emit synonyms as a free string with varying separators ("user users client",
+  // "user,client", "a|b"); splitting on the complement of name chars tolerates all of
+  // them without ever breaking a real single name, and "aws" still prefix-matches
+  // "aws-s3". For an exact multi-word name, pass it hyphenated.
+  const words = [
+    ...new Set(
+      terms
+        .toLowerCase()
+        .split(/[^a-z0-9*-]+/)
+        .filter(Boolean)
+    )
+  ];
+  const hits: { ref: string; pack: string; score: number; len: number }[] = [];
+  for (const p of ICON_PACKS) {
+    for (const icon of p.icons) {
+      let best: number | null = null;
+      for (const t of words) {
+        const s = scoreTerm(icon, t);
+        if (s !== null && (best === null || s < best)) best = s;
+      }
+      if (best !== null)
+        hits.push({ ref: `${p.prefix}:${icon}`, pack: p.prefix, score: best, len: icon.length });
+    }
+  }
+  hits.sort(
+    (a, b) =>
+      a.score - b.score ||
+      (PACK_RANK.get(a.pack) ?? 99) - (PACK_RANK.get(b.pack) ?? 99) ||
+      a.len - b.len ||
+      a.ref.localeCompare(b.ref)
+  );
+  return { matches: hits.slice(0, limit).map((h) => h.ref), total: hits.length };
+}
+
 function createMcpServer(): McpServer {
   const server = new McpServer(
     { name: 'mermaid-code-mcp', version },
@@ -55,7 +122,7 @@ function createMcpServer(): McpServer {
         'Use preview_diagram only for temporary, unsaved previews in the Draft tab. ' +
         // Keep in sync with registerIconPacks in src/lib/util/mermaid.ts.
         'Available Iconify icon packs for `pack:name` diagram icons: ' +
-        'logos, fa/fas/far/fab (Font Awesome 7).'
+        'logos, fa/fas/far/fab (Font Awesome 7). Call search_icons to resolve exact names.'
     }
   );
 
@@ -88,6 +155,58 @@ function createMcpServer(): McpServer {
       return {
         structuredContent,
         content: [{ type: 'text', text: JSON.stringify(structuredContent, null, 2) }]
+      };
+    }
+  );
+
+  server.registerTool(
+    'search_icons',
+    {
+      description:
+        "Resolve icon concepts to exact `pack:name` references that render in this app's diagrams " +
+        '(flowchart icon shapes, architecture-beta). Pass all concepts for a diagram in one call. ' +
+        'For each concept put the likely names/aliases in `terms` ' +
+        '(e.g. { label: "Kubernetes", terms: "kubernetes k8s" }). Each returned match is a ' +
+        'complete, ready-to-use reference like "logos:kubernetes" — use it verbatim; it already ' +
+        'includes the pack prefix, do not prepend anything.',
+      inputSchema: z.object({
+        queries: z
+          .array(
+            z.object({
+              label: z.string().optional().describe('Concept name, echoed in results'),
+              terms: z
+                .string()
+                .min(1)
+                .describe(
+                  'Candidate names/synonyms, space- or comma-separated, e.g. "user client person". ' +
+                    'Each word is matched individually; hyphenate for an exact name like "aws-s3"'
+                )
+            })
+          )
+          .min(1),
+        limit: z
+          .number()
+          .int()
+          .positive()
+          .max(50)
+          .optional()
+          .describe('Max matches per concept (default 10)')
+      }),
+      outputSchema: z.object({
+        results: z.array(
+          z.object({ label: z.string(), matches: z.array(z.string()), total: z.number() })
+        )
+      }),
+      annotations: { readOnlyHint: true }
+    },
+    async ({ queries, limit }) => {
+      const results = queries.map((q) => {
+        const { matches, total } = searchIcons(q.terms, limit ?? 10);
+        return { label: q.label ?? q.terms, matches, total };
+      });
+      return {
+        structuredContent: { results },
+        content: [{ type: 'text', text: JSON.stringify({ results }, null, 2) }]
       };
     }
   );

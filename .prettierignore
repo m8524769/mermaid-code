@@ -14,3 +14,4 @@ site/**
 src/lib/paraglide/**
 project.inlang/**
 !project.inlang/settings.json
+mcp-server/src/icon-index.generated.json

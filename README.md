@@ -82,7 +82,7 @@ brew install --cask mermaid-code
 
 ### Diagram Icons
 
-- **Bundled Iconify icon packs** — [SVG Logos](https://icon-sets.iconify.design/logos) and [Font Awesome 7](https://icon-sets.iconify.design/fa7-solid) are registered out of the box and render **offline** with no CDN fetch; use them in flowchart icon shapes and `architecture-beta` via the `logos:`, `fa:`/`fas:`/`far:`/`fab:` prefixes
+- **Bundled Iconify icon packs** — [SVG Logos](https://icon-sets.iconify.design/logos) and [Font Awesome 7](https://icon-sets.iconify.design/fa7-solid) are registered out of the box and render **offline** with no CDN fetch; use them in flowchart icon shapes and `architecture-beta` via the `logos:`, `fas:`/`far:`/`fab:` prefixes
 
 ---
 
@@ -118,6 +118,7 @@ claude mcp add --transport http mermaid-code-mcp http://localhost:37079/mcp
 | ----------------- | ------------------------------------------------------------------------------------------------------------------- |
 | `list_diagrams`   | Get the opened folder, list of `.mmd` files, and the active tab. Call this first to understand the current context. |
 | `preview_diagram` | Preview Mermaid diagram in the Draft tab (replaces existing Draft content).                                         |
+| `search_icons`    | Search available icons by concept (e.g. "kubernetes", "aws s3") to get the exact names to use in your diagrams.     |
 
 **Example — modifying an existing diagram:**
 
@@ -135,6 +136,15 @@ claude mcp add --transport http mermaid-code-mcp http://localhost:37079/mcp
 "Preview a flowchart showing the user registration flow"
 → Agent generates Mermaid code and calls preview_diagram
 → The diagram appears instantly in Mermaid Code's Draft tab
+```
+
+**Example — adding icons to a diagram:**
+
+```
+"Add icons to the services in this architecture diagram"
+→ Agent calls search_icons with concepts like "postgres", "redis", "nginx"
+→ search_icons returns exact names (e.g. logos:postgresql, logos:redis)
+→ Agent writes those names into the diagram and refreshes the preview
 ```
 
 > If your prompt triggers tools from other MCP servers (such as Figma MCP), that is expected — Mermaid Code MCP does not enforce its use. If you encounter tool conflicts, try phrasing your prompt as "Generate the mmd diagram within Mermaid Code app".

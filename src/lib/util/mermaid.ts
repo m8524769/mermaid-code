@@ -3,38 +3,18 @@ import tidyTreeLayouts from '@mermaid-js/layout-tidy-tree';
 import type { MermaidConfig, RenderResult } from 'mermaid';
 import mermaid from 'mermaid';
 import { canonicalDiagramId } from './diagramTypes';
+import { ICON_PACKS } from './iconPacks';
 
 mermaid.registerLayoutLoaders(tidyTreeLayouts);
 
-// Icon packs for diagram icon shapes (`@{ icon: "pack:name" }`) and architecture
-// diagrams. Mermaid ships none, so they're registered here — bundled (not
-// CDN-fetched) to work offline, and lazily loaded so Vite pulls a pack's JSON
-// only on first use. Each pack lists every name it answers to: the common
-// prefix(es) plus the canonical Iconify prefix, so names copied from
-// icon-sets.iconify.design resolve too.
-// (Separate from inline `[fa:fa-user]` labels, which use the Font Awesome
-// webfont — see FontAwesome.svelte — not these Iconify packs.)
-const ICON_PACKS: { names: string[]; loader: () => Promise<any> }[] = [
-  {
-    names: ['logos'],
-    loader: () => import('@iconify-json/logos/icons.json').then((m) => m.default)
-  },
-  {
-    names: ['fa', 'fas', 'fa7-solid'],
-    loader: () => import('@iconify-json/fa7-solid/icons.json').then((m) => m.default)
-  },
-  {
-    names: ['far', 'fa7-regular'],
-    loader: () => import('@iconify-json/fa7-regular/icons.json').then((m) => m.default)
-  },
-  {
-    names: ['fab', 'fa7-brands'],
-    loader: () => import('@iconify-json/fa7-brands/icons.json').then((m) => m.default)
-  }
-];
-
+// Register the bundled Iconify packs (see iconPacks.ts) with Mermaid, for diagram
+// icon shapes (`@{ icon: "pack:name" }`) and architecture diagrams. Bundled (not
+// CDN-fetched) to work offline; each pack's loader is lazy, so Vite pulls a pack's
+// JSON only on first use.
+// (Separate from inline `[fa:fa-user]` labels, which use the Font Awesome webfont —
+// see FontAwesome.svelte — not these Iconify packs.)
 mermaid.registerIconPacks(
-  ICON_PACKS.flatMap(({ names, loader }) => names.map((name) => ({ name, loader })))
+  ICON_PACKS.flatMap(({ prefixes, loader }) => prefixes.map((name) => ({ name, loader })))
 );
 
 export const render = async (
