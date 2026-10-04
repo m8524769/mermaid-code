@@ -49,6 +49,7 @@ export default defineConfig({
     }
   },
   preview: { port: 3000, host: true },
+  build: { license: { fileName: 'third-party-licenses.md' } },
   // Vitest otherwise resolves Svelte's server build, where $effect is a no-op.
   resolve: process.env.VITEST ? { conditions: ['browser'] } : undefined,
   test: {

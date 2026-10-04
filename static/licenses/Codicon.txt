@@ -1,0 +1,13 @@
+Codicon
+Copyright (c) Microsoft Corporation
+Source: https://github.com/microsoft/vscode-codicons
+Bundled via monaco-editor (codicon.ttf) for the editor UI.
+
+The Codicon icon font is licensed under the Creative Commons Attribution 4.0
+International License (CC BY 4.0):
+
+  https://creativecommons.org/licenses/by/4.0/
+
+(monaco-editor itself is MIT and is covered by the generated
+third-party-licenses.md; this notice covers the bundled Codicon font, whose
+CC BY 4.0 license is not surfaced by that automated list.)
