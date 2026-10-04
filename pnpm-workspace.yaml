@@ -4,4 +4,3 @@ allowBuilds:
   svelte-preprocess: false
 overrides:
   dompurify: ^3.4.16
-  lodash-es: ^4.18.1

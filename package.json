@@ -97,7 +97,7 @@
     "js-base64": "3.7.8",
     "lodash-es": "^4.18.1",
     "marked": "^18.0.14",
-    "mermaid": "^12.0.0",
+    "mermaid": "^12.1.0",
     "mode-watcher": "^1.1.0",
     "monaco-editor": "0.55.1",
     "monaco-vim": "^0.4.4",
