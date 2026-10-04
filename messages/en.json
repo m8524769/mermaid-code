@@ -49,6 +49,8 @@
   "action_open_folder": "Open Folder",
   "sidebar_search_placeholder": "Search files...",
   "sidebar_search_clear": "Clear search",
+  "sidebar_folder_filter": "Filter by subfolder",
+  "sidebar_folder_filter_all": "All files",
   "sidebar_autosave": "Auto-save",
   "share_description": "Share your diagrams with others.",
   "preset_title": "Sample Diagrams",

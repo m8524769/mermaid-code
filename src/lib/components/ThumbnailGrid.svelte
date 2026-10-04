@@ -11,8 +11,10 @@
 
   interface Props {
     query?: string;
+    folderFilter?: string;
+    availableFolders?: string[];
   }
-  let { query = '' }: Props = $props();
+  let { query = '', folderFilter = '', availableFolders = $bindable([]) }: Props = $props();
 
   const getThumbnailConfig = (): MermaidConfig => {
     try {
@@ -144,6 +146,45 @@
 
   const basename = (p: string) => p.split(/[/\\]/).pop() ?? p;
 
+  // Path of a file's directory relative to the open folder, '/'-separated
+  // ('' for files directly in the root). Normalize separators first so the
+  // slice boundary is consistent on Windows (backslashes) and *nix.
+  const relDir = (p: string): string => {
+    const norm = (s: string) => s.replace(/\\/g, '/').replace(/\/+$/, '');
+    const rel = norm(p)
+      .slice(norm(fileState.rootPath ?? '').length)
+      .replace(/^\/+/, '');
+    const idx = rel.lastIndexOf('/');
+    return idx === -1 ? '' : rel.slice(0, idx);
+  };
+
+  // Every subfolder (relative, '/'-separated) that contains .mmd files, expanded
+  // to all ancestor levels (a/b/c.mmd → "a", "a/b"). Surfaced to the sidebar for
+  // the folder-filter dropdown.
+  $effect(() => {
+    const set = new Set<string>();
+    for (const p of flatFiles) {
+      const d = relDir(p);
+      if (!d) continue;
+      const parts = d.split('/');
+      for (let i = 1; i <= parts.length; i++) set.add(parts.slice(0, i).join('/'));
+    }
+    availableFolders = [...set].sort((a, b) => a.localeCompare(b));
+  });
+
+  // Files shown after the name search and the subfolder filter (prefix match:
+  // a folder includes its descendants).
+  const visibleFiles = $derived(
+    flatFiles.filter((p) => {
+      if (query && !basename(p).toLowerCase().includes(query.toLowerCase())) return false;
+      if (folderFilter) {
+        const d = relDir(p);
+        if (d !== folderFilter && !d.startsWith(folderFilter + '/')) return false;
+      }
+      return true;
+    })
+  );
+
   // Inline rename state
   let renamingPath = $state<string | null>(null);
   let renameValue = $state('');
@@ -179,7 +220,7 @@
   };
 
   $effect(() => {
-    const files = flatFiles;
+    const files = visibleFiles;
 
     const observer = new IntersectionObserver(
       (entries) => {
@@ -214,9 +255,7 @@
 <div
   bind:this={containerEl}
   class={['grid gap-2 p-2 pt-0.5', containerWidth >= 240 ? 'grid-cols-2' : 'grid-cols-1']}>
-  {#each flatFiles.filter((p) => !query || basename(p)
-        .toLowerCase()
-        .includes(query.toLowerCase())) as path (path)}
+  {#each visibleFiles as path (path)}
     {@const entry = thumbnailCache.get(path)}
     <div
       class={[

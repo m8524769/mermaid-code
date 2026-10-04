@@ -5,23 +5,44 @@
   import { mcpState } from '$/util/mcpState.svelte';
   import FileTree from '$/components/FileTree.svelte';
   import ThumbnailGrid from '$/components/ThumbnailGrid.svelte';
+  import * as Popover from '$/components/ui/popover';
   import FolderOpenIcon from '~icons/material-symbols/folder-open-rounded';
   import AddIcon from '~icons/material-symbols/add-rounded';
   import FolderAddIcon from '~icons/material-symbols/create-new-folder-outline-rounded';
   import ViewListIcon from '~icons/material-symbols/view-list-rounded';
   import GridViewIcon from '~icons/material-symbols/grid-view-rounded';
+  import FilterIcon from '~icons/material-symbols/filter-list-rounded';
+  import CheckIcon from '~icons/material-symbols/check-rounded';
   import CloseIcon from '~icons/material-symbols/close-rounded';
   import { onMount } from 'svelte';
 
   const viewMode = persisted<'tree' | 'grid'>('mermaid-sidebar-view', 'grid');
   let renderContainer: HTMLDivElement | undefined = $state();
   let searchQuery = $state('');
+  // Subfolder filter for the grid view (''=all); folders surfaced by ThumbnailGrid.
+  let folderFilter = $state('');
+  let availableFolders = $state<string[]>([]);
+  let filterOpen = $state(false);
 
-  // Clear search when folder changes
+  // Display-only: pad '/' separators in a folder path for readability. Does not
+  // change the stored folderFilter value used for matching.
+  const prettyPath = (p: string) => p.replace(/\//g, ' / ');
+
+  // Clear search + folder filter when folder changes
   $effect(() => {
     // eslint-disable-next-line @typescript-eslint/no-unused-expressions
     fileState.rootPath;
     searchQuery = '';
+    folderFilter = '';
+  });
+
+  // Drop the folder filter only once folders are known and the selected one is
+  // gone — guards against the brief empty window while the grid rescans on remount
+  // (switching tree↔grid), which would otherwise clear a still-valid filter.
+  $effect(() => {
+    if (folderFilter && availableFolders.length > 0 && !availableFolders.includes(folderFilter)) {
+      folderFilter = '';
+    }
   });
 
   const pathLabel = $derived(
@@ -137,9 +158,9 @@
   </div>
 
   {#if fileState.rootPath}
-    <div class="p-2 pb-1">
+    <div class="flex items-center gap-1 p-2 pb-1">
       <div
-        class="flex h-6 items-center rounded bg-muted/50 px-2 focus-within:ring-1 focus-within:ring-primary">
+        class="flex h-6 min-w-0 flex-1 items-center rounded bg-muted/50 px-2 focus-within:ring-1 focus-within:ring-primary">
         <input
           class="min-w-0 flex-1 bg-transparent text-xs outline-none placeholder:text-muted-foreground/60"
           placeholder={m.sidebar_search_placeholder()}
@@ -153,6 +174,53 @@
           </button>
         {/if}
       </div>
+      {#if viewMode.value === 'grid' && (availableFolders.length > 0 || folderFilter)}
+        <Popover.Root bind:open={filterOpen}>
+          <Popover.Trigger
+            class={[
+              'flex h-6 shrink-0 items-center rounded px-1 text-muted-foreground hover:bg-muted hover:text-foreground data-[state=open]:bg-muted',
+              folderFilter && 'bg-muted text-foreground'
+            ]}
+            title={folderFilter
+              ? `${m.sidebar_folder_filter()} (${prettyPath(folderFilter)})`
+              : m.sidebar_folder_filter()}>
+            <FilterIcon class="size-4 shrink-0" />
+            {#if folderFilter}
+              <span class="ml-1 max-w-20 truncate text-xs">{prettyPath(folderFilter)}</span>
+            {/if}
+          </Popover.Trigger>
+          <Popover.Content align="end" class="max-h-64 w-56 overflow-y-auto p-1" sideOffset={4}>
+            <button
+              class="flex w-full items-center gap-1.5 rounded px-2 py-1 text-left text-xs hover:bg-muted"
+              onclick={() => {
+                folderFilter = '';
+                filterOpen = false;
+              }}>
+              <span class="min-w-0 flex-1">{m.sidebar_folder_filter_all()}</span>
+              {#if !folderFilter}
+                <CheckIcon class="size-3.5 shrink-0 text-foreground" />
+              {/if}
+            </button>
+            {#if availableFolders.length > 0}
+              <div class="my-1 border-t border-muted"></div>
+            {/if}
+            {#each availableFolders as folder (folder)}
+              <button
+                class="flex w-full items-center gap-1.5 rounded px-2 py-1 text-left text-xs hover:bg-muted"
+                onclick={() => {
+                  folderFilter = folder;
+                  filterOpen = false;
+                }}
+                title={prettyPath(folder)}>
+                <span class="min-w-0 flex-1 truncate">{prettyPath(folder)}</span>
+                {#if folderFilter === folder}
+                  <CheckIcon class="size-3.5 shrink-0 text-foreground" />
+                {/if}
+              </button>
+            {/each}
+          </Popover.Content>
+        </Popover.Root>
+      {/if}
     </div>
   {/if}
 
@@ -172,7 +240,7 @@
     {:else if fileState.tree.length === 0}
       <p class="px-3 py-4 text-center text-xs text-muted-foreground">{m.folder_empty()}</p>
     {:else if viewMode.value === 'grid' && renderContainer}
-      <ThumbnailGrid query={searchQuery} />
+      <ThumbnailGrid query={searchQuery} {folderFilter} bind:availableFolders />
     {:else}
       <div class="pr-2">
         <FileTree nodes={fileState.tree} query={searchQuery} />
