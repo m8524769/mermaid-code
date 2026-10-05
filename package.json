@@ -94,7 +94,7 @@
     "dayjs": "^1.11.23",
     "dompurify": "^3.4.16",
     "hammerjs": "^2.0.8",
-    "js-base64": "3.7.8",
+    "js-base64": "3.9.4",
     "lodash-es": "^4.18.1",
     "marked": "^18.0.14",
     "mermaid": "^12.1.0",
