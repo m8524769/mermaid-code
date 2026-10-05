@@ -99,7 +99,7 @@
     "marked": "^18.0.14",
     "mermaid": "^12.1.0",
     "mode-watcher": "^1.1.0",
-    "monaco-editor": "0.55.1",
+    "monaco-editor": "0.57.0",
     "monaco-vim": "^0.4.4",
     "pako": "3.0.2",
     "shiki": "^4.5.0",
