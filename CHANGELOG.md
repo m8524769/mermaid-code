@@ -2,6 +2,20 @@
 
 All notable changes to Mermaid Code are documented here.
 
+## [v0.9.1] - 2026-10-07
+
+### Added
+
+- **Filter the thumbnail grid by subfolder**: a dropdown beside the file search (thumbnail view) narrows the grid to a chosen subfolder and its descendants, so diagrams organized into subfolders are easier to browse.
+
+### Changed
+
+- **Updated Mermaid to 12.1.0**: rendering fixes and layout tweaks — see the [Mermaid 12.1.0 release notes](https://github.com/mermaid-js/mermaid/releases#release-mermaid@12.1.0).
+
+### Fixed
+
+- **Light-theme highlighting for arrows and operators**: across diagram types, connectors/arrows (e.g. `-->`) and operators (e.g. the sequence-diagram "right of") were painted in keyword blue; they now render as neutral text, matching the dark theme.
+
 ## [v0.9.0] - 2026-10-04
 
 ### Added
