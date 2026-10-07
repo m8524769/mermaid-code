@@ -713,7 +713,7 @@ export const initEditor = (monacoEditor: typeof Monaco): void => {
       // when semantic tokens take over. custom-error stays a distinct red.
       { foreground: '0000ff', token: 'typeKeyword' },
       { fontStyle: 'bold', foreground: 'ff0000', token: 'custom-error' },
-      { foreground: '0000ff', token: 'transition' },
+      { foreground: '000000', token: 'transition' },
       { foreground: '808080', token: 'delimiter.bracket' },
       { foreground: '001080', token: 'annotation' },
       { foreground: '001080', token: 'identifier' },
@@ -723,7 +723,7 @@ export const initEditor = (monacoEditor: typeof Monaco): void => {
       { foreground: '008000', token: 'comment' },
       { foreground: 'a31515', token: 'string' },
       { foreground: '098658', token: 'number' },
-      { foreground: '0000ff', token: 'operator' },
+      { foreground: '000000', token: 'operator' },
       { foreground: '001080', token: 'variable' },
       { foreground: '0070c1', token: 'constant' },
       { foreground: '267f99', token: 'type' },
