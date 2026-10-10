@@ -138,6 +138,8 @@
   "agent_mcp_cannot_edit": "Agent 无法读取或编辑图表。",
   "agent_enable": "启用",
   "agent_permission_request": "权限请求",
+  "agent_question_submit": "提交答案",
+  "agent_question_skip": "跳过",
   "agent_allow": "允许",
   "agent_deny": "拒绝",
   "agent_deny_placeholder": "告诉 Claude 该怎么做",

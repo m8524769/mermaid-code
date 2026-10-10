@@ -138,6 +138,8 @@
   "agent_mcp_cannot_edit": "Agent cannot read or edit diagrams.",
   "agent_enable": "Enable",
   "agent_permission_request": "Permission Request",
+  "agent_question_submit": "Submit Answers",
+  "agent_question_skip": "Skip",
   "agent_allow": "Allow",
   "agent_deny": "Deny",
   "agent_deny_placeholder": "Tell Claude what to do instead",

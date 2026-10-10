@@ -448,6 +448,69 @@
     }
   }
 
+  // ── AskUserQuestion (Claude's interactive question tool) ──────────────────
+  // Arrives on the same can_use_tool permission channel, but the request carries
+  // `requires_user_interaction: true` (the protocol-level signal) and an input
+  // shaped as { questions: [...] }. We gate on that flag (not the tool name) and
+  // render selectable options instead of allow/deny, answering by replying
+  // `allow` with updatedInput carrying an `answers` map (question text → chosen
+  // label(s)); Skip sends empty answers ("not answered").
+  type AskQuestion = {
+    question: string;
+    header?: string;
+    multiSelect?: boolean;
+    options: { label: string; description?: string }[];
+  };
+  const askQuestions = $derived.by(() => {
+    const p = pendingPermission;
+    if (!p?.requiresUserInteraction) return null;
+    const qs = (p.toolInput as { questions?: AskQuestion[] } | null)?.questions;
+    return Array.isArray(qs) && qs.length > 0 ? qs : null;
+  });
+  // question index → selected labels (single-select keeps at most one)
+  let answerSel = $state<Record<number, string[]>>({});
+  $effect(() => {
+    // reset selections whenever a new question request appears
+    void pendingPermission?.requestId;
+    answerSel = {};
+  });
+  function toggleAnswer(qi: number, label: string, multi: boolean) {
+    const cur = answerSel[qi] ?? [];
+    const next = multi
+      ? cur.includes(label)
+        ? cur.filter((l) => l !== label)
+        : [...cur, label]
+      : [label];
+    answerSel = { ...answerSel, [qi]: next };
+  }
+  const allAnswered = $derived(
+    !!askQuestions && askQuestions.every((_, i) => (answerSel[i]?.length ?? 0) > 0)
+  );
+  async function answerQuestion(skip: boolean) {
+    if (!pendingPermission || !runId) return;
+    const answers: Record<string, string | string[]> = {};
+    if (!skip && askQuestions) {
+      askQuestions.forEach((q, i) => {
+        const sel = answerSel[i] ?? [];
+        answers[q.question] = q.multiSelect ? sel : (sel[0] ?? '');
+      });
+    }
+    const toolInput = { ...(pendingPermission.toolInput as object), answers };
+    try {
+      const { invoke } = await import('@tauri-apps/api/core');
+      await invoke('respond_agent_permission', {
+        runId,
+        requestId: pendingPermission.requestId,
+        approved: true,
+        toolInput
+      });
+      slices[selectedAgentId].pendingPermission = null;
+      answerSel = {};
+    } catch (e) {
+      console.error('[agent] answerQuestion error:', e);
+    }
+  }
+
   let messagesEl = $state<HTMLDivElement | null>(null);
   $effect(() => {
     messages;
@@ -940,44 +1003,101 @@
 
     <!-- Permission banner -->
     {#if pendingPermission}
-      <div class="border-t border-amber-500/30 bg-amber-500/10 p-3">
-        <div
-          class="mb-2 flex items-center gap-2 text-xs font-medium text-amber-600 dark:text-amber-400">
-          <LockIcon class="size-3.5 shrink-0" />
-          <span>{m.agent_permission_request()}</span>
+      {#if askQuestions}
+        <div class="border-t border-primary/30 bg-primary/5 p-3">
+          {#each askQuestions as q, qi (qi)}
+            {#if q.header}
+              <p
+                class="mb-0.5 text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">
+                {q.header}
+              </p>
+            {/if}
+            <p class="mb-1.5 text-xs font-medium text-foreground">{q.question}</p>
+            <div class="mb-2 flex flex-col gap-1">
+              {#each q.options as opt (opt.label)}
+                {@const selected = (answerSel[qi] ?? []).includes(opt.label)}
+                <button
+                  type="button"
+                  onclick={() => toggleAnswer(qi, opt.label, !!q.multiSelect)}
+                  class={[
+                    'flex items-start gap-2 rounded-md border px-2 py-1.5 text-left text-xs transition-colors',
+                    selected ? 'border-primary bg-primary/10' : 'border-border hover:bg-muted'
+                  ]}>
+                  <span
+                    class={[
+                      'mt-px flex size-4 shrink-0 items-center justify-center border',
+                      q.multiSelect ? 'rounded-[4px]' : 'rounded-full',
+                      selected
+                        ? 'border-primary bg-primary text-primary-foreground'
+                        : 'border-muted-foreground/40'
+                    ]}>
+                    {#if selected}<CheckIcon class="size-3" />{/if}
+                  </span>
+                  <span class="min-w-0 flex-1">
+                    <span class="font-medium text-foreground">{opt.label}</span>
+                    {#if opt.description}
+                      <span class="ml-1.5 text-muted-foreground">{opt.description}</span>
+                    {/if}
+                  </span>
+                </button>
+              {/each}
+            </div>
+          {/each}
+          <div class="flex gap-2">
+            <button
+              onclick={() => answerQuestion(false)}
+              disabled={!allAnswered}
+              class="flex-1 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/80 disabled:opacity-50">
+              {m.agent_question_submit()}
+            </button>
+            <button
+              onclick={() => answerQuestion(true)}
+              class="rounded-md bg-muted px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted/80">
+              {m.agent_question_skip()}
+            </button>
+          </div>
         </div>
-        <p class="mb-1 text-xs text-foreground">
-          {m.agent_allow()} <span class="font-mono font-medium">{pendingPermission.toolName}</span>?
-        </p>
-        {#if pendingPermission.toolInput && Object.keys(pendingPermission.toolInput as object).length > 0}
-          <pre
-            class="mb-2 max-h-24 overflow-auto rounded-md bg-muted p-2 font-mono text-[11px] text-muted-foreground">{JSON.stringify(
-              pendingPermission.toolInput,
-              null,
-              2
-            )}</pre>
-        {/if}
-        {#if selectedAgentId !== 'codex'}
-          <textarea
-            bind:value={denyMessage}
-            placeholder={m.agent_deny_placeholder()}
-            rows="1"
-            class="mb-2 w-full resize-none rounded-md bg-muted px-2 py-1.5 text-xs outline-none placeholder:text-muted-foreground/60"
-          ></textarea>
-        {/if}
-        <div class="flex gap-2">
-          <button
-            onclick={allowPermission}
-            class="flex-1 rounded-md bg-green-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-green-700">
+      {:else}
+        <div class="border-t border-amber-500/30 bg-amber-500/10 p-3">
+          <div
+            class="mb-2 flex items-center gap-2 text-xs font-medium text-amber-600 dark:text-amber-400">
+            <LockIcon class="size-3.5 shrink-0" />
+            <span>{m.agent_permission_request()}</span>
+          </div>
+          <p class="mb-1 text-xs text-foreground">
             {m.agent_allow()}
-          </button>
-          <button
-            onclick={denyPermission}
-            class="flex-1 rounded-md bg-muted px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted/80">
-            {m.agent_deny()}
-          </button>
+            <span class="font-mono font-medium">{pendingPermission.toolName}</span>?
+          </p>
+          {#if pendingPermission.toolInput && Object.keys(pendingPermission.toolInput as object).length > 0}
+            <pre
+              class="mb-2 max-h-24 overflow-auto rounded-md bg-muted p-2 font-mono text-[11px] text-muted-foreground">{JSON.stringify(
+                pendingPermission.toolInput,
+                null,
+                2
+              )}</pre>
+          {/if}
+          {#if selectedAgentId !== 'codex'}
+            <textarea
+              bind:value={denyMessage}
+              placeholder={m.agent_deny_placeholder()}
+              rows="1"
+              class="mb-2 w-full resize-none rounded-md bg-muted px-2 py-1.5 text-xs outline-none placeholder:text-muted-foreground/60"
+            ></textarea>
+          {/if}
+          <div class="flex gap-2">
+            <button
+              onclick={allowPermission}
+              class="flex-1 rounded-md bg-green-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-green-700">
+              {m.agent_allow()}
+            </button>
+            <button
+              onclick={denyPermission}
+              class="flex-1 rounded-md bg-muted px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted/80">
+              {m.agent_deny()}
+            </button>
+          </div>
         </div>
-      </div>
+      {/if}
     {/if}
 
     <!-- Input -->

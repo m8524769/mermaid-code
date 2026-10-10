@@ -19,7 +19,7 @@ pub enum DriverEvent {
     ToolUse { id: String, name: String, input: Value },
     ToolResult { tool_use_id: String, content: String },
     SessionReady { session_id: String },
-    PermissionRequest { request_id: String, tool_name: String, tool_input: Value },
+    PermissionRequest { request_id: String, tool_name: String, tool_input: Value, requires_user_interaction: bool },
     Usage { output_tokens: u64 },
     Exit { is_error: bool, cost_usd: Option<f64>, error: Option<String>, is_final: bool },
 }
@@ -182,6 +182,12 @@ impl AgentDriver for ClaudeCodeDriver {
                             request_id: request_id.to_string(),
                             tool_name: req["tool_name"].as_str().unwrap_or("").to_string(),
                             tool_input: req["input"].clone(),
+                            // Protocol signal that this request needs the user to
+                            // interact (e.g. AskUserQuestion) rather than just
+                            // allow/deny; drives the question UI on the frontend.
+                            requires_user_interaction: req["requires_user_interaction"]
+                                .as_bool()
+                                .unwrap_or(false),
                         });
                     }
                 }
@@ -620,6 +626,8 @@ impl AgentDriver for CodexDriver {
                     request_id: item_id,
                     tool_name,
                     tool_input,
+                    // Codex only has allow/deny approvals, never interactive questions.
+                    requires_user_interaction: false,
                 });
             }
             return out;

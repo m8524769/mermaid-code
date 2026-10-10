@@ -28,6 +28,7 @@ export interface PermissionRequest {
   requestId: string;
   toolName: string;
   toolInput: unknown;
+  requiresUserInteraction: boolean;
 }
 
 interface AgentSlice {
@@ -96,6 +97,7 @@ interface RawEvent {
   request_id?: string;
   tool_name?: string;
   tool_input?: unknown;
+  requires_user_interaction?: boolean;
   output_tokens?: number;
   is_error?: boolean;
   cost_usd?: number;
@@ -149,7 +151,8 @@ function dispatch(agentId: string, e: RawEvent) {
         slice.pendingPermission = {
           requestId: e.request_id,
           toolName: e.tool_name ?? '',
-          toolInput: e.tool_input
+          toolInput: e.tool_input,
+          requiresUserInteraction: e.requires_user_interaction ?? false
         };
       }
       break;

@@ -319,3 +319,122 @@ async fn test_permission_deny_flow() {
     assert!(!exit_is_error, "session should exit cleanly even after deny");
     eprintln!("tool_executed={tool_executed}");
 }
+
+/// Verifies the AskUserQuestion answer flow over the stdio permission channel:
+/// Claude calls AskUserQuestion → we reply `allow` with an `updatedInput` that keeps
+/// `questions` unchanged and adds an `answers` map (question text -> chosen label) →
+/// Claude's tool_result echoes the selection back.
+///
+/// The chosen label is read from the options Claude actually produced (second option),
+/// so the assertion checks that whatever we send as the answer round-trips, instead of
+/// matching the model's free-form prose.
+///
+/// Run with: cargo test --test claude_code_cli_integration test_ask_user_question_answer_flow -- --ignored --nocapture
+#[tokio::test]
+#[ignore]
+async fn test_ask_user_question_answer_flow() {
+    let (_child, mut stdin, stdout, stderr) = spawn_claude(
+        "Do nothing else and call no other tool. Your only action: call the AskUserQuestion tool \
+         with ONE single-select question (multiSelect: false) — header \"Color\", question \
+         \"Pick one color\", options \"Red\", \"Green\", \"Blue\" (each with a short description). \
+         After the answer comes back, reply in text stating which option was selected.",
+    )
+    .await;
+    let mut lines = BufReader::new(stdout).lines();
+    let mut err_lines = BufReader::new(stderr).lines();
+    tokio::spawn(async move {
+        while let Ok(Some(l)) = err_lines.next_line().await {
+            eprintln!("[stderr] {l}");
+        }
+    });
+
+    let mut got_question = false;
+    let mut chosen_label = String::new();
+    let mut tool_result_content = String::new();
+    let mut exit_is_error = true;
+
+    while let Ok(Some(line)) = lines.next_line().await {
+        let line = line.trim().to_string();
+        if line.is_empty() {
+            continue;
+        }
+        eprintln!("[raw] {line}");
+        let Ok(val) = serde_json::from_str::<serde_json::Value>(&line) else {
+            continue;
+        };
+        match val["type"].as_str() {
+            Some("control_request")
+                if val["request"]["subtype"].as_str() == Some("can_use_tool") =>
+            {
+                let request_id = val["request_id"].as_str().unwrap_or("").to_string();
+                let tool_name = val["request"]["tool_name"].as_str().unwrap_or("").to_string();
+                let input = val["request"]["input"].clone();
+                eprintln!("[permission] id={request_id} tool={tool_name}");
+                eprintln!("[input] {}", serde_json::to_string_pretty(&input).unwrap_or_default());
+
+                assert_eq!(
+                    tool_name, "AskUserQuestion",
+                    "expected AskUserQuestion, got {tool_name}"
+                );
+                got_question = true;
+
+                let options = input["questions"][0]["options"]
+                    .as_array()
+                    .expect("AskUserQuestion input must carry questions[0].options");
+                assert!(
+                    options.len() >= 2,
+                    "updatedInput must stay schema-valid (options >= 2)"
+                );
+
+                // Answer with the SECOND option Claude actually produced, so the
+                // assertion checks a real round-trip rather than a hardcoded label.
+                let qtext = input["questions"][0]["question"].as_str().unwrap_or("").to_string();
+                chosen_label = options[1]["label"].as_str().unwrap_or("").to_string();
+                assert!(!chosen_label.is_empty(), "second option had no label");
+
+                // Single-select: the answer value is the chosen label as a string.
+                let mut updated = input.clone();
+                updated["answers"] = serde_json::json!({ qtext: chosen_label.clone() });
+                eprintln!("[→ allow w/ answer] {updated}");
+
+                let msg = build_control_response(&request_id, true, Some(&updated));
+                stdin.write_all(msg.as_bytes()).await.unwrap();
+            }
+            Some("user") => {
+                for block in val["message"]["content"].as_array().into_iter().flatten() {
+                    if block["type"].as_str() == Some("tool_result") {
+                        let content = match &block["content"] {
+                            serde_json::Value::String(s) => s.clone(),
+                            other => other.to_string(),
+                        };
+                        tool_result_content = content;
+                        eprintln!("[tool_result] {tool_result_content}");
+                    }
+                }
+            }
+            Some("assistant") => {
+                for block in val["message"]["content"].as_array().into_iter().flatten() {
+                    if block["type"].as_str() == Some("text") {
+                        let t = block["text"].as_str().unwrap_or("");
+                        if !t.is_empty() {
+                            eprintln!("[message] {t}");
+                        }
+                    }
+                }
+            }
+            Some("result") => {
+                exit_is_error = val["is_error"].as_bool().unwrap_or(true);
+                eprintln!("[exit] is_error={exit_is_error}");
+                break;
+            }
+            _ => {}
+        }
+    }
+
+    assert!(got_question, "no AskUserQuestion permission request received");
+    assert!(
+        tool_result_content.contains(&chosen_label),
+        "tool_result should echo the chosen label {chosen_label:?}, got: {tool_result_content:?}"
+    );
+    assert!(!exit_is_error, "session exited with error");
+}
