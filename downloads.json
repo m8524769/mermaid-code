@@ -1,7 +1,7 @@
 {
-  "total": 178,
-  "totalUpdateChecks": 608,
-  "updatedAt": "2026-10-09T15:19:16Z",
+  "total": 186,
+  "totalUpdateChecks": 615,
+  "updatedAt": "2026-10-10T03:20:47Z",
   "days": [
     {
       "date": "2026-09-12",
@@ -342,16 +342,33 @@
     },
     {
       "date": "2026-10-09",
-      "count": 3,
-      "updateChecks": 9,
+      "count": 9,
+      "updateChecks": 16,
       "byPlatform": {
-        "Windows": 2,
-        "Linux": 1
+        "macOS": 2,
+        "Windows": 4,
+        "Linux": 3
       },
       "byCountry": {
-        "HK": 1,
+        "TH": 1,
         "CN": 1,
-        "CZ": 1
+        "ID": 1,
+        "SG": 1,
+        "US": 2,
+        "HK": 1,
+        "CZ": 1,
+        "BR": 1
+      }
+    },
+    {
+      "date": "2026-10-10",
+      "count": 2,
+      "updateChecks": 0,
+      "byPlatform": {
+        "macOS": 2
+      },
+      "byCountry": {
+        "CZ": 2
       }
     }
   ]
