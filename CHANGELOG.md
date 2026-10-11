@@ -2,6 +2,17 @@
 
 All notable changes to Mermaid Code are documented here.
 
+## [v0.9.2] - 2026-10-12
+
+### Added
+
+- **Answer the AI agent's multiple-choice questions inline**: when the agent asks a question through Claude Code's AskUserQuestion tool, the panel now shows the choices as selectable options — single- or multi-select — with an **"Other"** field to type your own answer, instead of a plain allow/deny prompt.
+- **"Scroll to bottom" button in the AI agent panel**: when you scroll up through a long conversation, a button appears to jump back to the latest message and resume following new replies.
+
+### Changed
+
+- **The AI agent panel stays responsive in long conversations**: the transcript now renders only the messages currently in view, so sessions with thousands of messages open and scroll smoothly instead of freezing. New replies still keep the view pinned to the bottom unless you've scrolled up to read history.
+
 ## [v0.9.1] - 2026-10-07
 
 ### Added
