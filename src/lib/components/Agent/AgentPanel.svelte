@@ -10,7 +10,9 @@
   import { mcpState } from '$lib/util/mcpState.svelte';
   import { openFolderDialog } from '$lib/util/fileSystem';
   import { mode } from 'mode-watcher';
-  import { renderMarkdown, renderMarkdownSync } from '$lib/util/markdown';
+  import { renderMarkdownSync } from '$lib/util/markdown';
+  import { renderMarkdownCached, clearMarkdownCache } from '$lib/util/markdownCache';
+  import { VList, type VListHandle } from 'virtua/svelte';
   import { untrack } from 'svelte';
   import ClaudeIcon from '~icons/logos/claude-icon';
   import OpenAIIcon from '~icons/logos/openai-icon';
@@ -170,6 +172,9 @@
     void workingFolder;
     activeSessionId = localStorage.getItem(sessionKey(agent, workingFolder));
     untrack(() => agentState.clearMessages(agent));
+    following = true;
+    distanceFromBottom = 0;
+    clearMarkdownCache();
   });
 
   const runId = $derived(slices[selectedAgentId]?.activeRunId ?? null);
@@ -195,6 +200,9 @@
       const rid = slices[selectedAgentId]?.activeRunId;
       if (rid) void killRun(rid);
     });
+    following = true;
+    distanceFromBottom = 0;
+    clearMarkdownCache();
     agentState.loadSessionHistory(selectedAgentId, workingFolder, activeSessionId);
   });
 
@@ -289,6 +297,11 @@
   async function sendMessage() {
     const text = inputText.trim();
     if (!text || !workingFolder || sending) return;
+    // Sending always returns the view to the bottom and resumes auto-follow, so
+    // the new message (and the incoming reply) are visible rather than left
+    // off-screen when the user had scrolled up.
+    following = true;
+    distanceFromBottom = 0;
     inputText = '';
     sending = true;
     let startedRunId: string | null = null;
@@ -370,6 +383,27 @@
   }
 
   const messages = $derived(slices[selectedAgentId]?.messages ?? []);
+
+  // Typing dots mean "working, but nothing is streaming yet": waiting for the
+  // first token or running a tool. Debounced by 250ms so the sub-second gap
+  // between a finalized reply and the `exit` event doesn't flash the dots, while
+  // genuine waits (first token, tool runs) comfortably outlast the delay. A role
+  // check won't work here: `last === assistant` can mean either "final answer" or
+  // "said something, now running a tool", and only time tells them apart.
+  // Also suppressed while a permission/question request is pending — then the run
+  // is blocked on the user, not working.
+  const agentWorking = $derived(
+    isProcessing && !slices[selectedAgentId]?.pendingPermission && !messages.at(-1)?.isStreaming
+  );
+  let showTypingDots = $state(false);
+  $effect(() => {
+    if (!agentWorking) {
+      showTypingDots = false;
+      return;
+    }
+    const t = setTimeout(() => (showTypingDots = true), 250);
+    return () => clearTimeout(t);
+  });
 
   // Sync session_id from slice (set by session_ready event) to local state
   $effect(() => {
@@ -537,12 +571,44 @@
     }
   }
 
-  let messagesEl = $state<HTMLDivElement | null>(null);
+  let vlist = $state<VListHandle | null>(null);
+  // How far (px) the viewport bottom is from the content bottom. 0 = pinned.
+  let distanceFromBottom = $state(0);
+  // `following` (auto-pin) uses a small threshold so any deliberate scroll-up stops
+  // new messages from yanking the view back down. The "scroll to bottom" button
+  // uses a larger one (SCROLL_BUTTON_GAP) so it only appears after scrolling up a
+  // meaningful distance, not on tiny nudges. The two are intentionally decoupled.
+  const FOLLOW_GAP = 50;
+  const SCROLL_BUTTON_GAP = 200;
+  let following = $state(true);
+  // Recompute on both scroll and resize: resize matters because short,
+  // non-scrollable content never emits a scroll event, so without it `following`
+  // could latch false (e.g. if a scroll fires before the viewport is measured).
+  function updateFollowing() {
+    if (!vlist) return;
+    distanceFromBottom =
+      vlist.getScrollSize() - (vlist.getScrollOffset() + vlist.getViewportSize());
+    following = distanceFromBottom < FOLLOW_GAP;
+  }
+  // Fired when the viewport or items resize. If we were pinned, re-scroll to the
+  // bottom so a layout change that shrinks the list — most notably the typing-dots
+  // footer appearing ~250ms after a reply starts — doesn't leave the last message
+  // hidden behind the footer. Does nothing when the user has scrolled up.
+  function onViewportResize() {
+    if (following) vlist?.scrollToIndex(messages.length - 1, { align: 'end' });
+    updateFollowing();
+  }
   $effect(() => {
-    messages;
-    tick().then(() => {
-      if (messagesEl) messagesEl.scrollTop = messagesEl.scrollHeight;
-    });
+    const n = messages.length;
+    // Read the last message's length so streaming growth also re-triggers this.
+    const lastLen = messages[n - 1]?.text.length ?? 0;
+    void lastLen;
+    // `following` is read untracked: only NEW content (messages change) should
+    // pin to the bottom. If `following` were a dependency, scrolling up to within
+    // FOLLOW_GAP would flip it true and this effect would snap the view to the
+    // bottom on the user's own scroll.
+    if (n === 0 || !untrack(() => following)) return;
+    tick().then(() => vlist?.scrollToIndex(n - 1, { align: 'end' }));
   });
 
   async function handleLinkClick(e: MouseEvent | KeyboardEvent, target: EventTarget | null) {
@@ -785,9 +851,8 @@
 
     <!-- Content -->
     <div
-      bind:this={messagesEl}
       role="presentation"
-      class="flex flex-1 flex-col gap-2 overflow-y-auto p-2"
+      class="relative flex min-h-0 flex-1 flex-col"
       onclick={(e) => handleLinkClick(e, e.target)}
       onkeydown={(e) => {
         if (e.key === 'Enter') handleLinkClick(e, e.target);
@@ -811,119 +876,155 @@
           </div>
         </div>
       {:else}
-        {#each messages as msg (msg.id)}
-          <div class={['flex flex-col gap-0.5', msg.role === 'user' ? 'items-end' : 'items-start']}>
-            {#if msg.role === 'user'}
-              {#if msg.openedFiles && msg.openedFiles.length > 0}
-                <div class="flex max-w-[85%] flex-wrap gap-1">
-                  {#each msg.openedFiles as file}
-                    <span
-                      class="flex items-center gap-0.5 rounded-md border border-muted bg-muted/50 px-1.5 py-0.5 font-mono text-xs text-muted-foreground">
-                      <AttachFileIcon class="size-3 shrink-0" />{file.split(/[/\\]/).at(-1)}
-                    </span>
-                  {/each}
-                </div>
-              {/if}
-              {#if msg.selectedCode && msg.selectedCode.length > 0}
-                <div class="flex max-w-[85%] flex-wrap gap-1">
-                  {#each msg.selectedCode as sel}
-                    <span
-                      class="flex items-center gap-0.5 rounded-md border border-muted bg-muted/50 px-1.5 py-0.5 font-mono text-xs text-muted-foreground"
-                      title="{sel.file}:{sel.startLine}-{sel.endLine}">
-                      <CodeBracketIcon class="size-3 shrink-0" />{sel.symbol ??
-                        sel.file.split(/[/\\]/).at(-1)}:{sel.startLine}-{sel.endLine}
-                    </span>
-                  {/each}
-                </div>
-              {/if}
-              <div
-                class="max-w-[85%] rounded-xl bg-primary px-3 py-2 text-sm break-words whitespace-pre-wrap text-primary-foreground">
-                {msg.text}
-              </div>
-            {:else if msg.role === 'assistant'}
-              {#if msg.thinking}
-                <details class="max-w-[85%] rounded-xl border border-muted-foreground/20 text-xs">
-                  <summary
-                    class="flex cursor-pointer items-center gap-1.5 px-3 py-1.5 select-none hover:text-foreground">
-                    <span class="size-1.5 shrink-0 rounded-full bg-muted-foreground/50"></span>
-                    <span class="font-medium text-muted-foreground">{m.agent_thinking()}</span>
-                  </summary>
-                  <div
-                    class="border-t border-muted-foreground/20 px-3 py-2 break-words whitespace-pre-wrap text-muted-foreground">
-                    {msg.thinking}
+        <VList
+          bind:this={vlist}
+          data={messages}
+          getKey={(msg) => msg.id}
+          class="flex-1 p-2"
+          onscroll={updateFollowing}
+          onresize={onViewportResize}>
+          {#snippet children(msg, index)}
+            <div
+              class={[
+                index > 0 && 'mt-2',
+                'flex flex-col gap-0.5',
+                msg.role === 'user' ? 'items-end' : 'items-start'
+              ]}>
+              {#if msg.role === 'user'}
+                {#if msg.openedFiles && msg.openedFiles.length > 0}
+                  <div class="flex max-w-[85%] flex-wrap gap-1">
+                    {#each msg.openedFiles as file}
+                      <span
+                        class="flex items-center gap-0.5 rounded-md border border-muted bg-muted/50 px-1.5 py-0.5 font-mono text-xs text-muted-foreground">
+                        <AttachFileIcon class="size-3 shrink-0" />{file.split(/[/\\]/).at(-1)}
+                      </span>
+                    {/each}
                   </div>
-                </details>
-              {/if}
-              {#if msg.isStreaming}
+                {/if}
+                {#if msg.selectedCode && msg.selectedCode.length > 0}
+                  <div class="flex max-w-[85%] flex-wrap gap-1">
+                    {#each msg.selectedCode as sel}
+                      <span
+                        class="flex items-center gap-0.5 rounded-md border border-muted bg-muted/50 px-1.5 py-0.5 font-mono text-xs text-muted-foreground"
+                        title="{sel.file}:{sel.startLine}-{sel.endLine}">
+                        <CodeBracketIcon class="size-3 shrink-0" />{sel.symbol ??
+                          sel.file.split(/[/\\]/).at(-1)}:{sel.startLine}-{sel.endLine}
+                      </span>
+                    {/each}
+                  </div>
+                {/if}
                 <div
-                  class="prose prose-sm max-w-[85%] rounded-xl bg-muted px-3 py-2 dark:prose-invert [&_hr]:my-3 [&_pre]:my-2 [&_pre]:overflow-x-auto [&_pre]:rounded-lg [&_pre]:px-3 [&_pre]:py-2">
-                  <!-- eslint-disable-next-line svelte/no-at-html-tags -->
-                  {@html renderMarkdownSync(msg.text)}
+                  class="max-w-[85%] rounded-xl bg-primary px-3 py-2 text-sm break-words whitespace-pre-wrap text-primary-foreground">
+                  {msg.text}
                 </div>
-              {:else}
-                {#await renderMarkdown(msg.text, mode.current === 'dark')}
-                  <div
-                    class="max-w-[85%] rounded-xl bg-muted px-3 py-2 text-sm break-words whitespace-pre-wrap text-foreground">
-                    {msg.text}
-                  </div>
-                {:then html}
+              {:else if msg.role === 'assistant'}
+                {#if msg.thinking}
+                  <details class="max-w-[85%] rounded-xl border border-muted-foreground/20 text-xs">
+                    <summary
+                      class="flex cursor-pointer items-center gap-1.5 px-3 py-1.5 select-none hover:text-foreground">
+                      <span class="size-1.5 shrink-0 rounded-full bg-muted-foreground/50"></span>
+                      <span class="font-medium text-muted-foreground">{m.agent_thinking()}</span>
+                    </summary>
+                    <div
+                      class="border-t border-muted-foreground/20 px-3 py-2 break-words whitespace-pre-wrap text-muted-foreground">
+                      {msg.thinking}
+                    </div>
+                  </details>
+                {/if}
+                {#if msg.isStreaming}
                   <div
                     class="prose prose-sm max-w-[85%] rounded-xl bg-muted px-3 py-2 dark:prose-invert [&_hr]:my-3 [&_pre]:my-2 [&_pre]:overflow-x-auto [&_pre]:rounded-lg [&_pre]:px-3 [&_pre]:py-2">
                     <!-- eslint-disable-next-line svelte/no-at-html-tags -->
-                    {@html html}
+                    {@html renderMarkdownSync(msg.text)}
                   </div>
-                {/await}
-              {/if}
-            {:else if msg.role === 'tool_use'}
-              <details class="max-w-[85%] rounded-xl border border-muted-foreground/20 text-xs">
-                <summary
-                  class="flex cursor-pointer items-baseline gap-1.5 px-3 py-1.5 select-none hover:text-foreground">
-                  <span class="size-1.5 shrink-0 self-center rounded-full bg-muted-foreground/50"
-                  ></span>
-                  <span class="font-medium text-muted-foreground"
-                    >{msg.toolName ?? m.agent_tool_fallback()}</span>
-                  {#if msg.text}
-                    {@const input = (() => {
-                      try {
-                        return JSON.parse(msg.text);
-                      } catch {
-                        return null;
-                      }
-                    })()}
-                    {@const filePath = input?.file_path ?? input?.path ?? null}
-                    {@const label = filePath
-                      ? filePath.split(/[/\\]/).at(-1)
-                      : (input?.command ?? input?.skill ?? input?.description ?? null)}
-                    {#if label}
-                      <span
-                        class="truncate font-mono text-muted-foreground/60"
-                        style="max-width:24rem">{label}</span>
-                    {/if}
-                  {/if}
-                </summary>
-                <div
-                  class="border-t border-muted-foreground/20 px-3 py-2 font-mono text-xs break-words whitespace-pre-wrap text-muted-foreground">
-                  {msg.text}
-                </div>
-              </details>
-            {:else if msg.role === 'tool_result'}
-              {#if msg.text.trim()}
-                <details class="max-w-[85%] rounded-xl border border-muted-foreground/10 text-xs">
+                {:else}
+                  {#await renderMarkdownCached(msg.id, msg.text, mode.current === 'dark')}
+                    <div
+                      class="prose prose-sm max-w-[85%] rounded-xl bg-muted px-3 py-2 dark:prose-invert [&_hr]:my-3 [&_pre]:my-2 [&_pre]:overflow-x-auto [&_pre]:rounded-lg [&_pre]:px-3 [&_pre]:py-2">
+                      <!-- eslint-disable-next-line svelte/no-at-html-tags -->
+                      {@html renderMarkdownSync(msg.text)}
+                    </div>
+                  {:then html}
+                    <div
+                      class="prose prose-sm max-w-[85%] rounded-xl bg-muted px-3 py-2 dark:prose-invert [&_hr]:my-3 [&_pre]:my-2 [&_pre]:overflow-x-auto [&_pre]:rounded-lg [&_pre]:px-3 [&_pre]:py-2">
+                      <!-- eslint-disable-next-line svelte/no-at-html-tags -->
+                      {@html html}
+                    </div>
+                  {/await}
+                {/if}
+              {:else if msg.role === 'tool_use'}
+                <details class="max-w-[85%] rounded-xl border border-muted-foreground/20 text-xs">
                   <summary
-                    class="flex cursor-pointer items-center gap-1.5 px-3 py-1.5 text-muted-foreground/60 select-none hover:text-muted-foreground">
-                    <span class="size-1.5 rounded-full bg-green-500/60"></span>
-                    <span>{m.agent_result()}</span>
+                    class="flex cursor-pointer items-baseline gap-1.5 px-3 py-1.5 select-none hover:text-foreground">
+                    <span class="size-1.5 shrink-0 self-center rounded-full bg-muted-foreground/50"
+                    ></span>
+                    <span class="font-medium text-muted-foreground"
+                      >{msg.toolName ?? m.agent_tool_fallback()}</span>
+                    {#if msg.text}
+                      {@const input = (() => {
+                        try {
+                          return JSON.parse(msg.text);
+                        } catch {
+                          return null;
+                        }
+                      })()}
+                      {@const filePath = input?.file_path ?? input?.path ?? null}
+                      {@const label = filePath
+                        ? filePath.split(/[/\\]/).at(-1)
+                        : (input?.command ?? input?.skill ?? input?.description ?? null)}
+                      {#if label}
+                        <span
+                          class="truncate font-mono text-muted-foreground/60"
+                          style="max-width:24rem">{label}</span>
+                      {/if}
+                    {/if}
                   </summary>
                   <div
-                    class="border-t border-muted-foreground/10 px-3 py-2 font-mono text-xs break-words whitespace-pre-wrap text-muted-foreground/70">
-                    {msg.text.length > 1000 ? msg.text.slice(0, 1000) + '\n…' : msg.text}
+                    class="border-t border-muted-foreground/20 px-3 py-2 font-mono text-xs break-words whitespace-pre-wrap text-muted-foreground">
+                    {msg.text}
                   </div>
                 </details>
+              {:else if msg.role === 'tool_result'}
+                {#if msg.text.trim()}
+                  <details class="max-w-[85%] rounded-xl border border-muted-foreground/10 text-xs">
+                    <summary
+                      class="flex cursor-pointer items-center gap-1.5 px-3 py-1.5 text-muted-foreground/60 select-none hover:text-muted-foreground">
+                      <span class="size-1.5 rounded-full bg-green-500/60"></span>
+                      <span>{m.agent_result()}</span>
+                    </summary>
+                    <div
+                      class="border-t border-muted-foreground/10 px-3 py-2 font-mono text-xs break-words whitespace-pre-wrap text-muted-foreground/70">
+                      {msg.text.length > 1000 ? msg.text.slice(0, 1000) + '\n…' : msg.text}
+                    </div>
+                  </details>
+                {/if}
               {/if}
-            {/if}
-          </div>
-        {/each}
-        {#if isProcessing && !messages.at(-1)?.isStreaming}
+            </div>
+          {/snippet}
+        </VList>
+        {#if distanceFromBottom > SCROLL_BUTTON_GAP && messages.length > 0}
+          <button
+            type="button"
+            class="absolute bottom-3 left-1/2 -translate-x-1/2 rounded-full border border-muted bg-background px-3 py-1 text-xs text-muted-foreground shadow hover:text-foreground"
+            onclick={() => {
+              following = true;
+              // Smooth only within ~4 viewports; smooth-scrolling across thousands
+              // of virtualized items renders every one it passes and janks, so a
+              // longer jump falls back to instant.
+              const smooth = distanceFromBottom < (vlist?.getViewportSize() ?? 0) * 4;
+              distanceFromBottom = 0;
+              vlist?.scrollToIndex(messages.length - 1, { align: 'end', smooth });
+            }}>
+            {m.agent_scroll_to_bottom()}
+          </button>
+        {/if}
+      {/if}
+    </div>
+
+    <!-- Typing / cost footer -->
+    {#if showTypingDots || (!isProcessing && lastCostUsd != null)}
+      <div class="shrink-0 px-2 pb-2">
+        {#if showTypingDots}
           <div class="flex items-center gap-2">
             <div class="rounded-xl bg-muted px-3 py-2.5">
               <div class="flex gap-1">
@@ -947,8 +1048,8 @@
             <span class="text-xs text-muted-foreground/50">${lastCostUsd.toFixed(4)}</span>
           </div>
         {/if}
-      {/if}
-    </div>
+      </div>
+    {/if}
 
     <!-- CLI checking banner -->
     {#if cliAvailable === null}
