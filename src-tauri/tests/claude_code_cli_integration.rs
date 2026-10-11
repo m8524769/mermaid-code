@@ -438,3 +438,108 @@ async fn test_ask_user_question_answer_flow() {
     );
     assert!(!exit_is_error, "session exited with error");
 }
+
+/// Verifies the "Other" case: answering AskUserQuestion with FREE TEXT that is NOT
+/// one of the listed option labels. The official Claude Code CLI offers an "Other"
+/// choice with a text box, so the answer value must accept arbitrary strings — this
+/// test confirms our stdio path isn't rejected by schema validation and that the
+/// custom text round-trips, which is the prerequisite for an in-app "Other" option.
+///
+/// Run with: cargo test --test claude_code_cli_integration test_ask_user_question_free_text_answer -- --ignored --nocapture
+#[tokio::test]
+#[ignore]
+async fn test_ask_user_question_free_text_answer() {
+    // A distinctive string that cannot collide with any plausible option label.
+    const CUSTOM: &str = "custom-magenta-7Qx";
+
+    let (_child, mut stdin, stdout, stderr) = spawn_claude(
+        "Do nothing else and call no other tool. Your only action: call the AskUserQuestion tool \
+         with ONE single-select question (multiSelect: false) — header \"Color\", question \
+         \"Pick one color\", options \"Red\", \"Green\", \"Blue\" (each with a short description). \
+         After the answer comes back, reply in text repeating verbatim the exact answer string \
+         the user gave.",
+    )
+    .await;
+    let mut lines = BufReader::new(stdout).lines();
+    let mut err_lines = BufReader::new(stderr).lines();
+    tokio::spawn(async move {
+        while let Ok(Some(l)) = err_lines.next_line().await {
+            eprintln!("[stderr] {l}");
+        }
+    });
+
+    let mut got_question = false;
+    let mut tool_result_content = String::new();
+    let mut assistant_text = String::new();
+    let mut exit_is_error = true;
+
+    while let Ok(Some(line)) = lines.next_line().await {
+        let line = line.trim().to_string();
+        if line.is_empty() {
+            continue;
+        }
+        eprintln!("[raw] {line}");
+        let Ok(val) = serde_json::from_str::<serde_json::Value>(&line) else {
+            continue;
+        };
+        match val["type"].as_str() {
+            Some("control_request")
+                if val["request"]["subtype"].as_str() == Some("can_use_tool") =>
+            {
+                let request_id = val["request_id"].as_str().unwrap_or("").to_string();
+                let tool_name = val["request"]["tool_name"].as_str().unwrap_or("").to_string();
+                let input = val["request"]["input"].clone();
+                eprintln!("[permission] id={request_id} tool={tool_name}");
+                eprintln!("[input] {}", serde_json::to_string_pretty(&input).unwrap_or_default());
+
+                assert_eq!(tool_name, "AskUserQuestion", "expected AskUserQuestion, got {tool_name}");
+                got_question = true;
+
+                // Answer with free text that is NOT one of the options (the "Other" case).
+                let qtext = input["questions"][0]["question"].as_str().unwrap_or("").to_string();
+                let mut updated = input.clone();
+                updated["answers"] = serde_json::json!({ qtext: CUSTOM });
+                eprintln!("[→ allow w/ free-text answer] {updated}");
+
+                let msg = build_control_response(&request_id, true, Some(&updated));
+                stdin.write_all(msg.as_bytes()).await.unwrap();
+            }
+            Some("user") => {
+                for block in val["message"]["content"].as_array().into_iter().flatten() {
+                    if block["type"].as_str() == Some("tool_result") {
+                        let content = match &block["content"] {
+                            serde_json::Value::String(s) => s.clone(),
+                            other => other.to_string(),
+                        };
+                        tool_result_content = content;
+                        eprintln!("[tool_result] {tool_result_content}");
+                    }
+                }
+            }
+            Some("assistant") => {
+                for block in val["message"]["content"].as_array().into_iter().flatten() {
+                    if block["type"].as_str() == Some("text") {
+                        let t = block["text"].as_str().unwrap_or("");
+                        if !t.is_empty() {
+                            assistant_text.push_str(t);
+                            eprintln!("[message] {t}");
+                        }
+                    }
+                }
+            }
+            Some("result") => {
+                exit_is_error = val["is_error"].as_bool().unwrap_or(true);
+                eprintln!("[exit] is_error={exit_is_error}");
+                break;
+            }
+            _ => {}
+        }
+    }
+
+    assert!(got_question, "no AskUserQuestion permission request received");
+    assert!(!exit_is_error, "session rejected the free-text answer (schema validation?)");
+    assert!(
+        tool_result_content.contains(CUSTOM) || assistant_text.contains(CUSTOM),
+        "free-text answer {CUSTOM:?} did not round-trip; tool_result={tool_result_content:?} text={assistant_text:?}"
+    );
+}

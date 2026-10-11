@@ -140,6 +140,8 @@
   "agent_permission_request": "权限请求",
   "agent_question_submit": "提交答案",
   "agent_question_skip": "跳过",
+  "agent_question_other": "其他",
+  "agent_question_other_placeholder": "输入你的答案…",
   "agent_allow": "允许",
   "agent_deny": "拒绝",
   "agent_deny_placeholder": "告诉 Claude 该怎么做",

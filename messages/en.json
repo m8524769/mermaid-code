@@ -140,6 +140,8 @@
   "agent_permission_request": "Permission Request",
   "agent_question_submit": "Submit Answers",
   "agent_question_skip": "Skip",
+  "agent_question_other": "Other",
+  "agent_question_other_placeholder": "Type your answer…",
   "agent_allow": "Allow",
   "agent_deny": "Deny",
   "agent_deny_placeholder": "Tell Claude what to do instead",

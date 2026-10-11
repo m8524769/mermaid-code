@@ -461,6 +461,11 @@
     multiSelect?: boolean;
     options: { label: string; description?: string }[];
   };
+  // Sentinel for the auto-appended free-text "Other" choice (mirrors the official
+  // Claude Code CLI). It rides the same selection state as a normal option; on
+  // submit it resolves to the typed text instead of a label. Claude's own options
+  // never use this value, so there's no collision.
+  const OTHER = '__other__';
   const askQuestions = $derived.by(() => {
     const p = pendingPermission;
     if (!p?.requiresUserInteraction) return null;
@@ -469,11 +474,20 @@
   });
   // question index → selected labels (single-select keeps at most one)
   let answerSel = $state<Record<number, string[]>>({});
+  // question index → free text entered for the "Other" choice
+  let otherText = $state<Record<number, string>>({});
   $effect(() => {
     // reset selections whenever a new question request appears
     void pendingPermission?.requestId;
     answerSel = {};
+    otherText = {};
   });
+  function focusOnMount(el: HTMLElement) {
+    el.focus();
+  }
+  function isSel(qi: number, label: string) {
+    return (answerSel[qi] ?? []).includes(label);
+  }
   function toggleAnswer(qi: number, label: string, multi: boolean) {
     const cur = answerSel[qi] ?? [];
     const next = multi
@@ -484,7 +498,14 @@
     answerSel = { ...answerSel, [qi]: next };
   }
   const allAnswered = $derived(
-    !!askQuestions && askQuestions.every((_, i) => (answerSel[i]?.length ?? 0) > 0)
+    !!askQuestions &&
+      askQuestions.every((_, i) => {
+        const sel = answerSel[i] ?? [];
+        if (sel.length === 0) return false;
+        // "Other" counts as answered only once its text box is non-empty
+        if (sel.includes(OTHER) && !(otherText[i] ?? '').trim()) return false;
+        return true;
+      })
   );
   async function answerQuestion(skip: boolean) {
     if (!pendingPermission || !runId) return;
@@ -492,7 +513,11 @@
     if (!skip && askQuestions) {
       askQuestions.forEach((q, i) => {
         const sel = answerSel[i] ?? [];
-        answers[q.question] = q.multiSelect ? sel : (sel[0] ?? '');
+        // "Other" resolves to the typed free text; other picks pass through as labels.
+        const resolve = (s: string) => (s === OTHER ? (otherText[i] ?? '').trim() : s);
+        answers[q.question] = q.multiSelect
+          ? sel.map(resolve).filter((s) => s.length > 0)
+          : resolve(sel[0] ?? '');
       });
     }
     const toolInput = { ...(pendingPermission.toolInput as object), answers };
@@ -506,6 +531,7 @@
       });
       slices[selectedAgentId].pendingPermission = null;
       answerSel = {};
+      otherText = {};
     } catch (e) {
       console.error('[agent] answerQuestion error:', e);
     }
@@ -1041,6 +1067,36 @@
                   </span>
                 </button>
               {/each}
+              <!-- Free-text "Other" choice (mirrors the official CLI) -->
+              <button
+                type="button"
+                onclick={() => toggleAnswer(qi, OTHER, !!q.multiSelect)}
+                class={[
+                  'flex items-start gap-2 rounded-md border px-2 py-1.5 text-left text-xs transition-colors',
+                  isSel(qi, OTHER) ? 'border-primary bg-primary/10' : 'border-border hover:bg-muted'
+                ]}>
+                <span
+                  class={[
+                    'mt-px flex size-4 shrink-0 items-center justify-center border',
+                    q.multiSelect ? 'rounded-[4px]' : 'rounded-full',
+                    isSel(qi, OTHER)
+                      ? 'border-primary bg-primary text-primary-foreground'
+                      : 'border-muted-foreground/40'
+                  ]}>
+                  {#if isSel(qi, OTHER)}<CheckIcon class="size-3" />{/if}
+                </span>
+                <span class="min-w-0 flex-1 font-medium text-foreground">
+                  {m.agent_question_other()}
+                </span>
+              </button>
+              {#if isSel(qi, OTHER)}
+                <input
+                  type="text"
+                  use:focusOnMount
+                  bind:value={otherText[qi]}
+                  placeholder={m.agent_question_other_placeholder()}
+                  class="rounded-md border border-primary bg-background px-2 py-1.5 text-xs text-foreground outline-none placeholder:text-muted-foreground focus:ring-1 focus:ring-primary" />
+              {/if}
             </div>
           {/each}
           <div class="flex gap-2">
