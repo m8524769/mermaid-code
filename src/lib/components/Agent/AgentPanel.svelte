@@ -611,6 +611,34 @@
     tick().then(() => vlist?.scrollToIndex(n - 1, { align: 'end' }));
   });
 
+  // Pick a one-line label for a tool_use summary from its parsed input, plus
+  // whether it should render monospace. Code-like values (paths, commands, urls,
+  // skill ids) get `mono: true`; natural-language values (description, title,
+  // prompt, query) get `mono: false` so they read as prose, not code. Order is
+  // the display priority — description intentionally wins over command.
+  function toolLabel(input: unknown): { text: string; mono: boolean } | null {
+    if (!input || typeof input !== 'object') return null;
+    const i = input as Record<string, unknown>;
+    const filePath = i.file_path ?? i.path;
+    if (typeof filePath === 'string' && filePath.length > 0) {
+      return { text: filePath.split(/[/\\]/).at(-1) ?? filePath, mono: true };
+    }
+    const candidates: [unknown, boolean][] = [
+      [i.skill, true],
+      [i.description, false],
+      [i.title, false],
+      [i.command, true],
+      [i.task_name, false],
+      [i.prompt, false],
+      [i.query, false],
+      [i.url, true]
+    ];
+    for (const [value, mono] of candidates) {
+      if (typeof value === 'string' && value.length > 0) return { text: value, mono };
+    }
+    return null;
+  }
+
   async function handleLinkClick(e: MouseEvent | KeyboardEvent, target: EventTarget | null) {
     const a = (target as HTMLElement).closest('a');
     if (!a) return;
@@ -852,7 +880,7 @@
     <!-- Content -->
     <div
       role="presentation"
-      class="relative flex min-h-0 flex-1 flex-col"
+      class="agent-transcript relative flex min-h-0 flex-1 flex-col"
       onclick={(e) => handleLinkClick(e, e.target)}
       onkeydown={(e) => {
         if (e.key === 'Enter') handleLinkClick(e, e.target);
@@ -968,14 +996,11 @@
                           return null;
                         }
                       })()}
-                      {@const filePath = input?.file_path ?? input?.path ?? null}
-                      {@const label = filePath
-                        ? filePath.split(/[/\\]/).at(-1)
-                        : (input?.command ?? input?.skill ?? input?.description ?? null)}
+                      {@const label = toolLabel(input)}
                       {#if label}
                         <span
-                          class="truncate font-mono text-muted-foreground/60"
-                          style="max-width:24rem">{label}</span>
+                          class={['truncate text-muted-foreground/60', label.mono && 'font-mono']}
+                          style="max-width:24rem">{label.text}</span>
                       {/if}
                     {/if}
                   </summary>

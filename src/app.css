@@ -24,6 +24,21 @@
     'calt' 0 !important;
 }
 
+/* Agent transcript: render code blocks, inline code, and tool input/output in
+   Fira Code to match the editor. The markdown is injected via {@html}, which
+   Svelte doesn't scope, so this rule is global and keyed off a wrapper class. */
+.agent-transcript :is(pre, code),
+.agent-transcript .font-mono {
+  font-family: 'Fira Code', ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+/* @tailwindcss/typography wraps inline code in literal backtick quotes via
+   code::before/::after; drop them so inline code reads cleanly. */
+.agent-transcript .prose code::before,
+.agent-transcript .prose code::after {
+  content: none;
+}
+
 @custom-variant dark (&:is(.dark *));
 
 @layer base {
