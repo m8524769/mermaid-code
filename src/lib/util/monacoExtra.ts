@@ -6,6 +6,7 @@ import {
   SEMANTIC_TOKEN_MODIFIERS,
   SEMANTIC_TOKEN_TYPES
 } from './treeSitterHighlight';
+import { activeScheme } from './editorThemes';
 
 const commentRegex = /(?<!["'])%%(?![^"']*["']\)).*$/;
 
@@ -669,72 +670,10 @@ export const initEditor = (monacoEditor: typeof Monaco): void => {
     provideColorPresentations: (_model, colorInfo) => [{ label: colorToHex(colorInfo.color) }]
   });
 
-  monacoEditor.editor.defineTheme('mermaid-dark', {
-    base: 'vs-dark',
-    colors: {},
-    inherit: true,
-    rules: [
-      // Monarch fallback tokens, repainted to match their tree-sitter semantic
-      // role (the palette below) so the fallback layer blends in and there is no
-      // color flicker when semantic tokens take over: typeKeyword/section →
-      // keyword, transition (arrows) → operator, identifier (node ids) →
-      // variable, annotation (<<...>>) → attribute, brackets → punctuation.
-      { foreground: '569cd6', token: 'typeKeyword' },
-      { foreground: 'd4d4d4', token: 'transition' },
-      { foreground: '9cdcfe', token: 'identifier' },
-      { foreground: '9cdcfe', token: 'annotation' },
-      { foreground: '808080', token: 'delimiter.bracket' },
-      { fontStyle: 'bold', foreground: 'ff0000', token: 'custom-error' },
-      // tree-sitter semantic token colors — full VS Code Dark+ palette.
-      { foreground: '569cd6', token: 'keyword' },
-      { foreground: '6a9955', token: 'comment' },
-      { foreground: 'ce9178', token: 'string' },
-      { foreground: 'b5cea8', token: 'number' },
-      { foreground: 'd4d4d4', token: 'operator' },
-      { foreground: '9cdcfe', token: 'variable' },
-      { foreground: '4fc1ff', token: 'constant' },
-      { foreground: '4ec9b0', token: 'type' },
-      { foreground: '4ec9b0', token: 'namespace' },
-      { foreground: '9cdcfe', token: 'property' },
-      { foreground: 'dcdcaa', token: 'function' },
-      { foreground: '808080', token: 'punctuation' },
-      { foreground: '9cdcfe', token: 'attribute' },
-      { foreground: '569cd6', token: 'boolean' }
-    ]
-  });
-
-  monacoEditor.editor.defineTheme('mermaid', {
-    base: 'vs',
-    colors: {},
-    inherit: true,
-    rules: [
-      // Monarch fallback tokens, repainted to match their tree-sitter semantic
-      // role (the Light+ palette below) so the fallback blends in with no flicker
-      // when semantic tokens take over. custom-error stays a distinct red.
-      { foreground: '0000ff', token: 'typeKeyword' },
-      { fontStyle: 'bold', foreground: 'ff0000', token: 'custom-error' },
-      { foreground: '000000', token: 'transition' },
-      { foreground: '808080', token: 'delimiter.bracket' },
-      { foreground: '001080', token: 'annotation' },
-      { foreground: '001080', token: 'identifier' },
-      // tree-sitter semantic token colors — full VS Code Light+ palette (mirrors
-      // the Dark+ set in the mermaid-dark theme).
-      { foreground: '0000ff', token: 'keyword' },
-      { foreground: '008000', token: 'comment' },
-      { foreground: 'a31515', token: 'string' },
-      { foreground: '098658', token: 'number' },
-      { foreground: '000000', token: 'operator' },
-      { foreground: '001080', token: 'variable' },
-      { foreground: '0070c1', token: 'constant' },
-      { foreground: '267f99', token: 'type' },
-      { foreground: '267f99', token: 'namespace' },
-      { foreground: '001080', token: 'property' },
-      { foreground: '795e26', token: 'function' },
-      { foreground: '808080', token: 'punctuation' },
-      { foreground: '001080', token: 'attribute' },
-      { foreground: '0000ff', token: 'boolean' }
-    ]
-  });
+  // Register the `mermaid`/`mermaid-dark` Monaco themes. The color palette lives
+  // in editorThemes.ts so it can be tweaked or swapped independently.
+  monacoEditor.editor.defineTheme('mermaid-dark', activeScheme.dark);
+  monacoEditor.editor.defineTheme('mermaid', activeScheme.light);
 
   monacoEditor.languages.registerCompletionItemProvider('mermaid', {
     provideCompletionItems: (model, position) => {
