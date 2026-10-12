@@ -175,6 +175,7 @@
     following = true;
     distanceFromBottom = 0;
     clearMarkdownCache();
+    expandedResults = new Set();
   });
 
   const runId = $derived(slices[selectedAgentId]?.activeRunId ?? null);
@@ -203,6 +204,7 @@
     following = true;
     distanceFromBottom = 0;
     clearMarkdownCache();
+    expandedResults = new Set();
     agentState.loadSessionHistory(selectedAgentId, workingFolder, activeSessionId);
   });
 
@@ -572,6 +574,18 @@
   }
 
   let vlist = $state<VListHandle | null>(null);
+  // Tool results longer than this are truncated with a "Show all" toggle.
+  const RESULT_TRUNCATE = 1000;
+  // ids of tool_result messages the user chose to expand. Kept at component level
+  // (keyed by id) because VList virtualizes, so per-item state wouldn't survive
+  // scrolling the result out of and back into view.
+  let expandedResults = $state<Set<string>>(new Set());
+  function toggleResult(id: string) {
+    const next = new Set(expandedResults);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    expandedResults = next;
+  }
   // How far (px) the viewport bottom is from the content bottom. 0 = pinned.
   let distanceFromBottom = $state(0);
   // `following` (auto-pin) uses a small threshold so any deliberate scroll-up stops
@@ -1011,6 +1025,8 @@
                 </details>
               {:else if msg.role === 'tool_result'}
                 {#if msg.text.trim()}
+                  {@const long = msg.text.length > RESULT_TRUNCATE}
+                  {@const expanded = expandedResults.has(msg.id)}
                   <details class="max-w-[85%] rounded-xl border border-muted-foreground/10 text-xs">
                     <summary
                       class="flex cursor-pointer items-center gap-1.5 px-3 py-1.5 text-muted-foreground/60 select-none hover:text-muted-foreground">
@@ -1019,7 +1035,15 @@
                     </summary>
                     <div
                       class="border-t border-muted-foreground/10 px-3 py-2 font-mono text-xs break-words whitespace-pre-wrap text-muted-foreground/70">
-                      {msg.text.length > 1000 ? msg.text.slice(0, 1000) + '\n…' : msg.text}
+                      {long && !expanded ? msg.text.slice(0, RESULT_TRUNCATE) + '\n…' : msg.text}
+                      {#if long}
+                        <button
+                          type="button"
+                          class="mt-1 block cursor-pointer font-sans text-muted-foreground/60 hover:text-muted-foreground"
+                          onclick={() => toggleResult(msg.id)}>
+                          {expanded ? m.agent_result_collapse() : m.agent_result_expand()}
+                        </button>
+                      {/if}
                     </div>
                   </details>
                 {/if}

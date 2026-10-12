@@ -154,6 +154,8 @@
   "agent_result": "Result",
   "agent_tool_fallback": "Tool Use",
   "agent_scroll_to_bottom": "Scroll to bottom",
+  "agent_result_expand": "Expand all",
+  "agent_result_collapse": "Collapse",
   "error_page_title": "Error {status}",
   "error_unexpected": "An unexpected error occurred",
   "error_return_home": "Return to Home",
