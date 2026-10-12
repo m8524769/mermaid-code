@@ -39,6 +39,16 @@
   content: none;
 }
 
+/* prose sizes inline `code` with a parent-relative em (0.857em), so code nested
+   in any prose element that itself resizes — a code block (pre), a table cell
+   (td/th), figcaption, etc. — gets the em applied twice and shrinks to a
+   fractional ~10.3px (blurry on Windows). Pin code to a root-relative size so it's
+   a consistent, crisp 12px regardless of its container. Headings are excluded:
+   prose sizes their code deliberately (h2/h3 code → 18px/16px, already integer). */
+.agent-transcript .prose code:not(:is(h1, h2, h3, h4, h5, h6) *) {
+  font-size: 0.75rem;
+}
+
 @custom-variant dark (&:is(.dark *));
 
 @layer base {
