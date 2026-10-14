@@ -84,7 +84,7 @@ jobs:
       - name: Build MCP server binary
         shell: bash
         run: |
-          curl -fsSL https://bun.sh/install | bash -s "bun-v1.4.2"
+          curl -fsSL https://bun.sh/install | bash -s "bun-v1.4.3"
           export BUN_INSTALL="$HOME/.bun"
           export PATH="$BUN_INSTALL/bin:$PATH"
           cd mcp-server && bun ci
