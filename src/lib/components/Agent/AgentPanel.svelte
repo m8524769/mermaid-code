@@ -643,14 +643,33 @@
       [i.title, false],
       [i.command, true],
       [i.task_name, false],
-      [i.prompt, false],
       [i.query, false],
-      [i.url, true]
+      [i.url, true],
+      [i.prompt, false]
     ];
     for (const [value, mono] of candidates) {
       if (typeof value === 'string' && value.length > 0) return { text: value, mono };
     }
     return null;
+  }
+
+  // MCP tools are named `mcp__<server>__<tool>`; render them as
+  // "Mermaid-code-mcp · list_diagrams" (server capitalized, middle-dot
+  // separator) instead of the raw mangled id. Non-MCP tools (and anything
+  // that doesn't match) are returned unchanged.
+  function displayToolName(name: string | undefined): string {
+    if (!name) return m.agent_tool_fallback();
+    if (name.startsWith('mcp__')) {
+      const rest = name.slice('mcp__'.length);
+      const sep = rest.indexOf('__');
+      if (sep !== -1) {
+        const server = rest.slice(0, sep);
+        const tool = rest.slice(sep + 2);
+        const label = server.charAt(0).toUpperCase() + server.slice(1);
+        return tool ? `${label} · ${tool}` : label;
+      }
+    }
+    return name;
   }
 
   async function handleLinkClick(e: MouseEvent | KeyboardEvent, target: EventTarget | null) {
@@ -1001,7 +1020,7 @@
                     <span class="size-1.5 shrink-0 self-center rounded-full bg-muted-foreground/50"
                     ></span>
                     <span class="font-medium text-muted-foreground"
-                      >{msg.toolName ?? m.agent_tool_fallback()}</span>
+                      >{displayToolName(msg.toolName)}</span>
                     {#if msg.text}
                       {@const input = (() => {
                         try {
@@ -1030,7 +1049,11 @@
                   <details class="max-w-[85%] rounded-xl border border-muted-foreground/10 text-xs">
                     <summary
                       class="flex cursor-pointer items-center gap-1.5 px-3 py-1.5 text-muted-foreground/60 select-none hover:text-muted-foreground">
-                      <span class="size-1.5 rounded-full bg-green-500/60"></span>
+                      <span
+                        class={[
+                          'size-1.5 rounded-full',
+                          msg.isError ? 'bg-red-500/70' : 'bg-green-500/60'
+                        ]}></span>
                       <span>{m.agent_result()}</span>
                     </summary>
                     <div

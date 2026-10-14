@@ -17,6 +17,7 @@ export interface AgentMessage {
   isStreaming?: boolean;
   openedFiles?: string[];
   selectedCode?: SelectedCode[];
+  isError?: boolean;
 }
 
 export interface SessionEntry {
@@ -141,7 +142,8 @@ function dispatch(agentId: string, e: RawEvent) {
           id: `result-${e.tool_use_id}`,
           role: 'tool_result',
           text: e.content ?? '',
-          toolUseId: e.tool_use_id
+          toolUseId: e.tool_use_id,
+          isError: e.is_error ?? false
         });
       }
       break;
@@ -297,6 +299,7 @@ async function loadSessionHistory(agentId: string, folderPath: string, sessionId
         end_line: number;
         symbol: string | null;
       }>;
+      is_error: boolean;
     }> = await invoke('load_session_history', {
       agentType: agentId,
       folderPath,
@@ -325,7 +328,8 @@ async function loadSessionHistory(agentId: string, folderPath: string, sessionId
               endLine: s.end_line,
               symbol: s.symbol ?? undefined
             }))
-          : undefined
+          : undefined,
+      isError: m.is_error
     }));
   } catch {
     if (historyLoadTokens.get(agentId) === token) {

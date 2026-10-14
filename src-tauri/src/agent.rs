@@ -17,7 +17,7 @@ use crate::McpServerState;
 pub enum DriverEvent {
     Message { id: String, text: String, thinking: Option<String>, is_streaming: bool },
     ToolUse { id: String, name: String, input: Value },
-    ToolResult { tool_use_id: String, content: String },
+    ToolResult { tool_use_id: String, content: String, is_error: bool },
     SessionReady { session_id: String },
     PermissionRequest { request_id: String, tool_name: String, tool_input: Value, requires_user_interaction: bool },
     Usage { output_tokens: u64 },
@@ -282,6 +282,7 @@ impl AgentDriver for ClaudeCodeDriver {
                         events.push(DriverEvent::ToolResult {
                             tool_use_id: block["tool_use_id"].as_str().unwrap_or("").to_string(),
                             content,
+                            is_error: block["is_error"].as_bool().unwrap_or(false),
                         });
                     }
                 }
@@ -754,10 +755,10 @@ impl AgentDriver for CodexDriver {
                     }
                     Some("commandExecution") => {
                         let output = item["aggregatedOutput"].as_str().unwrap_or("").to_string();
-                        out.events.push(DriverEvent::ToolResult { tool_use_id: item_id, content: output });
+                        out.events.push(DriverEvent::ToolResult { tool_use_id: item_id, content: output, is_error: false });
                     }
                     Some("fileChange") => {
-                        out.events.push(DriverEvent::ToolResult { tool_use_id: item_id, content: "File updated".to_string() });
+                        out.events.push(DriverEvent::ToolResult { tool_use_id: item_id, content: "File updated".to_string(), is_error: false });
                     }
                     Some("mcpToolCall") => {
                         // v2 item: success payload in `result.content[]`, failure in
@@ -767,7 +768,7 @@ impl AgentDriver for CodexDriver {
                             .or_else(|| item["error"]["message"].as_str().map(|s| s.to_string()))
                             .or_else(|| item["error"].as_str().map(|s| s.to_string()))
                             .unwrap_or_default();
-                        out.events.push(DriverEvent::ToolResult { tool_use_id: item_id, content });
+                        out.events.push(DriverEvent::ToolResult { tool_use_id: item_id, content, is_error: false });
                     }
                     _ => {}
                 }
@@ -1804,6 +1805,7 @@ pub struct HistoryMessage {
     pub tool_use_id: Option<String>,
     pub opened_files: Vec<String>,
     pub selected_code: Vec<SelectedCode>,
+    pub is_error: bool,
 }
 
 #[tauri::command]
@@ -1861,6 +1863,7 @@ pub async fn load_session_history(
                                         tool_use_id: block["tool_use_id"].as_str().map(|s| s.to_string()),
                                         opened_files: vec![],
                                         selected_code: vec![],
+                                        is_error: block["is_error"].as_bool().unwrap_or(false),
                                     });
                                 }
                                 continue;
@@ -1880,6 +1883,7 @@ pub async fn load_session_history(
                                 tool_use_id: None,
                                 opened_files,
                                 selected_code,
+                                is_error: false,
                             });
                         }
                     }
@@ -1912,6 +1916,7 @@ pub async fn load_session_history(
                                                 tool_use_id: None,
                                                 opened_files: vec![],
                                                 selected_code: vec![],
+                                                is_error: false,
                                             });
                                             parts.clear();
                                         }
@@ -1927,6 +1932,7 @@ pub async fn load_session_history(
                                             tool_use_id,
                                             opened_files: vec![],
                                             selected_code: vec![],
+                                            is_error: false,
                                         });
                                     }
                                     _ => {}
@@ -1942,6 +1948,7 @@ pub async fn load_session_history(
                                 tool_use_id: None,
                                 opened_files: vec![],
                                 selected_code: vec![],
+                                is_error: false,
                             });
                         }
                     }
@@ -1987,14 +1994,14 @@ pub async fn load_session_history(
                             Some("user_message") => {
                                 if let Some(text) = p["message"].as_str() {
                                     if !text.trim().is_empty() {
-                                        messages.push(HistoryMessage { role: "user".into(), text: text.to_string(), thinking: None, tool_name: None, tool_use_id: None, opened_files: vec![], selected_code: vec![] });
+                                        messages.push(HistoryMessage { role: "user".into(), text: text.to_string(), thinking: None, tool_name: None, tool_use_id: None, opened_files: vec![], selected_code: vec![], is_error: false });
                                     }
                                 }
                             }
                             Some("agent_message") => {
                                 if let Some(text) = p["message"].as_str() {
                                     if !text.trim().is_empty() {
-                                        messages.push(HistoryMessage { role: "assistant".into(), text: text.to_string(), thinking: None, tool_name: None, tool_use_id: None, opened_files: vec![], selected_code: vec![] });
+                                        messages.push(HistoryMessage { role: "assistant".into(), text: text.to_string(), thinking: None, tool_name: None, tool_use_id: None, opened_files: vec![], selected_code: vec![], is_error: false });
                                     }
                                 }
                             }
@@ -2011,7 +2018,7 @@ pub async fn load_session_history(
                                     };
                                     let tuid = tool_use.tool_use_id.clone();
                                     messages.push(tool_use);
-                                    messages.push(HistoryMessage { role: "tool_result".into(), text: result, thinking: None, tool_name: None, tool_use_id: tuid, opened_files: vec![], selected_code: vec![] });
+                                    messages.push(HistoryMessage { role: "tool_result".into(), text: result, thinking: None, tool_name: None, tool_use_id: tuid, opened_files: vec![], selected_code: vec![], is_error: false });
                                 }
                             }
                             Some("mcp_tool_call_begin") => {
@@ -2019,7 +2026,7 @@ pub async fn load_session_history(
                                 let inv = &p["invocation"];
                                 let tool_name = format!("{}_{}", inv["server"].as_str().unwrap_or("mcp"), inv["tool"].as_str().unwrap_or("tool"));
                                 let input = serde_json::to_string_pretty(&inv["arguments"]).unwrap_or_default();
-                                pending_tool.insert(call_id.clone(), HistoryMessage { role: "tool_use".into(), text: input, thinking: None, tool_name: Some(tool_name), tool_use_id: Some(call_id), opened_files: vec![], selected_code: vec![] });
+                                pending_tool.insert(call_id.clone(), HistoryMessage { role: "tool_use".into(), text: input, thinking: None, tool_name: Some(tool_name), tool_use_id: Some(call_id), opened_files: vec![], selected_code: vec![], is_error: false });
                             }
                             _ => {}
                         },
@@ -2045,6 +2052,7 @@ pub async fn load_session_history(
                                     tool_name: Some(name),
                                     tool_use_id: Some(call_id),
                                     opened_files: vec![], selected_code: vec![],
+                                    is_error: false,
                                 });
                             }
                             // Tool result — output is a string OR an array of content blocks
@@ -2062,7 +2070,7 @@ pub async fn load_session_history(
                                     };
                                     let tuid = tool_use.tool_use_id.clone();
                                     messages.push(tool_use);
-                                    messages.push(HistoryMessage { role: "tool_result".into(), text: output, thinking: None, tool_name: None, tool_use_id: tuid, opened_files: vec![], selected_code: vec![] });
+                                    messages.push(HistoryMessage { role: "tool_result".into(), text: output, thinking: None, tool_name: None, tool_use_id: tuid, opened_files: vec![], selected_code: vec![], is_error: false });
                                 }
                             }
                             // Custom tool call (Windows/newer codex encodes exec as a custom tool
@@ -2086,6 +2094,7 @@ pub async fn load_session_history(
                                     tool_name: Some(name),
                                     tool_use_id: Some(call_id),
                                     opened_files: vec![], selected_code: vec![],
+                                    is_error: false,
                                 });
                             }
                             Some("custom_tool_call_output") => {
@@ -2103,7 +2112,7 @@ pub async fn load_session_history(
                                     };
                                     let tuid = tool_use.tool_use_id.clone();
                                     messages.push(tool_use);
-                                    messages.push(HistoryMessage { role: "tool_result".into(), text: output, thinking: None, tool_name: None, tool_use_id: tuid, opened_files: vec![], selected_code: vec![] });
+                                    messages.push(HistoryMessage { role: "tool_result".into(), text: output, thinking: None, tool_name: None, tool_use_id: tuid, opened_files: vec![], selected_code: vec![], is_error: false });
                                 }
                             }
                             // Paginated rollouts don't emit event_msg/*_message, so
@@ -2122,10 +2131,10 @@ pub async fn load_session_history(
                                 if !text.is_empty() {
                                     match p["role"].as_str() {
                                         Some("assistant") => {
-                                            messages.push(HistoryMessage { role: "assistant".into(), text: text.to_string(), thinking: None, tool_name: None, tool_use_id: None, opened_files: vec![], selected_code: vec![] });
+                                            messages.push(HistoryMessage { role: "assistant".into(), text: text.to_string(), thinking: None, tool_name: None, tool_use_id: None, opened_files: vec![], selected_code: vec![], is_error: false });
                                         }
                                         Some("user") if !is_injected_content(text) => {
-                                            messages.push(HistoryMessage { role: "user".into(), text: text.to_string(), thinking: None, tool_name: None, tool_use_id: None, opened_files: vec![], selected_code: vec![] });
+                                            messages.push(HistoryMessage { role: "user".into(), text: text.to_string(), thinking: None, tool_name: None, tool_use_id: None, opened_files: vec![], selected_code: vec![], is_error: false });
                                         }
                                         _ => {}
                                     }
