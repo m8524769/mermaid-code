@@ -2,6 +2,20 @@
 
 All notable changes to Mermaid Code are documented here.
 
+## [v0.9.3] - 2026-10-16
+
+### Added
+
+- **Expand long tool results in the AI agent panel**: long tool results are truncated with an ellipsis, with an **"Expand all"** button to reveal the full text (and **"Collapse"** to fold it back).
+- **Syntax highlighting for the agent's code blocks in any language**: code the AI agent writes is now highlighted regardless of language — grammars load on demand instead of from a fixed short list — with unknown languages falling back to plain text.
+
+### Changed
+
+- **Failed tool calls are flagged in the AI agent panel**: the status dot beside a tool result now turns red when the tool returned an error, instead of always showing green, so failures stand out at a glance. Currently supported for Claude Code sessions (Codex not yet covered).
+- **Tool calls are easier to read in the AI agent panel**: MCP tools now appear as **"Mermaid-code-mcp · list_diagrams"** instead of the raw underscored id (`mcp__mermaid-code-mcp__list_diagrams`), and more tool calls now show a short, relevant summary beside the tool name.
+- **Clearer code display in the AI agent panel**: code blocks, inline code, and tool input/output now use a cleaner monospace font at a fixed, consistent size, and inline code no longer shows decorative backtick quotes.
+- **Updated Mermaid to 12.2.0**: rendering fixes and layout tweaks — see the [Mermaid 12.2.0 release notes](https://github.com/mermaid-js/mermaid/releases#release-mermaid@12.2.0).
+
 ## [v0.9.2] - 2026-10-12
 
 ### Added
