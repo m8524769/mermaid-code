@@ -1,7 +1,7 @@
 {
-  "total": 217,
+  "total": 222,
   "totalUpdateChecks": 873,
-  "updatedAt": "2026-10-16T04:44:18Z",
+  "updatedAt": "2026-10-16T08:12:12Z",
   "days": [
     {
       "date": "2026-09-12",
@@ -441,10 +441,15 @@
     },
     {
       "date": "2026-10-16",
-      "count": 0,
+      "count": 5,
       "updateChecks": 0,
-      "byPlatform": {},
-      "byCountry": {}
+      "byPlatform": {
+        "Windows": 5
+      },
+      "byCountry": {
+        "CN": 4,
+        "US": 1
+      }
     }
   ]
 }
