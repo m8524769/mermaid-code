@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { m } from '$/paraglide/messages';
-  import { fileState } from '$/util/fileState.svelte';
+  import { m } from '#lib/paraglide/messages.js';
+  import { fileState } from '#lib/util/fileState.svelte.js';
   import AddIcon from '~icons/material-symbols/add-rounded';
   import CloseIcon from '~icons/material-symbols/close-rounded';
 

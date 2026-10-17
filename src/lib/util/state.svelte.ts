@@ -1,4 +1,4 @@
-import type { ErrorHash, MarkerData, State, ValidatedState } from '$/types';
+import type { ErrorHash, MarkerData, State, ValidatedState } from '#lib/types.js';
 import { resolve } from '$app/paths';
 import type { MermaidConfig } from 'mermaid';
 import { untrack } from 'svelte';
@@ -154,8 +154,8 @@ const urlsCurrent = $derived.by(() => {
   const png = rendererUrl ? `${rendererUrl}/img/${serialized}?type=png` : '';
   return {
     kroki: krokiRendererUrl ? `${krokiRendererUrl}/mermaid/svg/${pakoSerde.serialize(code)}` : '',
-    mdCode: png ? `[![](${png})](${origin}${resolve('/edit', {})}#${serialized})` : '',
-    edit: `${origin}${resolve('/edit', {})}#${serialized}`,
+    mdCode: png ? `[![](${png})](${origin}${resolve('/edit')}#${serialized})` : '',
+    edit: `${origin}${resolve('/edit')}#${serialized}`,
     png,
     svg: rendererUrl ? `${rendererUrl}/svg/${serialized}` : ''
   };

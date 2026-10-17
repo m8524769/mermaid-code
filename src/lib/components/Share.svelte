@@ -1,9 +1,9 @@
 <script lang="ts">
-  import { m } from '$/paraglide/messages';
-  import { buttonVariants } from '$/components/ui/button';
-  import { Separator } from '$/components/ui/separator';
-  import * as Dialog from '$/components/ui/dialog';
-  import { urls } from '$/util/state.svelte';
+  import { m } from '#lib/paraglide/messages.js';
+  import { buttonVariants } from '#lib/components/ui/button/index.js';
+  import { Separator } from '#lib/components/ui/separator/index.js';
+  import * as Dialog from '#lib/components/ui/dialog/index.js';
+  import { urls } from '#lib/util/state.svelte.js';
   import { asset } from '$app/paths';
   import ShareIcon from '~icons/material-symbols/share';
   import MarkdownIcon from '~icons/material-symbols/markdown';
@@ -24,7 +24,7 @@
     <div class="flex flex-col gap-4">
       <div class="flex flex-col gap-2">
         <h2 class="flex items-center gap-2">
-          <img class="size-5" src={asset('/favicon.svg')} alt="Mermaid Live Editor" />
+          <img class="size-5" src={asset('favicon.svg')} alt="Mermaid Live Editor" />
           Mermaid Live Editor
         </h2>
         <CopyInput value={urls.current.edit} />
@@ -36,7 +36,7 @@
         <Separator />
         <div class="flex flex-col gap-2">
           <h2 class="flex items-center gap-2">
-            <img class="size-5 dark:invert" src={asset('/kroki.png')} alt="Kroki" />
+            <img class="size-5 dark:invert" src={asset('kroki.png')} alt="Kroki" />
             Kroki
           </h2>
           <CopyInput value={urls.current.kroki} />

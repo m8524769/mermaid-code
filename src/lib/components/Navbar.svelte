@@ -1,9 +1,9 @@
 <script lang="ts">
-  import MainMenu from '$/components/MainMenu.svelte';
-  import { Separator } from '$/components/ui/separator';
-  import { updateState } from '$/util/updateState.svelte';
-  import { fileState } from '$/util/fileState.svelte';
-  import { m } from '$/paraglide/messages';
+  import MainMenu from '#lib/components/MainMenu.svelte';
+  import { Separator } from '#lib/components/ui/separator/index.js';
+  import { updateState } from '#lib/util/updateState.svelte.js';
+  import { fileState } from '#lib/util/fileState.svelte.js';
+  import { m } from '#lib/paraglide/messages.js';
   import { type Snippet } from 'svelte';
   import MermaidIcon from '~icons/custom/mermaid';
   import { version as appVersion } from '../../../package.json';

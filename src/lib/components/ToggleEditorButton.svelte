@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { m } from '$/paraglide/messages';
-  import { Button } from '$/components/ui/button';
+  import { m } from '#lib/paraglide/messages.js';
+  import { Button } from '#lib/components/ui/button/index.js';
 
   interface Props {
     collapsed?: boolean;

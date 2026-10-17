@@ -1,12 +1,12 @@
 <script lang="ts">
-  import { m } from '$/paraglide/messages';
-  import type { EditorProps } from '$/types';
-  import { env } from '$/util/env';
-  import { inputState, validatedState } from '$/util/state.svelte';
-  import { fileState } from '$/util/fileState.svelte';
-  import { saveFileAs } from '$/util/fileSystem';
-  import { initEditor } from '$lib/util/monacoExtra';
-  import { errorDebug } from '$lib/util/util';
+  import { m } from '#lib/paraglide/messages.js';
+  import type { EditorProps } from '#lib/types.js';
+  import { env } from '#lib/util/env.js';
+  import { inputState, validatedState } from '#lib/util/state.svelte.js';
+  import { fileState } from '#lib/util/fileState.svelte.js';
+  import { saveFileAs } from '#lib/util/fileSystem.js';
+  import { initEditor } from '#lib/util/monacoExtra.js';
+  import { errorDebug } from '#lib/util/util.js';
   import debounce from 'lodash-es/debounce';
   import { mode } from 'mode-watcher';
   import * as monaco from 'monaco-editor';

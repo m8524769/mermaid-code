@@ -1,17 +1,17 @@
 <script lang="ts">
-  import { m } from '$/paraglide/messages';
+  import { m } from '#lib/paraglide/messages.js';
   import type { Component } from 'svelte';
   import { tick } from 'svelte';
-  import Card from '$lib/components/Card/Card.svelte';
-  import { Button } from '$lib/components/ui/button';
-  import * as Popover from '$lib/components/ui/popover';
-  import { agentState, slices, type SessionEntry } from '$lib/util/agentState.svelte';
-  import { fileState } from '$lib/util/fileState.svelte';
-  import { mcpState } from '$lib/util/mcpState.svelte';
-  import { openFolderDialog } from '$lib/util/fileSystem';
+  import Card from '#lib/components/Card/Card.svelte';
+  import { Button } from '#lib/components/ui/button/index.js';
+  import * as Popover from '#lib/components/ui/popover/index.js';
+  import { agentState, slices, type SessionEntry } from '#lib/util/agentState.svelte.js';
+  import { fileState } from '#lib/util/fileState.svelte.js';
+  import { mcpState } from '#lib/util/mcpState.svelte.js';
+  import { openFolderDialog } from '#lib/util/fileSystem.js';
   import { mode } from 'mode-watcher';
-  import { renderMarkdownSync } from '$lib/util/markdown';
-  import { renderMarkdownCached, clearMarkdownCache } from '$lib/util/markdownCache';
+  import { renderMarkdownSync } from '#lib/util/markdown.js';
+  import { renderMarkdownCached, clearMarkdownCache } from '#lib/util/markdownCache.js';
   import { VList, type VListHandle } from 'virtua/svelte';
   import { untrack } from 'svelte';
   import ClaudeIcon from '~icons/logos/claude-icon';

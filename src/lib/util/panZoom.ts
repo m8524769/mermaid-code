@@ -1,4 +1,4 @@
-import type { State } from '$/types';
+import type { State } from '#lib/types.js';
 import Hammer from 'hammerjs';
 import throttle from 'lodash-es/throttle';
 import type { Point } from 'mermaid/dist/types.js';

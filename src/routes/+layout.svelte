@@ -1,11 +1,11 @@
 <script lang="ts">
-  import { Toaster } from '$/components/ui/sonner/index.js';
-  import { fileState } from '$/util/fileState.svelte';
-  import { saveFileAs } from '$/util/fileSystem';
-  import { updateState } from '$/util/updateState.svelte';
-  import { toggleDarkTheme } from '$/util/state.svelte';
-  import { initLocale } from '$/util/locale.svelte';
-  import { m } from '$/paraglide/messages';
+  import { Toaster } from '#lib/components/ui/sonner/index.js';
+  import { fileState } from '#lib/util/fileState.svelte.js';
+  import { saveFileAs } from '#lib/util/fileSystem.js';
+  import { updateState } from '#lib/util/updateState.svelte.js';
+  import { toggleDarkTheme } from '#lib/util/state.svelte.js';
+  import { initLocale } from '#lib/util/locale.svelte.js';
+  import { m } from '#lib/paraglide/messages.js';
   import { mode, ModeWatcher } from 'mode-watcher';
   import { onMount, type Snippet } from 'svelte';
   import '../app.css';

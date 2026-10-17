@@ -8,11 +8,8 @@
     "tests/**/*.ts"
   ],
   "compilerOptions": {
-    "resolveJsonModule": true,
-    "allowSyntheticDefaultImports": true,
     "strictNullChecks": true,
-    "skipLibCheck": true,
-    "types": ["vitest/importMeta"]
+    "types": ["$app/types", "vitest/importMeta"]
   },
-  "extends": "./.svelte-kit/tsconfig.json"
+  "extends": "$app/tsconfig"
 }

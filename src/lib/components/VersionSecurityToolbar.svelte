@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { m } from '$/paraglide/messages';
-  import FloatingToolbar from '$/components/FloatingToolbar.svelte';
-  import { Button } from '$/components/ui/button';
+  import { m } from '#lib/paraglide/messages.js';
+  import FloatingToolbar from '#lib/components/FloatingToolbar.svelte';
+  import { Button } from '#lib/components/ui/button/index.js';
   import { version } from 'mermaid/package.json';
   import { mode, setMode } from 'mode-watcher';
   import ThemeIcon from './ThemeIcon.svelte';

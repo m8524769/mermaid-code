@@ -1,10 +1,10 @@
 <script lang="ts">
-  import * as Popover from '$/components/ui/popover';
-  import { Switch } from '$/components/ui/switch';
-  import { env } from '$/util/env';
-  import { m } from '$/paraglide/messages';
-  import { setAppLocale, getAppLocale } from '$/util/locale.svelte';
-  import { cn } from '$/utils';
+  import * as Popover from '#lib/components/ui/popover/index.js';
+  import { Switch } from '#lib/components/ui/switch/index.js';
+  import { env } from '#lib/util/env.js';
+  import { m } from '#lib/paraglide/messages.js';
+  import { setAppLocale, getAppLocale } from '#lib/util/locale.svelte.js';
+  import { cn } from '#lib/utils.js';
   import { mode, setMode } from 'mode-watcher';
   import type { Component, Snippet } from 'svelte';
   import { onMount } from 'svelte';
@@ -16,7 +16,7 @@
   import ServerIcon from '~icons/material-symbols/lan-outline-rounded';
   import TranslateIcon from '~icons/material-symbols/translate';
 
-  import { mcpState } from '$/util/mcpState.svelte';
+  import { mcpState } from '#lib/util/mcpState.svelte.js';
 
   const MCP_PORT = 37079;
 

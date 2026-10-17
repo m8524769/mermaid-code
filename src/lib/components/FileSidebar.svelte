@@ -1,11 +1,11 @@
 <script lang="ts">
-  import { m } from '$/paraglide/messages';
-  import { fileState, autoSaveTick, IGNORED_DIRS } from '$/util/fileState.svelte';
-  import { persisted } from '$/util/persist.svelte';
-  import { mcpState } from '$/util/mcpState.svelte';
-  import FileTree from '$/components/FileTree.svelte';
-  import ThumbnailGrid from '$/components/ThumbnailGrid.svelte';
-  import * as Popover from '$/components/ui/popover';
+  import { m } from '#lib/paraglide/messages.js';
+  import { fileState, autoSaveTick, IGNORED_DIRS } from '#lib/util/fileState.svelte.js';
+  import { persisted } from '#lib/util/persist.svelte.js';
+  import { mcpState } from '#lib/util/mcpState.svelte.js';
+  import FileTree from '#lib/components/FileTree.svelte';
+  import ThumbnailGrid from '#lib/components/ThumbnailGrid.svelte';
+  import * as Popover from '#lib/components/ui/popover/index.js';
   import FolderOpenIcon from '~icons/material-symbols/folder-open-rounded';
   import AddIcon from '~icons/material-symbols/add-rounded';
   import FolderAddIcon from '~icons/material-symbols/create-new-folder-outline-rounded';

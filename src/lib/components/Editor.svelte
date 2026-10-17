@@ -1,13 +1,13 @@
 <script lang="ts">
-  import { m } from '$/paraglide/messages';
-  import { getLocale } from '$/paraglide/runtime';
-  import { fileState } from '$lib/util/fileState.svelte';
+  import { m } from '#lib/paraglide/messages.js';
+  import { getLocale } from '#lib/paraglide/runtime.js';
+  import { fileState } from '#lib/util/fileState.svelte.js';
   import {
     updateCode,
     updateCodeStore,
     updateConfig,
     validatedState
-  } from '$lib/util/state.svelte';
+  } from '#lib/util/state.svelte.js';
 
   const onUpdate = (text: string) => {
     if (validatedState.current.editorMode === 'code') {
@@ -31,7 +31,7 @@
     if (getLocale() === 'zh-CN') {
       await import('monaco-editor/esm/nls.messages.zh-cn.js');
     }
-    return (await import('$/components/DesktopEditor.svelte')).default;
+    return (await import('#lib/components/DesktopEditor.svelte')).default;
   })();
 
   const THEMES = [

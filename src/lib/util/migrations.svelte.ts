@@ -1,4 +1,4 @@
-import { persisted } from '$lib/util/persist.svelte';
+import { persisted } from '#lib/util/persist.svelte.js';
 
 interface MigrationState {
   version: number;

@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { m } from '$/paraglide/messages';
-  import * as Tooltip from '$lib/components/ui/tooltip';
+  import { m } from '#lib/paraglide/messages.js';
+  import * as Tooltip from '#lib/components/ui/tooltip/index.js';
   import type { ComponentProps, Snippet } from 'svelte';
   import ExternalLinkIcon from '~icons/material-symbols/open-in-new-rounded';
 

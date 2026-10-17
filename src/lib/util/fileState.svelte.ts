@@ -1,5 +1,5 @@
 import { v4 as uuidV4 } from 'uuid';
-import { thumbnailCache } from '$/util/thumbnailState.svelte';
+import { thumbnailCache } from '#lib/util/thumbnailState.svelte.js';
 import {
   confirmDialog,
   createDir as fsCreateDir,
@@ -12,11 +12,11 @@ import {
   saveFileAs,
   watchFolder,
   writeTextFile
-} from '$/util/fileSystem';
-import { notify } from '$/util/notify';
-import { m } from '$/paraglide/messages';
-import { inputState, updateCode } from '$/util/state.svelte';
-import { readJSON, writeJSON } from '$/util/persist.svelte';
+} from '#lib/util/fileSystem.js';
+import { notify } from '#lib/util/notify.js';
+import { m } from '#lib/paraglide/messages.js';
+import { inputState, updateCode } from '#lib/util/state.svelte.js';
+import { readJSON, writeJSON } from '#lib/util/persist.svelte.js';
 import debounce from 'lodash-es/debounce';
 
 // Cross-platform path join: works on both Unix (/) and Windows (\)
@@ -716,7 +716,9 @@ const reconcileTabWithDisk = async (p: string): Promise<void> => {
   thumbnailCache.invalidate(p);
 };
 
-const handleWatchEvent = async (event: import('$/util/fileSystem').WatchEvent): Promise<void> => {
+const handleWatchEvent = async (
+  event: import('#lib/util/fileSystem.js').WatchEvent
+): Promise<void> => {
   // Debounced tree refresh — only refresh for paths relevant to open tabs
   debouncedRefreshTree();
   // Check if any open tab was affected

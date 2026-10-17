@@ -1,4 +1,4 @@
-import { m } from '$/paraglide/messages';
+import { m } from '#lib/paraglide/messages.js';
 
 /**
  * Localized display names for diagram types, keyed by canonical id

@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { cn, type WithoutChildrenOrChild } from '$lib/utils.js';
-  import { m } from '$/paraglide/messages';
+  import { cn, type WithoutChildrenOrChild } from '#lib/utils.js';
+  import { m } from '#lib/paraglide/messages.js';
   import { Dialog as DialogPrimitive } from 'bits-ui';
   import CloseIcon from '~icons/material-symbols/close-rounded';
   import type { Snippet } from 'svelte';

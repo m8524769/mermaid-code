@@ -1,13 +1,13 @@
 <script lang="ts">
-  import { m } from '$/paraglide/messages';
-  import Card from '$/components/Card/Card.svelte';
-  import { Button, buttonVariants } from '$/components/ui/button';
-  import * as Popover from '$/components/ui/popover';
-  import { getSampleDiagrams, type SampleExample } from '$/util/mermaid';
-  import { diagramDisplayName } from '$/util/diagramNames';
-  import { updateCode } from '$lib/util/state.svelte';
-  import { fileState } from '$lib/util/fileState.svelte';
-  import { cn } from '$lib/utils';
+  import { m } from '#lib/paraglide/messages.js';
+  import Card from '#lib/components/Card/Card.svelte';
+  import { Button, buttonVariants } from '#lib/components/ui/button/index.js';
+  import * as Popover from '#lib/components/ui/popover/index.js';
+  import { getSampleDiagrams, type SampleExample } from '#lib/util/mermaid.js';
+  import { diagramDisplayName } from '#lib/util/diagramNames.js';
+  import { updateCode } from '#lib/util/state.svelte.js';
+  import { fileState } from '#lib/util/fileState.svelte.js';
+  import { cn } from '#lib/utils.js';
   import ShapesIcon from '~icons/material-symbols/account-tree-outline-rounded';
   import ChevronDownIcon from '~icons/material-symbols/keyboard-arrow-down-rounded';
 

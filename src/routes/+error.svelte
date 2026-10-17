@@ -2,7 +2,7 @@
   import { goto } from '$app/navigation';
   import { resolve } from '$app/paths';
   import { page } from '$app/state';
-  import { m } from '$/paraglide/messages';
+  import { m } from '#lib/paraglide/messages.js';
   import { onMount } from 'svelte';
 
   // Only redirect if it's a 404 error

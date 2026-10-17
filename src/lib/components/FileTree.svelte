@@ -1,8 +1,8 @@
 <script lang="ts">
-  import { m } from '$/paraglide/messages';
-  import { fileState, type FileTreeNode } from '$/util/fileState.svelte';
-  import { confirmDialog } from '$/util/fileSystem';
-  import FileTree from '$/components/FileTree.svelte';
+  import { m } from '#lib/paraglide/messages.js';
+  import { fileState, type FileTreeNode } from '#lib/util/fileState.svelte.js';
+  import { confirmDialog } from '#lib/util/fileSystem.js';
+  import FileTree from '#lib/components/FileTree.svelte';
   import FolderIcon from '~icons/material-symbols/folder-rounded';
   import FolderOpenIcon from '~icons/material-symbols/folder-open-rounded';
   import FileIcon from '~icons/material-symbols/description-outline-rounded';

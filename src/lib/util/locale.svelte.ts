@@ -4,9 +4,9 @@ import {
   overwriteGetLocale,
   locales,
   baseLocale
-} from '$/paraglide/runtime';
-import { m } from '$/paraglide/messages';
-import { notify } from '$/util/notify';
+} from '#lib/paraglide/runtime.js';
+import { m } from '#lib/paraglide/messages.js';
+import { notify } from '#lib/util/notify.js';
 
 export { locales, baseLocale };
 

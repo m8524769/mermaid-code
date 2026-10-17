@@ -35,8 +35,9 @@
     "@iconify-json/logos": "^1.2.16",
     "@iconify-json/material-symbols": "^1.2.95",
     "@inlang/paraglide-js": "^2.25.2",
-    "@sveltejs/adapter-static": "^3.0.10",
-    "@sveltejs/kit": "^2.70.3",
+    "@sveltejs/adapter-static": "^4.0.0",
+    "@sveltejs/kit": "^3.1.0",
+    "@sveltejs/load-config": "^0.2.3",
     "@sveltejs/vite-plugin-svelte": "^7.3.1",
     "@tailwindcss/typography": "^0.5.20",
     "@tailwindcss/vite": "^4.3.3",
@@ -107,6 +108,10 @@
     "uuid": "14.0.2",
     "virtua": "^0.53.5",
     "web-tree-sitter": "^0.27.1"
+  },
+  "imports": {
+    "#lib": "./src/lib/index.js",
+    "#lib/*": "./src/lib/*"
   },
   "lint-staged": {
     "*.{ts,svelte,js,css,md,json}": [

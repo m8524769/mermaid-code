@@ -1,10 +1,10 @@
 <script lang="ts">
-  import { m } from '$/paraglide/messages';
-  import { fileState, IGNORED_DIRS } from '$/util/fileState.svelte';
-  import { readTextFile, readDir, confirmDialog } from '$/util/fileSystem';
-  import { render } from '$/util/mermaid';
-  import { thumbnailCache } from '$/util/thumbnailState.svelte';
-  import { validatedState } from '$/util/state.svelte';
+  import { m } from '#lib/paraglide/messages.js';
+  import { fileState, IGNORED_DIRS } from '#lib/util/fileState.svelte.js';
+  import { readTextFile, readDir, confirmDialog } from '#lib/util/fileSystem.js';
+  import { render } from '#lib/util/mermaid.js';
+  import { thumbnailCache } from '#lib/util/thumbnailState.svelte.js';
+  import { validatedState } from '#lib/util/state.svelte.js';
   import EditIcon from '~icons/material-symbols/edit-outline-rounded';
   import DeleteIcon from '~icons/material-symbols/delete-outline-rounded';
   import type { MermaidConfig } from 'mermaid';

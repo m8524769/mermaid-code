@@ -6,7 +6,9 @@ import { defineConfig } from 'eslint/config';
 import globals from 'globals';
 import { fileURLToPath } from 'node:url';
 import ts from 'typescript-eslint';
-import svelteConfig from './svelte.config.js';
+import { loadConfig } from '@sveltejs/load-config';
+
+const svelteConfig = (await loadConfig('./', { traverse: false }))?.config;
 
 const gitignorePath = fileURLToPath(new URL('./.gitignore', import.meta.url));
 
@@ -42,14 +44,6 @@ export default defineConfig(
     },
     rules: {
       'svelte/no-unused-props': 'off'
-    }
-  },
-  {
-    files: ['**/components/ui/**'],
-    rules: {
-      'unicorn/prefer-export-from': 'off',
-      'unicorn/prevent-abbreviations': 'off',
-      'unicorn/explicit-length-check': 'off'
     }
   }
 );

@@ -1,10 +1,10 @@
 <script lang="ts">
-  import type { State, ValidatedState } from '$/types';
-  import { recordRenderTime, shouldRefreshView } from '$/util/autoSync';
-  import { render as renderDiagram } from '$/util/mermaid';
-  import { PanZoomState } from '$/util/panZoom';
-  import { updateCodeStore, updateViewport, validatedState } from '$/util/state.svelte';
-  import FontAwesome, { mayContainFontAwesome } from '$lib/components/FontAwesome.svelte';
+  import type { State, ValidatedState } from '#lib/types.js';
+  import { recordRenderTime, shouldRefreshView } from '#lib/util/autoSync.js';
+  import { render as renderDiagram } from '#lib/util/mermaid.js';
+  import { PanZoomState } from '#lib/util/panZoom.js';
+  import { updateCodeStore, updateViewport, validatedState } from '#lib/util/state.svelte.js';
+  import FontAwesome, { mayContainFontAwesome } from '#lib/components/FontAwesome.svelte';
   import uniqueID from 'lodash-es/uniqueId';
   import type { MermaidConfig } from 'mermaid';
   import { mode } from 'mode-watcher';

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { m } from '$/paraglide/messages';
+  import { m } from '#lib/paraglide/messages.js';
   import { getCurrentWindow } from '@tauri-apps/api/window';
   import { invoke } from '@tauri-apps/api/core';
   import SidebarOpenIcon from '~icons/material-symbols/left-panel-open-outline-rounded';

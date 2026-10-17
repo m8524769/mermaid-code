@@ -1,10 +1,10 @@
 <script lang="ts">
-  import { m } from '$/paraglide/messages';
-  import { Button } from '$/components/ui/button';
-  import { getDiagramDocumentationUrl } from '$/util/diagramDocs';
-  import { describeDiagram } from '$/util/diagramTypes';
-  import { diagramDisplayName } from '$/util/diagramNames';
-  import { validatedState } from '$/util/state.svelte';
+  import { m } from '#lib/paraglide/messages.js';
+  import { Button } from '#lib/components/ui/button/index.js';
+  import { getDiagramDocumentationUrl } from '#lib/util/diagramDocs.js';
+  import { describeDiagram } from '#lib/util/diagramTypes.js';
+  import { diagramDisplayName } from '#lib/util/diagramNames.js';
+  import { validatedState } from '#lib/util/state.svelte.js';
   import BookIcon from '~icons/material-symbols/book-2-outline-rounded';
 
   const doc = $derived.by(() => {

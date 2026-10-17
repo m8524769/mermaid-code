@@ -1,3 +1,6 @@
+import adapter from '@sveltejs/adapter-static';
+import 'dotenv/config';
+import { sveltePreprocess } from 'svelte-preprocess';
 import tailwindcss from '@tailwindcss/vite';
 import { sveltekit } from '@sveltejs/kit/vite';
 import { paraglideVitePlugin } from '@inlang/paraglide-js';
@@ -21,7 +24,13 @@ const alwaysFullReload = {
 export default defineConfig({
   plugins: [
     tailwindcss(),
-    sveltekit(),
+    sveltekit({
+      // Consult https://github.com/sveltejs/svelte-preprocess
+      // for more information about preprocessors
+      preprocess: [sveltePreprocess({})],
+      adapter: adapter({ pages: 'dist', fallback: '404.html' })
+    }),
+
     paraglideVitePlugin({
       project: './project.inlang',
       outdir: './src/lib/paraglide',

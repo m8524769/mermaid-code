@@ -1,9 +1,9 @@
 <script lang="ts">
-  import { m } from '$/paraglide/messages';
-  import FloatingToolbar from '$/components/FloatingToolbar.svelte';
-  import { Button } from '$/components/ui/button';
-  import { Separator } from '$/components/ui/separator';
-  import type { PanZoomState } from '$/util/panZoom';
+  import { m } from '#lib/paraglide/messages.js';
+  import FloatingToolbar from '#lib/components/FloatingToolbar.svelte';
+  import { Button } from '#lib/components/ui/button/index.js';
+  import { Separator } from '#lib/components/ui/separator/index.js';
+  import type { PanZoomState } from '#lib/util/panZoom.js';
   import ExpandIcon from '~icons/material-symbols/open-in-full-rounded';
   import CloseFullscreenIcon from '~icons/material-symbols/close-fullscreen-rounded';
   import ArrowsToCircleIcon from '~icons/material-symbols/screenshot-frame-2';

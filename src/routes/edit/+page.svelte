@@ -1,35 +1,35 @@
 <script lang="ts">
-  import Actions from '$/components/Actions.svelte';
-  import { m } from '$/paraglide/messages';
-  import Card from '$/components/Card/Card.svelte';
-  import DiagramDocButton from '$/components/DiagramDocumentationButton.svelte';
-  import Editor from '$/components/Editor.svelte';
-  import FileSidebar from '$/components/FileSidebar.svelte';
-  import AgentPanel from '$/components/Agent/AgentPanel.svelte';
-  import Navbar from '$/components/Navbar.svelte';
-  import TitleBar from '$/components/TitleBar.svelte';
-  import PanZoomToolbar from '$/components/PanZoomToolbar.svelte';
-  import Preset from '$/components/Preset.svelte';
-  import Share from '$/components/Share.svelte';
-  import SyncRoughToolbar from '$/components/SyncRoughToolbar.svelte';
-  import TabBar from '$/components/TabBar.svelte';
-  import { Button } from '$/components/ui/button';
-  import * as Resizable from '$/components/ui/resizable';
-  import { Toggle } from '$/components/ui/toggle';
-  import VersionSecurityToolbar from '$/components/VersionSecurityToolbar.svelte';
-  import View from '$/components/View.svelte';
-  import type { EditorMode, Tab } from '$/types';
-  import { fileState } from '$/util/fileState.svelte';
-  import { saveFileAs } from '$/util/fileSystem';
-  import { PanZoomState } from '$/util/panZoom';
-  import { updateCodeStore, validatedState } from '$/util/state.svelte';
-  import { initHandler } from '$/util/util';
+  import Actions from '#lib/components/Actions.svelte';
+  import { m } from '#lib/paraglide/messages.js';
+  import Card from '#lib/components/Card/Card.svelte';
+  import DiagramDocButton from '#lib/components/DiagramDocumentationButton.svelte';
+  import Editor from '#lib/components/Editor.svelte';
+  import FileSidebar from '#lib/components/FileSidebar.svelte';
+  import AgentPanel from '#lib/components/Agent/AgentPanel.svelte';
+  import Navbar from '#lib/components/Navbar.svelte';
+  import TitleBar from '#lib/components/TitleBar.svelte';
+  import PanZoomToolbar from '#lib/components/PanZoomToolbar.svelte';
+  import Preset from '#lib/components/Preset.svelte';
+  import Share from '#lib/components/Share.svelte';
+  import SyncRoughToolbar from '#lib/components/SyncRoughToolbar.svelte';
+  import TabBar from '#lib/components/TabBar.svelte';
+  import { Button } from '#lib/components/ui/button/index.js';
+  import * as Resizable from '#lib/components/ui/resizable/index.js';
+  import { Toggle } from '#lib/components/ui/toggle/index.js';
+  import VersionSecurityToolbar from '#lib/components/VersionSecurityToolbar.svelte';
+  import View from '#lib/components/View.svelte';
+  import type { EditorMode, Tab } from '#lib/types.js';
+  import { fileState } from '#lib/util/fileState.svelte.js';
+  import { saveFileAs } from '#lib/util/fileSystem.js';
+  import { PanZoomState } from '#lib/util/panZoom.js';
+  import { updateCodeStore, validatedState } from '#lib/util/state.svelte.js';
+  import { initHandler } from '#lib/util/util.js';
   import { onMount } from 'svelte';
   import { fade } from 'svelte/transition';
   import CodeIcon from '~icons/custom/code';
   import FolderIcon from '~icons/material-symbols/folder-outline-rounded';
   import GearIcon from '~icons/material-symbols/settings-outline-rounded';
-  import ToggleEditorButton from '$/components/ToggleEditorButton.svelte';
+  import ToggleEditorButton from '#lib/components/ToggleEditorButton.svelte';
 
   const panZoomState = new PanZoomState();
 
@@ -126,7 +126,7 @@
         }
         switch (id) {
           case 'open-file': {
-            const { openFile } = await import('$/util/fileSystem');
+            const { openFile } = await import('#lib/util/fileSystem.js');
             const result = await openFile();
             if (result) await fileState.openFile(result.handle.path);
             break;
