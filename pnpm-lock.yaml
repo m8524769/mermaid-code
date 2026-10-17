@@ -163,7 +163,7 @@ settings:
   excludeLinksFromLockfile: false
 
 overrides:
-  dompurify: ^3.4.16
+  dompurify: ^3.4.17
 
 importers:
 
@@ -206,7 +206,7 @@ importers:
         specifier: ^1.11.23
         version: 1.11.23
       dompurify:
-        specifier: ^3.4.16
+        specifier: ^3.4.17
         version: 3.4.17
       hammerjs:
         specifier: ^2.0.8
