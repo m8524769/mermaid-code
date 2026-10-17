@@ -3,7 +3,7 @@
   import { recordRenderTime, shouldRefreshView } from '$/util/autoSync';
   import { render as renderDiagram } from '$/util/mermaid';
   import { PanZoomState } from '$/util/panZoom';
-  import { updateCodeStore, validatedState } from '$/util/state.svelte';
+  import { updateCodeStore, updateViewport, validatedState } from '$/util/state.svelte';
   import FontAwesome, { mayContainFontAwesome } from '$lib/components/FontAwesome.svelte';
   import uniqueID from 'lodash-es/uniqueId';
   import type { MermaidConfig } from 'mermaid';
@@ -28,7 +28,7 @@
   // Set up panZoom state observer to update the store when pan/zoom changes
   const setupPanZoomObserver = () => {
     panZoomState.onPanZoomChange = (pan, zoom) => {
-      updateCodeStore({ pan, zoom });
+      updateViewport(pan, zoom);
     };
   };
 

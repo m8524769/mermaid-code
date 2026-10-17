@@ -115,7 +115,12 @@ const persistAndProcess = (): void => {
   const snapshot = $state.snapshot(input) as State;
   writeJSON(CODE_STORE_KEY, snapshot);
   void processState(snapshot).then((processed) => {
-    validatedCurrent = processed;
+    // pan/zoom are not validation outputs and may have been changed by
+    // updateViewport while we were parsing. Take the live viewport rather than
+    // this snapshot's, so a stale pan/zoom can't revert the viewport when the
+    // next render restores it.
+    const { pan, zoom } = $state.snapshot(input) as State;
+    validatedCurrent = { ...processed, pan, zoom };
   });
 };
 
@@ -170,6 +175,20 @@ const applyPartial = (state: State, newState: Partial<State>): void => {
 
 export const updateCodeStore = (newState: Partial<State>): void => {
   update((state) => applyPartial(state, newState));
+};
+
+// Persist a viewport (pan/zoom) change without re-validating. The diagram is
+// unchanged, so there is nothing to re-parse — we only write the new viewport
+// to storage. validatedState is intentionally left untouched: nothing reads
+// its pan/zoom until the next real update re-snapshots `input`, and a viewport
+// change never triggers a re-render. Routing pan/zoom through update() instead
+// would run mermaid's parse() on every (throttled) pan frame for no reason.
+export const updateViewport = (pan: State['pan'], zoom: State['zoom']): void => {
+  untrack(() => {
+    input.pan = pan;
+    input.zoom = zoom;
+    writeJSON(CODE_STORE_KEY, $state.snapshot(input));
+  });
 };
 
 export const updateCode = (
