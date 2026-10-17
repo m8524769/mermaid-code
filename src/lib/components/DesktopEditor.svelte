@@ -2,6 +2,7 @@
   import { m } from '#lib/paraglide/messages.js';
   import type { EditorProps } from '#lib/types.js';
   import { env } from '#lib/util/env.js';
+  import { getAppLocale } from '#lib/util/locale.svelte.js';
   import { inputState, validatedState } from '#lib/util/state.svelte.js';
   import { fileState } from '#lib/util/fileState.svelte.js';
   import { saveFileAs } from '#lib/util/fileSystem.js';
@@ -59,6 +60,16 @@
     if (end - start + 1 < 2) return null; // a single char can't form a ligature
     return new monaco.Range(position.lineNumber, start + 1, position.lineNumber, end + 2);
   };
+
+  // Monaco font stack: Fira Code (self-hosted, see app.css @font-face) for Latin
+  // + ligatures, with mono fallbacks. In Chinese UI only, insert 'Microsoft YaHei'
+  // ahead of the generic `monospace` (which Windows maps to SimSun for CJK);
+  // other locales keep the OS default so Japanese/Korean text isn't forced
+  // through a Simplified Chinese face. Read once at load — matches the existing
+  // "switch language takes effect next launch" behavior (see locale.svelte.ts).
+  const cjkFallback = getAppLocale() === 'zh-CN' ? "'Microsoft YaHei', " : '';
+  const editorFontFamily = `'Fira Code', ui-monospace, Menlo, Consolas, ${cjkFallback}monospace`;
+
   let editorOptions = {
     minimap: {
       enabled: false
@@ -66,9 +77,7 @@
     overviewRulerLanes: 0,
     glyphMargin: false,
     lineNumbersMinChars: 4,
-    // Fira Code (self-hosted, see app.css @font-face). System mono fallbacks
-    // keep the editor readable if the webfont ever fails to load.
-    fontFamily: "'Fira Code', ui-monospace, Menlo, Consolas, monospace",
+    fontFamily: editorFontFamily,
     fontLigatures: true,
     // Enable tree-sitter semantic highlighting (see monacoExtra.ts). Default is
     // 'configuredByTheme'; forcing true keeps it on regardless of theme.
