@@ -1,6 +1,5 @@
 import type { ErrorHash, MarkerData, State, ValidatedState } from '$/types';
 import { resolve } from '$app/paths';
-import { debounce, get as lodashGet } from 'lodash-es';
 import type { MermaidConfig } from 'mermaid';
 import { untrack } from 'svelte';
 import { env } from './env';
@@ -9,9 +8,9 @@ import {
   findMostRelevantLineNumber,
   replaceLineNumberInErrorMessage
 } from './errorHandling';
-import { defaultMermaidConfig, parse } from './mermaid';
+import { parse } from './mermaid';
 import { readJSON, writeJSON } from './persist.svelte';
-import { deserializeState, pakoSerde, serializeState } from './serde';
+import { pakoSerde, serializeState } from './serde';
 import { errorDebug, formatJSON } from './util';
 
 export const defaultState: State = {
@@ -22,17 +21,6 @@ export const defaultState: State = {
   rough: false,
   updateDiagram: true
 };
-
-const urlParseFailedState = `flowchart TD
-    A[Loading URL failed. We can try to figure out why.] -->|Decode JSON| B(Please check the console to see the JSON and error details.)
-    B --> C{Is the JSON correct?}
-    C -->|Yes| D(Please Click here to Raise an issue in github.<br/>Including the broken link in the issue <br/> will speed up the fix.)
-    C -->|No| E{Did someone <br/>send you this link?}
-    E -->|Yes| F[Ask them to send <br/>you the complete link]
-    E -->|No| G{Did you copy <br/> the complete URL?}
-    G --> |Yes| D
-    G --> |"No :("| H(Try using the Timeline tab in History <br/>from same browser you used to create the diagram.)
-    click D href "https://github.com/mermaid-js/mermaid-live-editor/issues/new?assignees=&labels=bug&template=bug_report.md&title=Broken%20link" "Raise issue"`;
 
 const CODE_STORE_KEY = 'codeStore';
 
@@ -125,19 +113,14 @@ const processState = async (state: State) => {
   return processed;
 };
 
-// Replaces the old URL-hash store subscription; assigned by initURLSubscription.
-let updateHash: ((serialized: string) => void) | undefined;
-
 // Persist the current input state and asynchronously re-validate it,
-// publishing the result to `validatedState` (and the URL hash, once
-// initURLSubscription has run). Only called from update(), which suppresses
-// dependency tracking.
+// publishing the result to `validatedState`. Only called from update(),
+// which suppresses dependency tracking.
 const persistAndProcess = (): void => {
   const snapshot = $state.snapshot(input) as State;
   writeJSON(CODE_STORE_KEY, snapshot);
   void processState(snapshot).then((processed) => {
     validatedCurrent = processed;
-    updateHash?.(processed.serialized);
   });
 };
 
@@ -179,104 +162,6 @@ export const urls = {
   get current() {
     return urlsCurrent;
   }
-};
-
-/**
- * Gets a list of paths that contain unsafe keys which might pose security risks.
- *
- * @param object - The object to check for unsafe keys.
- * @param unsafeKeys - List of unsafe keys.
- * @param path - The current path being checked (used for recursion).
- * @returns List of unsafe paths.
- */
-function getUnsafePaths(object: object, unsafeKeys: string[], path: string[] = []) {
-  const unsafePaths: string[][] = [];
-  for (const key of unsafeKeys) {
-    // Copied from mermaid's sanitize function in case there's non-enumerable keys
-    if (Object.hasOwn(object, key)) {
-      unsafePaths.push([...path, key]);
-      continue;
-    }
-  }
-  Object.keys(object).forEach((key) => {
-    const value = (object as Record<string, unknown>)[key];
-    const currentPath = [...path, key];
-    // Prototype pollution check.
-    if (key.startsWith('__')) {
-      unsafePaths.push(currentPath);
-      return;
-    }
-    if (typeof value === 'object' && value !== null) {
-      unsafePaths.push(...getUnsafePaths(value as object, unsafeKeys, currentPath));
-    } else if (
-      typeof value === 'string' &&
-      // XSS prevention checks -- See mermaid `sanitize` function for reference.
-      (value.includes('<') || value.includes('>') || value.includes('url(data:'))
-    ) {
-      unsafePaths.push(currentPath);
-    }
-  });
-  return unsafePaths;
-}
-
-/**
- * Asks the user for confirmation if the config contains settings that might
- * pose security risks, such as a relaxed `securityLevel`.
- *
- * @param config - The Mermaid configuration to sanitize.
- * @returns The sanitized Mermaid configuration as a JSON string.
- */
-export const sanitizeConfig = (config: string | MermaidConfig) => {
-  const mermaidConfig: MermaidConfig =
-    typeof config === 'string' ? (JSON.parse(config) as MermaidConfig) : config;
-
-  const secureKeys = defaultMermaidConfig.secure ?? [];
-  const unsafePaths = getUnsafePaths(mermaidConfig, secureKeys).filter((path) => {
-    return lodashGet(mermaidConfig, path) !== lodashGet(defaultMermaidConfig, path);
-  });
-
-  if (
-    unsafePaths.length > 0 &&
-    confirm(
-      `Removing ${unsafePaths
-        .map((unsafePath) => {
-          return `${JSON.stringify(unsafePath.join('.'))}: ${JSON.stringify(lodashGet(mermaidConfig, unsafePath))}`;
-        })
-        .join(
-          ',\n'
-        )} from the config for safety.\nClick Cancel if you trust the source of this Diagram.`
-    )
-  ) {
-    for (const unsafePath of unsafePaths) {
-      const pathToObject = [...unsafePath];
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- We know this exists since it was found in `getUnsafePaths`
-      const lastKey = pathToObject.pop()!;
-      const lastObject =
-        pathToObject.length === 0 ? mermaidConfig : lodashGet(mermaidConfig, pathToObject);
-      // eslint-disable-next-line @typescript-eslint/no-dynamic-delete -- Copied from mermaid code
-      delete lastObject[lastKey];
-    }
-  }
-  return formatJSON(mermaidConfig);
-};
-
-export const loadState = (data: string): void => {
-  console.log(`Loading '${data}'`);
-  update((state) => {
-    let next: State;
-    try {
-      next = deserializeState(data);
-      next.mermaid = sanitizeConfig(next.mermaid || defaultState.mermaid);
-    } catch (error) {
-      next = $state.snapshot(state) as State;
-      if (data) {
-        console.error('Init error', error);
-        next.code = urlParseFailedState;
-        next.mermaid = defaultState.mermaid;
-      }
-    }
-    applyPartial(state, next);
-  });
 };
 
 let renderCount = 0;
@@ -363,13 +248,6 @@ export const replaceInputState = (next: State): void => {
     }
     Object.assign(state, next);
   });
-};
-
-export const initURLSubscription = (): void => {
-  updateHash = debounce((serialized: string) => {
-    history.replaceState(undefined, '', `#${serialized}`);
-  }, 250);
-  updateHash(validatedCurrent.serialized);
 };
 
 export const verifyState = (): void => {

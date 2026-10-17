@@ -6,7 +6,6 @@
   import { toggleDarkTheme } from '$/util/state.svelte';
   import { initLocale } from '$/util/locale.svelte';
   import { m } from '$/paraglide/messages';
-  import { initHandler } from '$/util/util';
   import { mode, ModeWatcher } from 'mode-watcher';
   import { onMount, type Snippet } from 'svelte';
   import '../app.css';
@@ -23,10 +22,6 @@
     // Mirror the resolved locale to a file the Rust side reads at startup to
     // localize the native menu / dialogs.
     initLocale();
-
-    window.addEventListener('hashchange', () => {
-      void initHandler();
-    });
 
     // Disable native browser/webview context menu so bits-ui ContextMenu can work.
     // bits-ui sets data-context-menu-trigger on ContextMenu.Trigger elements —

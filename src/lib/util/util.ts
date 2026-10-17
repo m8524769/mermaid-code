@@ -1,14 +1,10 @@
 import { applyMigrations } from './migrations.svelte';
-import { initURLSubscription, loadState, updateCodeStore, verifyState } from './state.svelte';
+import { updateCodeStore, verifyState } from './state.svelte';
 
 export const getDomain = (url?: string): string => {
   if (!url) return '';
   const domain = new URL(url).hostname;
   return domain;
-};
-
-export const loadStateFromURL = (): void => {
-  loadState(window.location.hash.slice(1));
 };
 
 export const syncDiagram = (): void => {
@@ -19,9 +15,7 @@ export const syncDiagram = (): void => {
 
 export const initHandler = async (): Promise<void> => {
   applyMigrations();
-  loadStateFromURL();
   syncDiagram();
-  initURLSubscription();
   verifyState();
 };
 
