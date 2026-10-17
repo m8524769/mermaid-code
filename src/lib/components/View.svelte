@@ -47,7 +47,6 @@
       return;
     }
     error = false;
-    let diagramType: string | undefined;
     try {
       if (container) {
         manualUpdate = true;
@@ -84,12 +83,11 @@
         }
 
         const viewID = uniqueID('graph-');
-        const {
-          svg,
-          bindFunctions,
-          diagramType: detectedDiagramType
-        } = await renderDiagram(JSON.parse(state.mermaid || '{}') as MermaidConfig, code, viewID);
-        diagramType = detectedDiagramType;
+        const { svg, bindFunctions } = await renderDiagram(
+          JSON.parse(state.mermaid || '{}') as MermaidConfig,
+          code,
+          viewID
+        );
         if (svg.length > 0) {
           // eslint-disable-next-line svelte/no-dom-manipulating
           container.innerHTML = svg;
@@ -150,7 +148,6 @@
   let pendingStateChange = Promise.resolve();
   $effect(() => {
     const state = validatedState.current;
-    // eslint-disable-next-line @typescript-eslint/no-empty-function
     pendingStateChange = pendingStateChange.then(() => handleStateChange(state).catch(() => {}));
   });
 </script>

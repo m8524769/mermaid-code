@@ -141,7 +141,7 @@ let recentFolders = $state<string[]>(readJSON(RECENT_FOLDERS_KEY, []));
 let recentFiles = $state<string[]>(readJSON(RECENT_FILES_KEY, []));
 let isAutoSave = $state(localStorage.getItem('mermaid-autosave') !== 'false');
 // Map of watched path → unwatch function; only visible directories are watched
-let watchMap = new Map<string, () => void>();
+const watchMap = new Map<string, () => void>();
 
 const saveRecentFolder = (path: string): void => {
   const recent = readJSON<string[]>(RECENT_FOLDERS_KEY, []).filter((p: string) => p !== path);

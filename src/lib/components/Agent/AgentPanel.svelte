@@ -369,14 +369,14 @@
     try {
       const { invoke } = await import('@tauri-apps/api/core');
       await invoke('send_agent_message', { runId, content: '\x03' });
-    } catch (e) {}
+    } catch {}
   }
 
   async function killRun(id: string) {
     try {
       const { invoke } = await import('@tauri-apps/api/core');
       await invoke('kill_agent_run', { runId: id });
-    } catch (e) {}
+    } catch {}
     // The persistent Codex process emits no exit event for a dropped session,
     // so clear the active run locally (harmless for Claude — its process dies).
     const slice = slices[selectedAgentId];

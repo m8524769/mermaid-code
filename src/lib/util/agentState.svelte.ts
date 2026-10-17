@@ -229,7 +229,7 @@ async function loadSessions(agentId: string, folderPath: string) {
   slice.sessionsLoading = true;
   try {
     const { invoke } = await import('@tauri-apps/api/core');
-    const ids: Array<{ session_id: string; first_prompt: string | null }> = await invoke(
+    const ids: { session_id: string; first_prompt: string | null }[] = await invoke(
       'list_folder_sessions',
       { agentType: agentId, folderPath }
     );
@@ -286,21 +286,21 @@ async function loadSessionHistory(agentId: string, folderPath: string, sessionId
   historyLoadTokens.set(agentId, token);
   try {
     const { invoke } = await import('@tauri-apps/api/core');
-    const msgs: Array<{
+    const msgs: {
       role: string;
       text: string;
       thinking: string | null;
       tool_name: string | null;
       tool_use_id: string | null;
       opened_files: string[];
-      selected_code: Array<{
+      selected_code: {
         file: string;
         start_line: number;
         end_line: number;
         symbol: string | null;
-      }>;
+      }[];
       is_error: boolean;
-    }> = await invoke('load_session_history', {
+    }[] = await invoke('load_session_history', {
       agentType: agentId,
       folderPath,
       sessionId

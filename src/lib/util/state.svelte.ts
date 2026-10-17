@@ -190,7 +190,7 @@ export const urls = {
  * @returns List of unsafe paths.
  */
 function getUnsafePaths(object: object, unsafeKeys: string[], path: string[] = []) {
-  const unsafePaths = new Array<string[]>();
+  const unsafePaths: string[][] = [];
   for (const key of unsafeKeys) {
     // Copied from mermaid's sanitize function in case there's non-enumerable keys
     if (Object.hasOwn(object, key)) {
