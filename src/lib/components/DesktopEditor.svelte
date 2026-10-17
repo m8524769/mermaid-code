@@ -2,7 +2,6 @@
   import { m } from '#lib/paraglide/messages.js';
   import type { EditorProps } from '#lib/types.js';
   import { env } from '#lib/util/env.js';
-  import { getAppLocale } from '#lib/util/locale.svelte.js';
   import { inputState, validatedState } from '#lib/util/state.svelte.js';
   import { fileState } from '#lib/util/fileState.svelte.js';
   import { saveFileAs } from '#lib/util/fileSystem.js';
@@ -61,13 +60,21 @@
     return new monaco.Range(position.lineNumber, start + 1, position.lineNumber, end + 2);
   };
 
-  // Monaco font stack: Fira Code (self-hosted, see app.css @font-face) for Latin
-  // + ligatures, with mono fallbacks. In Chinese UI only, insert 'Microsoft YaHei'
-  // ahead of the generic `monospace` (which Windows maps to SimSun for CJK);
-  // other locales keep the OS default so Japanese/Korean text isn't forced
-  // through a Simplified Chinese face. Read once at load — matches the existing
-  // "switch language takes effect next launch" behavior (see locale.svelte.ts).
-  const cjkFallback = getAppLocale() === 'zh-CN' ? "'Microsoft YaHei', " : '';
+  // Monaco font stack: Fira Code (self-hosted, see app.css @font-face) with mono
+  // fallbacks. On Chinese systems, add a Windows CJK UI font so editor CJK skips
+  // the generic `monospace` (which Windows maps to SimSun/MingLiU serifs). Keyed
+  // off the OS language, not the in-app UI toggle, so Japanese/Korean aren't
+  // forced through a Chinese face.
+  const osLang = navigator.language.toLowerCase();
+  let cjkFallback = '';
+  if (osLang.startsWith('zh')) {
+    const traditional =
+      osLang.includes('hant') ||
+      osLang.startsWith('zh-tw') ||
+      osLang.startsWith('zh-hk') ||
+      osLang.startsWith('zh-mo');
+    cjkFallback = traditional ? "'Microsoft JhengHei', " : "'Microsoft YaHei', ";
+  }
   const editorFontFamily = `'Fira Code', ui-monospace, Menlo, Consolas, ${cjkFallback}monospace`;
 
   let editorOptions = {
