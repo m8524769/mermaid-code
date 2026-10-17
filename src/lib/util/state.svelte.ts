@@ -44,29 +44,24 @@ const input = $state<State>(storedState);
 // module, where update() persists and re-validates every change.
 export const inputState: Readonly<State> = input;
 
-const validatedStateOf = (state: State, serialized: string): ValidatedState => ({
+const validatedStateOf = (state: State): ValidatedState => ({
   ...state,
   editorMode: state.editorMode ?? 'code',
   error: undefined,
-  errorMarkers: [],
-  serialized
+  errorMarkers: []
 });
 
 const initialState = $state.snapshot(input) as State;
 // Only ever replaced wholesale, so raw (shallow) reactivity is enough.
-let validatedCurrent = $state.raw<ValidatedState>(
-  validatedStateOf(initialState, serializeState(initialState))
-);
+let validatedCurrent = $state.raw<ValidatedState>(validatedStateOf(initialState));
 
 const processState = async (state: State) => {
-  const processed = validatedStateOf(state, '');
+  const processed = validatedStateOf(state);
   // No changes should be done to fields part of `state`.
   if (!state.code.trim()) {
-    processed.serialized = serializeState(state);
     return processed;
   }
   try {
-    processed.serialized = serializeState(state);
     const { diagramType } = await parse(state.code);
     processed.diagramType = diagramType;
     JSON.parse(state.mermaid || '{}');
@@ -144,14 +139,17 @@ export const validatedState = {
 };
 
 const urlsCurrent = $derived.by(() => {
-  const { code, serialized } = validatedCurrent;
+  const state = $state.snapshot(input) as State;
+  const { code } = state;
   const { domain, krokiRendererUrl, rendererUrl } = env;
   const origin = domain ? `https://${domain}` : window.location.origin;
+  // Read only by the Share dialog, so this pako serialization runs lazily —
+  // when the dialog is open, not on every keystroke.
+  const serialized = serializeState(state);
   const png = rendererUrl ? `${rendererUrl}/img/${serialized}?type=png` : '';
   return {
     kroki: krokiRendererUrl ? `${krokiRendererUrl}/mermaid/svg/${pakoSerde.serialize(code)}` : '',
     mdCode: png ? `[![](${png})](${origin}${resolve('/edit', {})}#${serialized})` : '',
-    new: `${resolve('/edit', {})}#${serializeState(defaultState)}`,
     edit: `${origin}${resolve('/edit', {})}#${serialized}`,
     png,
     svg: rendererUrl ? `${rendererUrl}/svg/${serialized}` : ''

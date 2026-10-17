@@ -14,7 +14,7 @@
   import { m } from '$/paraglide/messages';
   import { toast } from 'svelte-sonner';
   import { waitForRender } from '$lib/util/autoSync';
-  import { inputState, updateCodeStore, urls, validatedState } from '$lib/util/state.svelte';
+  import { inputState, updateCodeStore, validatedState } from '$lib/util/state.svelte';
   import { version as FAVersion } from '@fortawesome/fontawesome-free/package.json';
   import dayjs from 'dayjs';
   import { toBase64, toUint8Array } from 'js-base64';
@@ -362,8 +362,8 @@
       {/if}
     </div>
     <div class="flex gap-2">
-      {@render dualActionButton('PNG', onDownloadPNG, urls.current.png)}
-      {@render dualActionButton('SVG', onDownloadSVG, urls.current.svg)}
+      {@render dualActionButton('PNG', onDownloadPNG)}
+      {@render dualActionButton('SVG', onDownloadSVG)}
     </div>
     <Separator />
     {#if isClipboardAvailable()}
