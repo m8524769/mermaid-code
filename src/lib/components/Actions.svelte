@@ -16,7 +16,6 @@
   import { waitForRender } from '#lib/util/autoSync.js';
   import { inputState, updateCodeStore, validatedState } from '#lib/util/state.svelte.js';
   import { version as FAVersion } from '@fortawesome/fontawesome-free/package.json';
-  import dayjs from 'dayjs';
   import { toBase64, toUint8Array } from 'js-base64';
   import DownloadIcon from '~icons/material-symbols/download';
   import ExternalLinkIcon from '~icons/material-symbols/open-in-new-rounded';
@@ -28,13 +27,10 @@
 
   type Exporter = (context: CanvasRenderingContext2D, image: HTMLImageElement) => () => void;
 
-  const getFileName = (extension: string) => {
+  const getExportFileName = (extension: string) => {
     const activeTab = fileState.tabs.find((t) => t.id === fileState.activeTabId);
-    if (activeTab) {
-      const stem = activeTab.name.replace(/\.(mmd|mermaid)$/i, '');
-      return `${stem}.${extension}`;
-    }
-    return `mermaid-diagram-${dayjs().format('YYYY-MM-DD-HHmmss')}.${extension}`;
+    const stem = (activeTab?.name ?? 'mermaid-diagram').replace(/\.(mmd|mermaid)$/i, '');
+    return `${stem}.${extension}`;
   };
 
   /**
@@ -208,7 +204,7 @@
       const { canvas } = context;
       context.drawImage(image, 0, 0, canvas.width, canvas.height);
       const dataUrl = canvas.toDataURL('image/png');
-      void saveExport(getFileName('png'), toUint8Array(dataUrl.split(',')[1]));
+      void saveExport(getExportFileName('png'), toUint8Array(dataUrl.split(',')[1]));
     };
   };
 
@@ -260,7 +256,7 @@
   const onDownloadSVG = async () => {
     try {
       const base64 = getBase64SVG();
-      await saveExport(getFileName('svg'), toUint8Array(base64));
+      await saveExport(getExportFileName('svg'), toUint8Array(base64));
     } catch (error) {
       console.error('[Actions] SVG export failed', error);
       toast.error(m.actions_export_failed());

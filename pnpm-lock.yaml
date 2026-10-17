@@ -202,9 +202,6 @@ importers:
       '@tauri-apps/plugin-updater':
         specifier: ^2.14.0
         version: 2.14.0
-      dayjs:
-        specifier: ^1.11.23
-        version: 1.11.23
       dompurify:
         specifier: ^3.4.17
         version: 3.4.17
@@ -383,9 +380,6 @@ importers:
       tailwindcss:
         specifier: ^4.3.3
         version: 4.3.3
-      tslib:
-        specifier: ^2.8.1
-        version: 2.8.1
       tw-animate-css:
         specifier: ^1.4.0
         version: 1.4.0
