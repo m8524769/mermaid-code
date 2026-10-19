@@ -5,7 +5,12 @@
   import Card from '#lib/components/Card/Card.svelte';
   import { Button } from '#lib/components/ui/button/index.js';
   import * as Popover from '#lib/components/ui/popover/index.js';
-  import { agentState, slices, type SessionEntry } from '#lib/util/agentState.svelte.js';
+  import {
+    agentState,
+    slices,
+    type SessionEntry,
+    type AgentMessage
+  } from '#lib/util/agentState.svelte.js';
   import { fileState } from '#lib/util/fileState.svelte.js';
   import { mcpState } from '#lib/util/mcpState.svelte.js';
   import { openFolderDialog } from '#lib/util/fileSystem.js';
@@ -76,6 +81,14 @@
     '[&_:not(pre)>code]:rounded-md [&_:not(pre)>code]:bg-foreground/10 [&_:not(pre)>code]:px-1.5 ' +
     '[&_:not(pre)>code]:py-0.5 [&_:not(pre)>code]:font-normal ' +
     '[&_:not(pre)>code]:before:content-none [&_:not(pre)>code]:after:content-none';
+
+  // Claude writes a sentinel user message (e.g. "[Request interrupted by user]"
+  // or "[Request interrupted by user for tool use]") when the turn is cut off.
+  // It's not something the user typed, so render it as a subtle centered notice
+  // rather than a user bubble. Both variants collapse to one label.
+  const INTERRUPT_RE = /^\[Request interrupted by user[^\]]*\]$/;
+  const isInterruptNotice = (msg: AgentMessage) =>
+    msg.role === 'user' && INTERRUPT_RE.test(msg.text.trim());
 
   // Start event listener for agent events
   agentState.init();
@@ -961,9 +974,20 @@
               class={[
                 index > 0 && 'mt-2',
                 'flex flex-col gap-0.5',
-                msg.role === 'user' ? 'items-end' : 'items-start'
+                isInterruptNotice(msg)
+                  ? 'items-center'
+                  : msg.role === 'user'
+                    ? 'items-end'
+                    : 'items-start'
               ]}>
-              {#if msg.role === 'user'}
+              {#if isInterruptNotice(msg)}
+                <div
+                  class="my-1 flex w-full items-center gap-2 px-2 text-xs text-muted-foreground/50 select-none">
+                  <span class="h-px flex-1 bg-muted-foreground/15"></span>
+                  {m.agent_interrupted()}
+                  <span class="h-px flex-1 bg-muted-foreground/15"></span>
+                </div>
+              {:else if msg.role === 'user'}
                 {#if msg.openedFiles && msg.openedFiles.length > 0}
                   <div class="flex max-w-[85%] flex-wrap gap-1">
                     {#each msg.openedFiles as file}
@@ -996,7 +1020,7 @@
                     <summary
                       class="flex cursor-pointer items-center gap-1.5 px-3 py-1.5 select-none hover:text-foreground">
                       <span class="size-1.5 shrink-0 rounded-full bg-muted-foreground/50"></span>
-                      <span class="font-medium text-muted-foreground">{m.agent_thinking()}</span>
+                      <span class="font-medium text-muted-foreground">{m.agent_reasoning()}</span>
                     </summary>
                     <div
                       class="border-t border-muted-foreground/20 px-3 py-2 break-words whitespace-pre-wrap text-muted-foreground">
