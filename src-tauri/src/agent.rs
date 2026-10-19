@@ -238,6 +238,13 @@ impl AgentDriver for ClaudeCodeDriver {
                 let msg_id = val["message"]["id"].as_str().unwrap_or("").to_string();
                 let mut text_parts: Vec<String> = vec![];
                 let mut thinking: Option<String> = None;
+                // Collect tool_use blocks instead of emitting inline: the message
+                // (text/thinking) must be emitted *before* the tool rows so
+                // reasoning renders above the tool it leads to. A thinking-only
+                // turn isn't streamed (only text_delta is), so unlike streamed
+                // text it has no early position reserved — emitting the tool
+                // first would push the thinking block below it.
+                let mut tool_uses: Vec<DriverEvent> = vec![];
                 for block in val["message"]["content"].as_array().into_iter().flatten() {
                     match block["type"].as_str() {
                         Some("text") => {
@@ -248,7 +255,7 @@ impl AgentDriver for ClaudeCodeDriver {
                             let t = block["thinking"].as_str().unwrap_or("").trim().to_string();
                             if !t.is_empty() { thinking = Some(t); }
                         }
-                        Some("tool_use") => events.push(DriverEvent::ToolUse {
+                        Some("tool_use") => tool_uses.push(DriverEvent::ToolUse {
                             id: block["id"].as_str().unwrap_or("").to_string(),
                             name: block["name"].as_str().unwrap_or("").to_string(),
                             input: block["input"].clone(),
@@ -262,10 +269,12 @@ impl AgentDriver for ClaudeCodeDriver {
                     // If this message was already streamed, mark complete and clean up
                     self.streaming_text.remove(&msg_id);
                     self.streamed_ids.remove(&msg_id);
-                    if !text.is_empty() {
-                        events.push(DriverEvent::Message { id: msg_id, text, thinking, is_streaming });
-                    }
+                    // Emit even when text is empty: a "think, then call a tool"
+                    // turn has a thinking block but no text block, and dropping
+                    // it here is what hid reasoning from the panel.
+                    events.push(DriverEvent::Message { id: msg_id, text, thinking, is_streaming });
                 }
+                events.extend(tool_uses);
             }
             Some("user") => {
                 for block in val["message"]["content"].as_array().into_iter().flatten() {
@@ -1939,7 +1948,7 @@ pub async fn load_session_history(
                                 }
                             }
                         }
-                        if !parts.is_empty() {
+                        if !parts.is_empty() || thinking.is_some() {
                             messages.push(HistoryMessage {
                                 role: "assistant".into(),
                                 text: parts.join("\n"),

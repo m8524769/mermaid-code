@@ -150,7 +150,7 @@
   "agent_start_conversation": "在下方开始对话",
   "agent_select_folder_to_start": "选择一个文件夹以开始",
   "agent_no_messages": "此会话暂无消息",
-  "agent_thinking": "思考中",
+  "agent_thinking": "已思考",
   "agent_result": "结果",
   "agent_tool_fallback": "工具调用",
   "agent_scroll_to_bottom": "回到底部",

@@ -1004,23 +1004,25 @@
                     </div>
                   </details>
                 {/if}
-                {#if msg.isStreaming}
-                  <div class={markdownBubbleClasses}>
-                    <!-- eslint-disable-next-line svelte/no-at-html-tags -->
-                    {@html renderMarkdownSync(msg.text)}
-                  </div>
-                {:else}
-                  {#await renderMarkdownCached(msg.id, msg.text, mode.current === 'dark')}
+                {#if msg.text}
+                  {#if msg.isStreaming}
                     <div class={markdownBubbleClasses}>
                       <!-- eslint-disable-next-line svelte/no-at-html-tags -->
                       {@html renderMarkdownSync(msg.text)}
                     </div>
-                  {:then html}
-                    <div class={markdownBubbleClasses}>
-                      <!-- eslint-disable-next-line svelte/no-at-html-tags -->
-                      {@html html}
-                    </div>
-                  {/await}
+                  {:else}
+                    {#await renderMarkdownCached(msg.id, msg.text, mode.current === 'dark')}
+                      <div class={markdownBubbleClasses}>
+                        <!-- eslint-disable-next-line svelte/no-at-html-tags -->
+                        {@html renderMarkdownSync(msg.text)}
+                      </div>
+                    {:then html}
+                      <div class={markdownBubbleClasses}>
+                        <!-- eslint-disable-next-line svelte/no-at-html-tags -->
+                        {@html html}
+                      </div>
+                    {/await}
+                  {/if}
                 {/if}
               {:else if msg.role === 'tool_use'}
                 <details class="max-w-[85%] rounded-xl border border-muted-foreground/20 text-xs">

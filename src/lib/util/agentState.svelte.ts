@@ -75,10 +75,27 @@ function getSlice(agentId: string): AgentSlice {
 
 // ── Mutations ──────────────────────────────────────────────────────────────────
 
+// Preserve a thinking block once it's set for a message id. The live Claude
+// stream splits one logical assistant message into a thinking-only event
+// followed by text-only events that share the same id and carry no thinking
+// (serialized as `null` from Rust's `None`). Replacing the message wholesale on
+// id would let those later events wipe the reasoning, which is exactly what hid
+// thinking from the live panel (history, which appends per line, was unaffected).
+// A later event with its own non-empty thinking still wins. Exported for tests.
+export function mergeMessage(prev: AgentMessage | undefined, next: AgentMessage): AgentMessage {
+  if (prev && !next.thinking && prev.thinking) {
+    return { ...next, thinking: prev.thinking };
+  }
+  return next;
+}
+
 function upsertMessage(agentId: string, msg: AgentMessage) {
   const slice = getSlice(agentId);
   const idx = slice.messages.findIndex((m) => m.id === msg.id);
-  slice.messages = idx >= 0 ? slice.messages.with(idx, msg) : [...slice.messages, msg];
+  slice.messages =
+    idx >= 0
+      ? slice.messages.with(idx, mergeMessage(slice.messages[idx], msg))
+      : [...slice.messages, msg];
 }
 
 // ── Event dispatcher (driver-agnostic) ────────────────────────────────────────
