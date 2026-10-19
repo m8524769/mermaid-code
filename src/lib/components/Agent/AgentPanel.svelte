@@ -65,6 +65,18 @@
     }
   ];
 
+  // Shared classes for a rendered-markdown message bubble. Kept in one place
+  // because the streaming / loading / resolved branches all render the same
+  // container. The [&_:not(pre)>code] variants style *inline* code only (a
+  // subtle background chip), leaving the Shiki-highlighted `<pre><code>` fenced
+  // blocks untouched; content-none drops prose's default backtick glyphs.
+  const markdownBubbleClasses =
+    'prose prose-sm max-w-[85%] rounded-xl bg-muted px-3 py-2 dark:prose-invert ' +
+    '[&_hr]:my-3 [&_pre]:my-2 [&_pre]:overflow-x-auto [&_pre]:rounded-lg [&_pre]:px-3 [&_pre]:py-2 ' +
+    '[&_:not(pre)>code]:rounded-md [&_:not(pre)>code]:bg-foreground/10 [&_:not(pre)>code]:px-1.5 ' +
+    '[&_:not(pre)>code]:py-0.5 [&_:not(pre)>code]:font-normal ' +
+    '[&_:not(pre)>code]:before:content-none [&_:not(pre)>code]:after:content-none';
+
   // Start event listener for agent events
   agentState.init();
 
@@ -993,21 +1005,18 @@
                   </details>
                 {/if}
                 {#if msg.isStreaming}
-                  <div
-                    class="prose prose-sm max-w-[85%] rounded-xl bg-muted px-3 py-2 dark:prose-invert [&_hr]:my-3 [&_pre]:my-2 [&_pre]:overflow-x-auto [&_pre]:rounded-lg [&_pre]:px-3 [&_pre]:py-2">
+                  <div class={markdownBubbleClasses}>
                     <!-- eslint-disable-next-line svelte/no-at-html-tags -->
                     {@html renderMarkdownSync(msg.text)}
                   </div>
                 {:else}
                   {#await renderMarkdownCached(msg.id, msg.text, mode.current === 'dark')}
-                    <div
-                      class="prose prose-sm max-w-[85%] rounded-xl bg-muted px-3 py-2 dark:prose-invert [&_hr]:my-3 [&_pre]:my-2 [&_pre]:overflow-x-auto [&_pre]:rounded-lg [&_pre]:px-3 [&_pre]:py-2">
+                    <div class={markdownBubbleClasses}>
                       <!-- eslint-disable-next-line svelte/no-at-html-tags -->
                       {@html renderMarkdownSync(msg.text)}
                     </div>
                   {:then html}
-                    <div
-                      class="prose prose-sm max-w-[85%] rounded-xl bg-muted px-3 py-2 dark:prose-invert [&_hr]:my-3 [&_pre]:my-2 [&_pre]:overflow-x-auto [&_pre]:rounded-lg [&_pre]:px-3 [&_pre]:py-2">
+                    <div class={markdownBubbleClasses}>
                       <!-- eslint-disable-next-line svelte/no-at-html-tags -->
                       {@html html}
                     </div>
