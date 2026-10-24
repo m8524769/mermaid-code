@@ -738,7 +738,16 @@ impl AgentDriver for CodexDriver {
                         });
                     }
                     Some("mcpToolCall") => {
-                        let name = format!("{}_{}", item["server"].as_str().unwrap_or("mcp"), item["tool"].as_str().unwrap_or("tool"));
+                        // Use Claude's `mcp__<server>__<tool>` convention so the
+                        // frontend's displayToolName prettifies Codex MCP calls
+                        // the same way ("Mermaid-code-mcp · list_diagrams") instead
+                        // of showing a raw underscore-joined id. server/tool arrive
+                        // as separate fields here, so there's no ambiguity.
+                        let name = format!(
+                            "mcp__{}__{}",
+                            item["server"].as_str().unwrap_or("mcp"),
+                            item["tool"].as_str().unwrap_or("tool")
+                        );
                         out.events.push(DriverEvent::ToolUse {
                             id: item_id,
                             name,
@@ -2033,7 +2042,7 @@ pub async fn load_session_history(
                             Some("mcp_tool_call_begin") => {
                                 let call_id = p["call_id"].as_str().unwrap_or("").to_string();
                                 let inv = &p["invocation"];
-                                let tool_name = format!("{}_{}", inv["server"].as_str().unwrap_or("mcp"), inv["tool"].as_str().unwrap_or("tool"));
+                                let tool_name = format!("mcp__{}__{}", inv["server"].as_str().unwrap_or("mcp"), inv["tool"].as_str().unwrap_or("tool"));
                                 let input = serde_json::to_string_pretty(&inv["arguments"]).unwrap_or_default();
                                 pending_tool.insert(call_id.clone(), HistoryMessage { role: "tool_use".into(), text: input, thinking: None, tool_name: Some(tool_name), tool_use_id: Some(call_id), opened_files: vec![], selected_code: vec![], is_error: false });
                             }
