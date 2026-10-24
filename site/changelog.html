@@ -190,6 +190,17 @@
 <main class="changelog">
 <h1>Changelog</h1>
 <p>All notable changes to Mermaid Code are documented here.</p>
+<h2>[v0.9.4] - 2026-10-24</h2>
+<h3>Changed</h3>
+<ul>
+<li><strong>Polish across the AI agent panel</strong>: inline code now sits on a subtle background so it stands out from the surrounding text; interrupting the agent mid-task shows a quiet <strong>&quot;Interrupted&quot;</strong> divider instead of a bubble that looked like a message you had typed; and Codex MCP tool calls now read like Claude&#39;s — <strong>&quot;Mermaid-code-mcp · list_diagrams&quot;</strong> instead of a raw underscored id.</li>
+<li><strong>Less overhead when panning and zooming</strong>: moving or zooming a diagram no longer re-parses it each time, trimming background work on large diagrams.</li>
+<li><strong>Cleaner Chinese text in the editor on Windows</strong>: on a Chinese-language Windows system, the editor now renders CJK characters in Microsoft YaHei (Simplified) or Microsoft JhengHei (Traditional) instead of the dated default (SimSun / MingLiU); other languages keep the OS default.</li>
+</ul>
+<h3>Removed</h3>
+<ul>
+<li><strong>Remote-render link on image export</strong>: the PNG/SVG export buttons no longer show a secondary &quot;open on the remote renderer&quot; link; local file export is unchanged.</li>
+</ul>
 <h2>[v0.9.3] - 2026-10-16</h2>
 <h3>Added</h3>
 <ul>
