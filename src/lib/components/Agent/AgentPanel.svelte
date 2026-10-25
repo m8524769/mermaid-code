@@ -1069,7 +1069,7 @@
                     class="flex cursor-pointer items-baseline gap-1.5 px-3 py-1.5 select-none hover:text-foreground">
                     <span class="size-1.5 shrink-0 self-center rounded-full bg-muted-foreground/50"
                     ></span>
-                    <span class="font-medium text-muted-foreground"
+                    <span class="shrink-0 font-medium whitespace-nowrap text-muted-foreground"
                       >{displayToolName(msg.toolName)}</span>
                     {#if msg.text}
                       {@const input = (() => {
