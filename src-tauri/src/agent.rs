@@ -725,15 +725,21 @@ impl AgentDriver for CodexDriver {
                     Some("commandExecution") => {
                         out.events.push(DriverEvent::ToolUse {
                             id: item_id,
-                            name: "Bash".to_string(),
+                            name: "commandExecution".to_string(),
                             input: serde_json::json!({ "command": item["command"].as_str().unwrap_or("") }),
                         });
                     }
                     Some("fileChange") => {
-                        let path = item["changes"][0]["path"].as_str().unwrap_or("");
+                        let change = &item["changes"][0];
+                        let path = change["path"].as_str().unwrap_or("");
+                        let kind = match change["kind"]["type"].as_str() {
+                            Some("add") => "add",
+                            Some("delete") => "delete",
+                            _ => "update",
+                        };
                         out.events.push(DriverEvent::ToolUse {
                             id: item_id,
-                            name: "Edit".to_string(),
+                            name: format!("fileChange/{kind}"),
                             input: serde_json::json!({ "file_path": path }),
                         });
                     }
@@ -753,6 +759,17 @@ impl AgentDriver for CodexDriver {
                             name,
                             input: item["arguments"].clone(),
                         });
+                    }
+                    Some("collabAgentToolCall") => {
+                        // Only spawn/followup carry a task prompt; skip lifecycle ops.
+                        let tool = item["tool"].as_str().unwrap_or("");
+                        if matches!(tool, "spawnAgent" | "followupTask") {
+                            out.events.push(DriverEvent::ToolUse {
+                                id: item_id,
+                                name: "collabAgentToolCall".to_string(),
+                                input: serde_json::json!({ "prompt": item["prompt"].as_str().unwrap_or("") }),
+                            });
+                        }
                     }
                     _ => {}
                 }
@@ -787,6 +804,35 @@ impl AgentDriver for CodexDriver {
                             .or_else(|| item["error"].as_str().map(|s| s.to_string()))
                             .unwrap_or_default();
                         out.events.push(DriverEvent::ToolResult { tool_use_id: item_id, content, is_error: false });
+                    }
+                    Some("collabAgentToolCall") => {
+                        // Pairs with the item/started ToolUse; a spawn has no stdout,
+                        // so surface the final status as the result.
+                        let tool = item["tool"].as_str().unwrap_or("");
+                        if matches!(tool, "spawnAgent" | "followupTask") {
+                            let content = match item["status"].as_str().unwrap_or("") {
+                                "completed" => "Completed",
+                                "failed" => "Failed",
+                                "interrupted" => "Interrupted",
+                                _ => "In progress",
+                            }.to_string();
+                            out.events.push(DriverEvent::ToolResult { tool_use_id: item_id, content, is_error: false });
+                        }
+                    }
+                    Some("reasoning") => {
+                        // Only the plaintext `summary` is displayable; empty unless the
+                        // session enabled reasoning summaries. Mirrors the history mapper.
+                        let summary = item["summary"].as_array()
+                            .map(|parts| parts.iter()
+                                .filter_map(|s| s.as_str())
+                                .map(|s| s.trim())
+                                .filter(|s| !s.is_empty())
+                                .collect::<Vec<_>>()
+                                .join("\n"))
+                            .unwrap_or_default();
+                        if !summary.is_empty() {
+                            out.events.push(DriverEvent::Message { id: item_id, text: String::new(), thinking: Some(summary), is_streaming: false });
+                        }
                     }
                     _ => {}
                 }
@@ -1440,34 +1486,117 @@ fn sanitize_path(folder_path: &str) -> String {
 }
 
 // ── Codex session helpers ──────────────────────────────────────────────────────
-// Codex stores sessions at ~/.codex/sessions/YYYY/MM/DD/rollout-<ts>-<id>.jsonl,
-// organized by date (not by project). Each file's `session_meta` line records
-// the cwd, which we use to filter sessions by working folder.
+// Codex sessions come from the persistent app-server: thread/list for the folder
+// listing, thread/read for history, both returning a uniform ThreadItem stream.
 
-fn codex_collect_jsonl(dir: &std::path::Path, out: &mut Vec<PathBuf>) {
-    if let Ok(rd) = std::fs::read_dir(dir) {
-        for entry in rd.flatten() {
-            let p = entry.path();
-            if p.is_dir() {
-                codex_collect_jsonl(&p, out);
-            } else if p.extension().map(|x| x == "jsonl").unwrap_or(false) {
-                out.push(p);
+/// Map the `turns[].items[]` array from a `thread/read` response into history
+/// rows. Each ThreadItem carries its own result, so items translate in order.
+fn codex_history_from_turns(turns: &serde_json::Value) -> Vec<HistoryMessage> {
+    let mut messages: Vec<HistoryMessage> = vec![];
+    let Some(turns) = turns.as_array() else { return messages };
+    for turn in turns {
+        let Some(items) = turn["items"].as_array() else { continue };
+        for item in items {
+            let id = item["id"].as_str().unwrap_or("").to_string();
+            match item["type"].as_str() {
+                Some("userMessage") => {
+                    // content is an array of input blocks; keep the text parts.
+                    let text = item["content"].as_array()
+                        .map(|blocks| blocks.iter()
+                            .filter_map(|b| b["text"].as_str())
+                            .collect::<Vec<_>>()
+                            .join(""))
+                        .unwrap_or_default();
+                    let text = text.trim();
+                    if !text.is_empty() && !is_injected_content(text) {
+                        messages.push(HistoryMessage { role: "user".into(), text: text.to_string(), ..Default::default() });
+                    }
+                }
+                Some("agentMessage") => {
+                    let text = item["text"].as_str().unwrap_or("").trim().to_string();
+                    if !text.is_empty() {
+                        messages.push(HistoryMessage { role: "assistant".into(), text, ..Default::default() });
+                    }
+                }
+                Some("reasoning") => {
+                    // Only the plaintext `summary` is displayable; `content` is
+                    // encrypted and stays empty unless the session enabled
+                    // reasoning summaries (model_reasoning_summary). Skip when blank.
+                    let summary = item["summary"].as_array()
+                        .map(|parts| parts.iter()
+                            .filter_map(|s| s.as_str())
+                            .map(|s| s.trim())
+                            .filter(|s| !s.is_empty())
+                            .collect::<Vec<_>>()
+                            .join("\n"))
+                        .unwrap_or_default();
+                    if !summary.is_empty() {
+                        messages.push(HistoryMessage { role: "assistant".into(), thinking: Some(summary), ..Default::default() });
+                    }
+                }
+                Some("mcpToolCall") => {
+                    // mcp__<server>__<tool> so the frontend prettifies it the same
+                    // way it does Claude's MCP calls.
+                    let name = format!(
+                        "mcp__{}__{}",
+                        item["server"].as_str().unwrap_or("mcp"),
+                        item["tool"].as_str().unwrap_or("tool")
+                    );
+                    let input = serde_json::to_string_pretty(&item["arguments"]).unwrap_or_default();
+                    messages.push(HistoryMessage { role: "tool_use".into(), text: input, tool_name: Some(name), tool_use_id: Some(id.clone()), ..Default::default() });
+                    // success → result.content[].text; failure → error.message/error.
+                    let output = item["result"]["content"][0]["text"].as_str()
+                        .map(|s| s.to_string())
+                        .or_else(|| item["error"]["message"].as_str().map(|s| s.to_string()))
+                        .or_else(|| item["error"].as_str().map(|s| s.to_string()))
+                        .unwrap_or_default();
+                    messages.push(HistoryMessage { role: "tool_result".into(), text: output, tool_use_id: Some(id), ..Default::default() });
+                }
+                Some("commandExecution") => {
+                    let command = item["command"].as_str().unwrap_or("");
+                    let input = serde_json::json!({ "command": command }).to_string();
+                    messages.push(HistoryMessage { role: "tool_use".into(), text: input, tool_name: Some("commandExecution".into()), tool_use_id: Some(id.clone()), ..Default::default() });
+                    // aggregatedOutput is null for read-only commands.
+                    let output = item["aggregatedOutput"].as_str().unwrap_or("").to_string();
+                    messages.push(HistoryMessage { role: "tool_result".into(), text: output, tool_use_id: Some(id), ..Default::default() });
+                }
+                Some("fileChange") => {
+                    let change = &item["changes"][0];
+                    let path = change["path"].as_str().unwrap_or("");
+                    // add | delete | update; update also covers renames (move_path).
+                    let kind = match change["kind"]["type"].as_str() {
+                        Some("add") => "add",
+                        Some("delete") => "delete",
+                        _ => "update",
+                    };
+                    let input = serde_json::json!({ "file_path": path }).to_string();
+                    messages.push(HistoryMessage { role: "tool_use".into(), text: input, tool_name: Some(format!("fileChange/{kind}")), tool_use_id: Some(id.clone()), ..Default::default() });
+                    messages.push(HistoryMessage { role: "tool_result".into(), text: "File updated".into(), tool_use_id: Some(id), ..Default::default() });
+                }
+                Some("collabAgentToolCall") => {
+                    // Only the two operations that carry a task prompt are shown;
+                    // lifecycle ops (wait/closeAgent/listAgents/…) are skipped as
+                    // noise. The agent's task_name isn't on this item — it moved to
+                    // the spawned thread's metadata — so the prompt is the label.
+                    let tool = item["tool"].as_str().unwrap_or("");
+                    if !matches!(tool, "spawnAgent" | "followupTask") { continue; }
+                    let prompt = item["prompt"].as_str().unwrap_or("");
+                    let input = serde_json::json!({ "prompt": prompt }).to_string();
+                    messages.push(HistoryMessage { role: "tool_use".into(), text: input, tool_name: Some("collabAgentToolCall".into()), tool_use_id: Some(id.clone()), ..Default::default() });
+                    // A spawn has no stdout; surface the final status as the result.
+                    let status = match item["status"].as_str().unwrap_or("") {
+                        "completed" => "Completed",
+                        "failed" => "Failed",
+                        "interrupted" => "Interrupted",
+                        _ => "In progress",
+                    };
+                    messages.push(HistoryMessage { role: "tool_result".into(), text: status.into(), tool_use_id: Some(id), ..Default::default() });
+                }
+                _ => {}
             }
         }
     }
-}
-
-/// Locate a codex rollout file by session id (files are named `*-<id>.jsonl`).
-fn codex_find_session_file(root: &std::path::Path, session_id: &str) -> Option<PathBuf> {
-    let mut files = vec![];
-    codex_collect_jsonl(root, &mut files);
-    let suffix = format!("{session_id}.jsonl");
-    files.into_iter().find(|p| {
-        p.file_name()
-            .and_then(|n| n.to_str())
-            .map(|n| n.ends_with(&suffix))
-            .unwrap_or(false)
-    })
+    messages
 }
 
 fn validate_session_id(session_id: &str) -> Result<(), String> {
@@ -1814,7 +1943,7 @@ pub struct SelectedCode {
     pub symbol: Option<String>,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Default)]
 pub struct HistoryMessage {
     pub role: String,
     pub text: String,
@@ -1876,12 +2005,9 @@ pub async fn load_session_history(
                                     messages.push(HistoryMessage {
                                         role: "tool_result".into(),
                                         text,
-                                        thinking: None,
-                                        tool_name: None,
                                         tool_use_id: block["tool_use_id"].as_str().map(|s| s.to_string()),
-                                        opened_files: vec![],
-                                        selected_code: vec![],
                                         is_error: block["is_error"].as_bool().unwrap_or(false),
+                                        ..Default::default()
                                     });
                                 }
                                 continue;
@@ -1896,12 +2022,9 @@ pub async fn load_session_history(
                             messages.push(HistoryMessage {
                                 role: "user".into(),
                                 text,
-                                thinking: None,
-                                tool_name: None,
-                                tool_use_id: None,
                                 opened_files,
                                 selected_code,
-                                is_error: false,
+                                ..Default::default()
                             });
                         }
                     }
@@ -1930,11 +2053,7 @@ pub async fn load_session_history(
                                                 role: "assistant".into(),
                                                 text: parts.join("\n"),
                                                 thinking: thinking.take(),
-                                                tool_name: None,
-                                                tool_use_id: None,
-                                                opened_files: vec![],
-                                                selected_code: vec![],
-                                                is_error: false,
+                                                ..Default::default()
                                             });
                                             parts.clear();
                                         }
@@ -1945,12 +2064,9 @@ pub async fn load_session_history(
                                         messages.push(HistoryMessage {
                                             role: "tool_use".into(),
                                             text: input_text,
-                                            thinking: None,
                                             tool_name: Some(tool_name),
                                             tool_use_id,
-                                            opened_files: vec![],
-                                            selected_code: vec![],
-                                            is_error: false,
+                                            ..Default::default()
                                         });
                                     }
                                     _ => {}
@@ -1962,11 +2078,7 @@ pub async fn load_session_history(
                                 role: "assistant".into(),
                                 text: parts.join("\n"),
                                 thinking,
-                                tool_name: None,
-                                tool_use_id: None,
-                                opened_files: vec![],
-                                selected_code: vec![],
-                                is_error: false,
+                                ..Default::default()
                             });
                         }
                     }
@@ -1977,196 +2089,32 @@ pub async fn load_session_history(
         }
         "codex" => {
             validate_session_id(&session_id)?;
-            let home = app.path().home_dir().map_err(|e| e.to_string())?;
-            let root = home.join(".codex").join("sessions");
-            let sid = session_id.clone();
-            tokio::task::spawn_blocking(move || {
-                let Some(path) = codex_find_session_file(&root, &sid) else {
-                    return Ok(vec![]);
-                };
-                let content = std::fs::read_to_string(&path).map_err(|e| e.to_string())?;
-                let mut messages: Vec<HistoryMessage> = vec![];
-                let mut pending_tool: std::collections::HashMap<String, HistoryMessage> = std::collections::HashMap::new();
-
-                // Determine the thread's history mode the way codex does — from
-                // the session_meta line's `history_mode` (defaults to Legacy).
-                // Legacy rollouts carry messages as event_msg/{agent,user}_message;
-                // Paginated ones only as response_item/message. This decides which
-                // source we read so messages aren't double-counted or dropped.
-                let is_paginated = content.lines().find_map(|line| {
-                    let v = serde_json::from_str::<serde_json::Value>(line).ok()?;
-                    if v["type"] == "session_meta" {
-                        Some(v["payload"]["history_mode"].as_str() == Some("paginated"))
-                    } else {
-                        None
-                    }
-                }).unwrap_or(false);
-
-                for line in content.lines() {
-                    let Ok(v) = serde_json::from_str::<serde_json::Value>(line) else { continue };
-                    let t = v["type"].as_str().unwrap_or("");
-                    let p = &v["payload"];
-
-                    match t {
-                        "event_msg" => match p["type"].as_str() {
-                            Some("user_message") => {
-                                if let Some(text) = p["message"].as_str() {
-                                    if !text.trim().is_empty() {
-                                        messages.push(HistoryMessage { role: "user".into(), text: text.to_string(), thinking: None, tool_name: None, tool_use_id: None, opened_files: vec![], selected_code: vec![], is_error: false });
-                                    }
-                                }
-                            }
-                            Some("agent_message") => {
-                                if let Some(text) = p["message"].as_str() {
-                                    if !text.trim().is_empty() {
-                                        messages.push(HistoryMessage { role: "assistant".into(), text: text.to_string(), thinking: None, tool_name: None, tool_use_id: None, opened_files: vec![], selected_code: vec![], is_error: false });
-                                    }
-                                }
-                            }
-                            Some("mcp_tool_call_end") => {
-                                let call_id = p["call_id"].as_str().unwrap_or("");
-                                if let Some(tool_use) = pending_tool.remove(call_id) {
-                                    let result = if let Some(ok) = p["result"].get("Ok") {
-                                        ok["content"].as_array()
-                                            .and_then(|a| a.first())
-                                            .and_then(|b| b["text"].as_str())
-                                            .unwrap_or("").to_string()
-                                    } else {
-                                        p["result"]["Err"].as_str().unwrap_or("error").to_string()
-                                    };
-                                    let tuid = tool_use.tool_use_id.clone();
-                                    messages.push(tool_use);
-                                    messages.push(HistoryMessage { role: "tool_result".into(), text: result, thinking: None, tool_name: None, tool_use_id: tuid, opened_files: vec![], selected_code: vec![], is_error: false });
-                                }
-                            }
-                            Some("mcp_tool_call_begin") => {
-                                let call_id = p["call_id"].as_str().unwrap_or("").to_string();
-                                let inv = &p["invocation"];
-                                let tool_name = format!("mcp__{}__{}", inv["server"].as_str().unwrap_or("mcp"), inv["tool"].as_str().unwrap_or("tool"));
-                                let input = serde_json::to_string_pretty(&inv["arguments"]).unwrap_or_default();
-                                pending_tool.insert(call_id.clone(), HistoryMessage { role: "tool_use".into(), text: input, thinking: None, tool_name: Some(tool_name), tool_use_id: Some(call_id), opened_files: vec![], selected_code: vec![], is_error: false });
-                            }
-                            _ => {}
-                        },
-                        "response_item" => match p["type"].as_str() {
-                            // Tool call: parse function name + arguments
-                            Some("function_call") => {
-                                let call_id = p["call_id"].as_str().unwrap_or("").to_string();
-                                let name = p["name"].as_str().unwrap_or("tool").to_string();
-                                let args_str = p["arguments"].as_str().unwrap_or("{}");
-                                // Use raw argument string as the tool input text
-                                let input_text = serde_json::from_str::<serde_json::Value>(args_str)
-                                    .ok()
-                                    .and_then(|v| {
-                                        // For exec_command show the command; others show full args
-                                        v["cmd"].as_str().map(|s| serde_json::json!({"command": s}).to_string())
-                                        .or_else(|| serde_json::to_string_pretty(&v).ok())
-                                    })
-                                    .unwrap_or_else(|| args_str.to_string());
-                                pending_tool.insert(call_id.clone(), HistoryMessage {
-                                    role: "tool_use".into(),
-                                    text: input_text,
-                                    thinking: None,
-                                    tool_name: Some(name),
-                                    tool_use_id: Some(call_id),
-                                    opened_files: vec![], selected_code: vec![],
-                                    is_error: false,
-                                });
-                            }
-                            // Tool result — output is a string OR an array of content blocks
-                            Some("function_call_output") => {
-                                let call_id = p["call_id"].as_str().unwrap_or("");
-                                if let Some(tool_use) = pending_tool.remove(call_id) {
-                                    let output = match &p["output"] {
-                                        v if v.is_string() => v.as_str().unwrap_or("").to_string(),
-                                        v if v.is_array() => v.as_array().unwrap()
-                                            .iter()
-                                            .filter_map(|b| b["text"].as_str())
-                                            .collect::<Vec<_>>()
-                                            .join("\n"),
-                                        _ => String::new(),
-                                    };
-                                    let tuid = tool_use.tool_use_id.clone();
-                                    messages.push(tool_use);
-                                    messages.push(HistoryMessage { role: "tool_result".into(), text: output, thinking: None, tool_name: None, tool_use_id: tuid, opened_files: vec![], selected_code: vec![], is_error: false });
-                                }
-                            }
-                            // Custom tool call (Windows/newer codex encodes exec as a custom tool
-                            // whose `input` is a freeform JS string rather than JSON args).
-                            Some("custom_tool_call") => {
-                                let call_id = p["call_id"].as_str().unwrap_or("").to_string();
-                                let name = p["name"].as_str().unwrap_or("tool").to_string();
-                                let raw = p["input"].as_str().unwrap_or("");
-                                // Try to pull a "cmd" out of an embedded {...} JSON object for a
-                                // clean command label; otherwise fall back to the raw input.
-                                let input_text = raw
-                                    .find('{')
-                                    .and_then(|s| raw[s..].rfind('}').map(|e| &raw[s..s + e + 1]))
-                                    .and_then(|obj| serde_json::from_str::<serde_json::Value>(obj).ok())
-                                    .and_then(|v| v["cmd"].as_str().map(|c| serde_json::json!({ "command": c }).to_string()))
-                                    .unwrap_or_else(|| raw.to_string());
-                                pending_tool.insert(call_id.clone(), HistoryMessage {
-                                    role: "tool_use".into(),
-                                    text: input_text,
-                                    thinking: None,
-                                    tool_name: Some(name),
-                                    tool_use_id: Some(call_id),
-                                    opened_files: vec![], selected_code: vec![],
-                                    is_error: false,
-                                });
-                            }
-                            Some("custom_tool_call_output") => {
-                                let call_id = p["call_id"].as_str().unwrap_or("");
-                                if let Some(tool_use) = pending_tool.remove(call_id) {
-                                    // output is either a plain string or an array of {text} parts
-                                    let output = match &p["output"] {
-                                        v if v.is_string() => v.as_str().unwrap_or("").to_string(),
-                                        v if v.is_array() => v.as_array().unwrap()
-                                            .iter()
-                                            .filter_map(|b| b["text"].as_str())
-                                            .collect::<Vec<_>>()
-                                            .join("\n"),
-                                        _ => String::new(),
-                                    };
-                                    let tuid = tool_use.tool_use_id.clone();
-                                    messages.push(tool_use);
-                                    messages.push(HistoryMessage { role: "tool_result".into(), text: output, thinking: None, tool_name: None, tool_use_id: tuid, opened_files: vec![], selected_code: vec![], is_error: false });
-                                }
-                            }
-                            // Paginated rollouts don't emit event_msg/*_message, so
-                            // messages live here as raw Responses API items. (Legacy
-                            // rollouts carry both, so we skip this to avoid doubling.)
-                            // Skips developer/system roles and injected user context.
-                            Some("message") if is_paginated => {
-                                let text = match &p["content"] {
-                                    c if c.is_array() => c.as_array().unwrap().iter()
-                                        .filter_map(|b| b["text"].as_str())
-                                        .collect::<Vec<_>>().join(""),
-                                    c if c.is_string() => c.as_str().unwrap_or("").to_string(),
-                                    _ => String::new(),
-                                };
-                                let text = text.trim();
-                                if !text.is_empty() {
-                                    match p["role"].as_str() {
-                                        Some("assistant") => {
-                                            messages.push(HistoryMessage { role: "assistant".into(), text: text.to_string(), thinking: None, tool_name: None, tool_use_id: None, opened_files: vec![], selected_code: vec![], is_error: false });
-                                        }
-                                        Some("user") if !is_injected_content(text) => {
-                                            messages.push(HistoryMessage { role: "user".into(), text: text.to_string(), thinking: None, tool_name: None, tool_use_id: None, opened_files: vec![], selected_code: vec![], is_error: false });
-                                        }
-                                        _ => {}
-                                    }
-                                }
-                            }
-                            _ => {}
-                        },
-                        _ => {}
-                    }
-                }
-                Ok(messages)
-            })
-            .await
-            .map_err(|e| e.to_string())?
+            // Read history via the persistent app-server; thread/read with
+            // includeTurns returns the full turn/item stream in one response.
+            ensure_codex_process(&app).await?;
+            let state = app.state::<AgentManagerState>();
+            let (rx, req, tx) = {
+                let mut mgr = state.0.lock().await;
+                let handle = mgr.codex.as_mut().ok_or("Codex process not available")?;
+                let stdin_tx = handle.stdin_tx.clone();
+                let mut d = handle.driver.lock().await;
+                let codex = d.as_any_mut().downcast_mut::<CodexDriver>().ok_or("Codex driver missing")?;
+                let (id, rx) = codex.register_rpc();
+                let req = serde_json::json!({
+                    "id": id,
+                    "method": "thread/read",
+                    "params": { "threadId": session_id, "includeTurns": true }
+                }).to_string();
+                (rx, req, stdin_tx)
+            };
+            tx.send(req).await.map_err(|e| e.to_string())?;
+            let result = tokio::time::timeout(std::time::Duration::from_secs(20), rx)
+                .await
+                .map_err(|_| "thread/read timed out".to_string())?
+                .map_err(|_| "thread/read channel closed".to_string())?;
+            // An error response resolves the waiter with Null; treat a missing
+            // thread as an empty history rather than an error.
+            Ok(codex_history_from_turns(&result["thread"]["turns"]))
         }
         _ => Err(format!("Agent type '{agent_type}' does not support session history")),
     }

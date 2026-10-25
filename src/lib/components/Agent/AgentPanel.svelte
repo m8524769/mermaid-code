@@ -667,7 +667,6 @@
       [i.description, false],
       [i.title, false],
       [i.command, true],
-      [i.task_name, false],
       [i.query, false],
       [i.url, true],
       [i.prompt, false]
@@ -694,6 +693,22 @@
         return tool ? `${label} · ${tool}` : label;
       }
     }
+    // Codex surfaces built-in actions as typed items, not named tools; the
+    // backend emits the item type as a stable token that we localize here.
+    // fileChange carries its patch kind as `fileChange/<add|delete|update>`.
+    switch (name) {
+      case 'commandExecution':
+        return m.agent_tool_executed();
+      case 'fileChange/add':
+        return m.agent_tool_file_add();
+      case 'fileChange/delete':
+        return m.agent_tool_file_delete();
+      case 'fileChange/update':
+        return m.agent_tool_file_update();
+      case 'collabAgentToolCall':
+        return m.agent_tool_subagent();
+    }
+    if (name.startsWith('fileChange/')) return m.agent_tool_file_update();
     return name;
   }
 
