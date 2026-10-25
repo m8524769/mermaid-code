@@ -790,10 +790,10 @@ impl AgentDriver for CodexDriver {
                     }
                     Some("commandExecution") => {
                         let output = item["aggregatedOutput"].as_str().unwrap_or("").to_string();
-                        out.events.push(DriverEvent::ToolResult { tool_use_id: item_id, content: output, is_error: false });
+                        out.events.push(DriverEvent::ToolResult { tool_use_id: item_id, content: output, is_error: codex_item_is_error(item) });
                     }
                     Some("fileChange") => {
-                        out.events.push(DriverEvent::ToolResult { tool_use_id: item_id, content: "File updated".to_string(), is_error: false });
+                        out.events.push(DriverEvent::ToolResult { tool_use_id: item_id, content: "File updated".to_string(), is_error: codex_item_is_error(item) });
                     }
                     Some("mcpToolCall") => {
                         // v2 item: success payload in `result.content[]`, failure in
@@ -803,7 +803,7 @@ impl AgentDriver for CodexDriver {
                             .or_else(|| item["error"]["message"].as_str().map(|s| s.to_string()))
                             .or_else(|| item["error"].as_str().map(|s| s.to_string()))
                             .unwrap_or_default();
-                        out.events.push(DriverEvent::ToolResult { tool_use_id: item_id, content, is_error: false });
+                        out.events.push(DriverEvent::ToolResult { tool_use_id: item_id, content, is_error: codex_item_is_error(item) });
                     }
                     Some("collabAgentToolCall") => {
                         // Pairs with the item/started ToolUse; a spawn has no stdout,
@@ -816,7 +816,7 @@ impl AgentDriver for CodexDriver {
                                 "interrupted" => "Interrupted",
                                 _ => "In progress",
                             }.to_string();
-                            out.events.push(DriverEvent::ToolResult { tool_use_id: item_id, content, is_error: false });
+                            out.events.push(DriverEvent::ToolResult { tool_use_id: item_id, content, is_error: codex_item_is_error(item) });
                         }
                     }
                     Some("reasoning") => {
@@ -1489,6 +1489,14 @@ fn sanitize_path(folder_path: &str) -> String {
 // Codex sessions come from the persistent app-server: thread/list for the folder
 // listing, thread/read for history, both returning a uniform ThreadItem stream.
 
+/// A Codex tool item failed if its lifecycle status is `failed` or `declined`.
+/// `interrupted` and a completed command with a nonzero exit are not errors —
+/// Codex still marks those `completed`, and nonzero exits are often normal
+/// (grep no-match, test, diff).
+fn codex_item_is_error(item: &serde_json::Value) -> bool {
+    matches!(item["status"].as_str(), Some("failed") | Some("declined"))
+}
+
 /// Map the `turns[].items[]` array from a `thread/read` response into history
 /// rows. Each ThreadItem carries its own result, so items translate in order.
 fn codex_history_from_turns(turns: &serde_json::Value) -> Vec<HistoryMessage> {
@@ -1550,7 +1558,7 @@ fn codex_history_from_turns(turns: &serde_json::Value) -> Vec<HistoryMessage> {
                         .or_else(|| item["error"]["message"].as_str().map(|s| s.to_string()))
                         .or_else(|| item["error"].as_str().map(|s| s.to_string()))
                         .unwrap_or_default();
-                    messages.push(HistoryMessage { role: "tool_result".into(), text: output, tool_use_id: Some(id), ..Default::default() });
+                    messages.push(HistoryMessage { role: "tool_result".into(), text: output, tool_use_id: Some(id), is_error: codex_item_is_error(item), ..Default::default() });
                 }
                 Some("commandExecution") => {
                     let command = item["command"].as_str().unwrap_or("");
@@ -1558,7 +1566,7 @@ fn codex_history_from_turns(turns: &serde_json::Value) -> Vec<HistoryMessage> {
                     messages.push(HistoryMessage { role: "tool_use".into(), text: input, tool_name: Some("commandExecution".into()), tool_use_id: Some(id.clone()), ..Default::default() });
                     // aggregatedOutput is null for read-only commands.
                     let output = item["aggregatedOutput"].as_str().unwrap_or("").to_string();
-                    messages.push(HistoryMessage { role: "tool_result".into(), text: output, tool_use_id: Some(id), ..Default::default() });
+                    messages.push(HistoryMessage { role: "tool_result".into(), text: output, tool_use_id: Some(id), is_error: codex_item_is_error(item), ..Default::default() });
                 }
                 Some("fileChange") => {
                     let change = &item["changes"][0];
@@ -1571,7 +1579,7 @@ fn codex_history_from_turns(turns: &serde_json::Value) -> Vec<HistoryMessage> {
                     };
                     let input = serde_json::json!({ "file_path": path }).to_string();
                     messages.push(HistoryMessage { role: "tool_use".into(), text: input, tool_name: Some(format!("fileChange/{kind}")), tool_use_id: Some(id.clone()), ..Default::default() });
-                    messages.push(HistoryMessage { role: "tool_result".into(), text: "File updated".into(), tool_use_id: Some(id), ..Default::default() });
+                    messages.push(HistoryMessage { role: "tool_result".into(), text: "File updated".into(), tool_use_id: Some(id), is_error: codex_item_is_error(item), ..Default::default() });
                 }
                 Some("collabAgentToolCall") => {
                     // Only the two operations that carry a task prompt are shown;
@@ -1590,7 +1598,7 @@ fn codex_history_from_turns(turns: &serde_json::Value) -> Vec<HistoryMessage> {
                         "interrupted" => "Interrupted",
                         _ => "In progress",
                     };
-                    messages.push(HistoryMessage { role: "tool_result".into(), text: status.into(), tool_use_id: Some(id), ..Default::default() });
+                    messages.push(HistoryMessage { role: "tool_result".into(), text: status.into(), tool_use_id: Some(id), is_error: codex_item_is_error(item), ..Default::default() });
                 }
                 _ => {}
             }
