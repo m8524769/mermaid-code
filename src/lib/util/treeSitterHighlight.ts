@@ -15,66 +15,25 @@ import wtsRuntimeWasmUrl from 'web-tree-sitter/web-tree-sitter.wasm?url';
 import mermaidLangWasmUrl from '@mermanjs/tree-sitter-mermaid/tree-sitter-mermaid.wasm?url';
 import highlightsQuery from '@mermanjs/tree-sitter-mermaid/queries/portable/highlights.scm?raw';
 
-// Legend token types. The INDEX into this array is what we encode into the
-// semantic-token stream, and the NAME is matched verbatim against the theme's
-// `rules[].token` field by Monaco's standalone theme service
-// (StandaloneTheme.getTokenStyleMetadata → tokenTheme._match). So each name here
-// must have a matching color rule in both `mermaid` and `mermaid-dark` themes.
-export const SEMANTIC_TOKEN_TYPES = [
-  'keyword',
-  'comment',
-  'string',
-  'number',
-  'operator',
-  'variable',
-  'constant',
-  'type',
-  'namespace',
-  'property',
-  'function',
-  'punctuation',
-  'attribute',
-  'boolean'
-] as const;
+// The semantic-token legend is the set of capture names the grammar emits
+// (`query.captureNames`), handed to Monaco as-is. Monaco encodes the INDEX in the
+// token stream and resolves the NAME against the theme by HIERARCHICAL matching
+// (splitting on `.`), so a dotted capture like `string.special` falls back to its
+// `string` rule. editorThemes.ts therefore only defines the base categories plus
+// the few captures whose color must deviate from that base (e.g. string.escape);
+// every other capture resolves through the fallback.
+//
+// Populated once the query loads (see ensureReady); empty until then, but Monaco
+// reads the legend only after provideDocumentSemanticTokens resolves — which
+// awaits ensureReady — so the empty value is never observed.
+let legend: string[] = [];
+let captureIndex = new Map<string, number>();
 
-export const SEMANTIC_TOKEN_MODIFIERS: string[] = [];
-
-// Maps every capture name that appears in portable/highlights.scm to one of the
-// legend types above. Dotted tree-sitter captures (e.g. `string.special`) are
-// folded into their base category; anything not listed here is skipped.
-const CAPTURE_TO_TYPE: Record<string, (typeof SEMANTIC_TOKEN_TYPES)[number]> = {
-  keyword: 'keyword',
-  'keyword.operator': 'operator',
-  comment: 'comment',
-  'comment.documentation': 'comment',
-  string: 'string',
-  'string.special': 'string',
-  'string.escape': 'string',
-  number: 'number',
-  boolean: 'boolean',
-  operator: 'operator',
-  variable: 'variable',
-  'variable.member': 'variable',
-  constant: 'constant',
-  type: 'type',
-  'type.builtin': 'type',
-  namespace: 'namespace',
-  property: 'property',
-  function: 'function',
-  'function.macro': 'function',
-  attribute: 'attribute',
-  'punctuation.bracket': 'punctuation',
-  'punctuation.delimiter': 'punctuation',
-  'punctuation.special': 'punctuation'
-};
-
-// capture name -> legend index (precomputed once).
-const CAPTURE_TO_INDEX: Record<string, number> = Object.fromEntries(
-  Object.entries(CAPTURE_TO_TYPE).map(([capture, type]) => [
-    capture,
-    SEMANTIC_TOKEN_TYPES.indexOf(type)
-  ])
-);
+// The legend Monaco encodes token-type indices against. Wired into the
+// provider's getLegend() in monacoExtra.ts.
+export function getSemanticTokenTypes(): string[] {
+  return legend;
+}
 
 interface TreeSitterContext {
   parser: Parser;
@@ -96,6 +55,8 @@ export function ensureReady(): Promise<TreeSitterContext> {
       const parser = new Parser();
       parser.setLanguage(language);
       const query = new Query(language, highlightsQuery);
+      legend = [...query.captureNames];
+      captureIndex = new Map(legend.map((name, index) => [name, index]));
       return { parser, query };
     })().catch((error: unknown) => {
       readyPromise = null;
@@ -133,9 +94,9 @@ export async function computeSemanticTokens(text: string): Promise<Uint32Array> 
     raw = [];
 
     for (const { name, node } of captures) {
-      const typeIndex = CAPTURE_TO_INDEX[name];
+      const typeIndex = captureIndex.get(name);
       if (typeIndex === undefined) {
-        continue; // capture not part of our legend
+        continue; // not a highlight capture (unexpected for a query capture)
       }
       const { startPosition: start, endPosition: end } = node;
 

@@ -1,19 +1,10 @@
 // Modified from https://github.com/Yash-Singh1/monaco-mermaid/blob/main/index.ts
 
 import type * as Monaco from 'monaco-editor';
-import {
-  computeSemanticTokens,
-  SEMANTIC_TOKEN_MODIFIERS,
-  SEMANTIC_TOKEN_TYPES
-} from './treeSitterHighlight';
+import { computeSemanticTokens, getSemanticTokenTypes } from './treeSitterHighlight';
 import { activeScheme } from './editorThemes';
 
 const commentRegex = /(?<!["'])%%(?![^"']*["']\)).*$/;
-
-const SEMANTIC_LEGEND: Monaco.languages.SemanticTokensLegend = {
-  tokenTypes: [...SEMANTIC_TOKEN_TYPES],
-  tokenModifiers: [...SEMANTIC_TOKEN_MODIFIERS]
-};
 
 // Matches CSS colors used in Mermaid `style`/`classDef` statements: hex
 // (#RGB / #RGBA / #RRGGBB / #RRGGBBAA) and rgb()/rgba(). The negative lookahead
@@ -645,7 +636,9 @@ export const initEditor = (monacoEditor: typeof Monaco): void => {
   // no per-model wiring. If the wasm fails to load the provider throws and
   // Monaco silently keeps the Monarch colors — graceful degradation.
   monacoEditor.languages.registerDocumentSemanticTokensProvider('mermaid', {
-    getLegend: () => SEMANTIC_LEGEND,
+    // Legend = the grammar's capture names, populated once the wasm query loads;
+    // Monaco reads it only after the first provide resolves, so it is never empty here.
+    getLegend: () => ({ tokenTypes: getSemanticTokenTypes(), tokenModifiers: [] }),
     provideDocumentSemanticTokens: async (model) => {
       const data = await computeSemanticTokens(model.getValue());
       return { data, resultId: undefined };
