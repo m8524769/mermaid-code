@@ -447,9 +447,32 @@
     // Update editor text if it's different
     const newText = editorMode === 'code' ? code : mermaid;
     if (modelSwitched) {
-      if (model === jsonModel && newText !== model.getValue()) {
-        // jsonModel is always created empty; populate it on first switch to config mode
-        model.setValue(newText);
+      if (model === jsonModel) {
+        if (newText !== model.getValue()) {
+          // jsonModel is always created empty; populate it on first switch to config mode
+          model.setValue(newText);
+        }
+      } else {
+        // A tab's model only stays in sync while it is the active model, so a
+        // programmatic code change made from config mode (pin-to-code) never
+        // reaches it. Resync from the tab's own code (validatedState.code lags
+        // async validation). The !isTyping guard avoids clobbering unflushed
+        // typing, where the model is ahead of tab.code instead.
+        const tabCode = fileState.activeTabId
+          ? (fileState.tabs.find((t) => t.id === fileState.activeTabId)?.code ?? newText)
+          : newText;
+        if (!isTyping && tabCode !== model.getValue()) {
+          isUpdatingFromState = true;
+          try {
+            editor.pushUndoStop();
+            editor.executeEdits('syncOnSwitch', [
+              { range: model.getFullModelRange(), text: tabCode }
+            ]);
+            editor.pushUndoStop();
+          } finally {
+            isUpdatingFromState = false;
+          }
+        }
       }
       currentText = model.getValue();
     } else if (!isTyping && newText !== currentText && newText !== model.getValue()) {
