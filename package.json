@@ -42,7 +42,7 @@
     "@tailwindcss/typography": "^0.5.20",
     "@tailwindcss/vite": "^4.3.3",
     "@tauri-apps/api": "^2.12.4",
-    "@tauri-apps/cli": "^2.12.3",
+    "@tauri-apps/cli": "^2.12.4",
     "@types/hammerjs": "^2.0.46",
     "@types/lodash-es": "^4.17.12",
     "@types/node": "^24.13.3",
