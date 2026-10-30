@@ -3,7 +3,7 @@
   import { getCurrentWindow } from '@tauri-apps/api/window';
   import { invoke } from '@tauri-apps/api/core';
   import SidebarOpenIcon from '~icons/material-symbols/left-panel-open-outline-rounded';
-  import SidebarCloseIcon from '~icons/material-symbols/left-panel-close-outline-rounded';
+  import SidebarCloseIcon from '~icons/material-symbols/left-panel-close-rounded';
 
   interface Props {
     sidebarOpen: boolean;
@@ -29,17 +29,17 @@
     class="flex h-9 shrink-0 items-center border-b select-none"
     style="padding-left: env(titlebar-area-x, 72px)"
     data-tauri-drag-region>
-    <div class="flex-1" data-tauri-drag-region></div>
     <button
-      class="mr-2.5 rounded-md p-1.5 hover:bg-muted"
+      class="ml-2 rounded-md p-1 hover:bg-muted"
       onclick={onToggleSidebar}
       title={m.toggle_file_explorer()}>
       {#if sidebarOpen}
-        <SidebarCloseIcon class="size-4" />
+        <SidebarCloseIcon class="size-4.5" />
       {:else}
-        <SidebarOpenIcon class="size-4" />
+        <SidebarOpenIcon class="size-4.5" />
       {/if}
     </button>
+    <div class="flex-1" data-tauri-drag-region></div>
   </div>
 {/if}
 
