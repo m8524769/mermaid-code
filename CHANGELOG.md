@@ -2,6 +2,18 @@
 
 All notable changes to Mermaid Code are documented here.
 
+## [v0.9.5] - 2026-11-01
+
+### Changed
+
+- **Sidebar toggle moved to the left on macOS**: the file-sidebar toggle now sits at the left end of the title bar, with some visual polish.
+- **Easier to grab the panel dividers**: the draggable dividers between panels now have a larger hit area and highlight while you drag them.
+
+### Fixed
+
+- **Codex tool calls render accurately**: Codex tool calls and their results could previously display incorrectly; they now render faithfully, with a red dot marking any that fail.
+- **Pin to code works again**: pinning settings into a diagram's frontmatter now updates the code editor.
+
 ## [v0.9.4] - 2026-10-24
 
 ### Changed
