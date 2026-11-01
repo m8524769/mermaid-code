@@ -30,7 +30,10 @@
     style="padding-left: env(titlebar-area-x, 72px)"
     data-tauri-drag-region>
     <button
-      class="ml-2 rounded-md p-1 hover:bg-muted"
+      class={[
+        'ml-2 rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground',
+        sidebarOpen && 'bg-muted'
+      ]}
       onclick={onToggleSidebar}
       title={m.toggle_file_explorer()}>
       {#if sidebarOpen}
