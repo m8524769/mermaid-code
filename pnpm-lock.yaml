@@ -366,8 +366,8 @@ importers:
         specifier: ^6.0.5
         version: 6.0.5(postcss-load-config@3.1.4(postcss@8.5.30))(postcss@8.5.30)(svelte@5.57.3(@typescript-eslint/types@8.72.1))(typescript@6.0.3)
       svelte-sonner:
-        specifier: ~1.1.1
-        version: 1.1.1(svelte@5.57.3(@typescript-eslint/types@8.72.1))
+        specifier: ~1.2.2
+        version: 1.2.2(svelte@5.57.3(@typescript-eslint/types@8.72.1))
       tailwind-merge:
         specifier: ^3.7.0
         version: 3.7.0
@@ -2679,8 +2679,8 @@ packages:
       typescript:
         optional: true
 
-  svelte-sonner@1.1.1:
-    resolution: {integrity: sha512-5cd3p7wa4cq0NsqslMwdlPb7x1JglEZ/GKrLePWNr5bCxR1nagAVrY01FRFrXfUGs41miLt3C327+8XJo5BzZw==}
+  svelte-sonner@1.2.2:
+    resolution: {integrity: sha512-sHAvdhf9PNC7LMBmUSWRGPdxZn17HrW5ITsUKmF4SP9C3IZBE7B3rBw8BEztIiSDcTpEdZcKgmnN+BAhH4M8qQ==}
     peerDependencies:
       svelte: ^5.0.0
 
@@ -5252,7 +5252,7 @@ snapshots:
       postcss-load-config: 3.1.4(postcss@8.5.30)
       typescript: 6.0.3
 
-  svelte-sonner@1.1.1(svelte@5.57.3(@typescript-eslint/types@8.72.1)):
+  svelte-sonner@1.2.2(svelte@5.57.3(@typescript-eslint/types@8.72.1)):
     dependencies:
       runed: 0.28.0(svelte@5.57.3(@typescript-eslint/types@8.72.1))
       svelte: 5.57.3(@typescript-eslint/types@8.72.1)
