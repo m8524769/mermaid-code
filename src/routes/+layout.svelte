@@ -1,5 +1,6 @@
 <script lang="ts">
   import { Toaster } from '#lib/components/ui/sonner/index.js';
+  import * as Tooltip from '#lib/components/ui/tooltip/index.js';
   import { fileState } from '#lib/util/fileState.svelte.js';
   import { saveFileAs } from '#lib/util/fileSystem.js';
   import { updateState } from '#lib/util/updateState.svelte.js';
@@ -108,6 +109,8 @@
 <ModeWatcher />
 <Toaster />
 
-<main class="h-dvh">
-  {@render children()}
-</main>
+<Tooltip.Provider delayDuration={300} ignoreNonKeyboardFocus>
+  <main class="h-dvh">
+    {@render children()}
+  </main>
+</Tooltip.Provider>

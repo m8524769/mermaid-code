@@ -1,5 +1,6 @@
 <script lang="ts">
   import { m } from '#lib/paraglide/messages.js';
+  import Tip from '#lib/components/Tip.svelte';
   import { getCurrentWindow } from '@tauri-apps/api/window';
   import { invoke } from '@tauri-apps/api/core';
   import SidebarOpenIcon from '~icons/material-symbols/left-panel-open-outline-rounded';
@@ -29,26 +30,33 @@
     class="flex h-9 shrink-0 items-center border-b select-none"
     style="padding-left: env(titlebar-area-x, 72px)"
     data-tauri-drag-region>
-    <button
-      class={[
-        'ml-2 rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground',
-        sidebarOpen && 'bg-muted'
-      ]}
-      onclick={onToggleSidebar}
-      title={m.toggle_file_explorer()}>
-      {#if sidebarOpen}
-        <SidebarCloseIcon class="size-4.5" />
-      {:else}
-        <SidebarOpenIcon class="size-4.5" />
-      {/if}
-    </button>
+    <Tip content={sidebarOpen ? m.close_sidebar() : m.open_sidebar()} side="right">
+      {#snippet children(props)}
+        <button
+          {...props}
+          class={[
+            'ml-2 rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground',
+            sidebarOpen && 'bg-muted'
+          ]}
+          onclick={onToggleSidebar}>
+          {#if sidebarOpen}
+            <SidebarCloseIcon class="size-4.5" />
+          {:else}
+            <SidebarOpenIcon class="size-4.5" />
+          {/if}
+        </button>
+      {/snippet}
+    </Tip>
     <div class="flex-1" data-tauri-drag-region></div>
   </div>
 {/if}
 
 {#if platform === 'windows'}
   <div class="flex h-8 shrink-0 items-stretch border-b text-xs select-none">
-    <button class="px-3 hover:bg-muted" onclick={onToggleSidebar} title={m.toggle_file_explorer()}>
+    <button
+      class="px-3 hover:bg-muted"
+      onclick={onToggleSidebar}
+      title={sidebarOpen ? m.close_sidebar() : m.open_sidebar()}>
       {#if sidebarOpen}
         <SidebarCloseIcon class="size-3.5" />
       {:else}
