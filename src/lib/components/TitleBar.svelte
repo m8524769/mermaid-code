@@ -30,7 +30,7 @@
     class="flex h-9 shrink-0 items-center border-b select-none"
     style="padding-left: env(titlebar-area-x, 72px)"
     data-tauri-drag-region>
-    <Tip content={sidebarOpen ? m.close_sidebar() : m.open_sidebar()} side="right">
+    <Tip content={sidebarOpen ? m.close_sidebar() : m.open_sidebar()} side="right" shortcut="⌘B">
       {#snippet children(props)}
         <button
           {...props}
@@ -53,16 +53,20 @@
 
 {#if platform === 'windows'}
   <div class="flex h-8 shrink-0 items-stretch border-b text-xs select-none">
-    <button
-      class="px-3 hover:bg-muted"
-      onclick={onToggleSidebar}
-      title={sidebarOpen ? m.close_sidebar() : m.open_sidebar()}>
-      {#if sidebarOpen}
-        <SidebarCloseIcon class="size-3.5" />
-      {:else}
-        <SidebarOpenIcon class="size-3.5" />
-      {/if}
-    </button>
+    <Tip
+      content={sidebarOpen ? m.close_sidebar() : m.open_sidebar()}
+      side="bottom"
+      shortcut="Ctrl+B">
+      {#snippet children(props)}
+        <button {...props} class="px-3 hover:bg-muted" onclick={onToggleSidebar}>
+          {#if sidebarOpen}
+            <SidebarCloseIcon class="size-3.5" />
+          {:else}
+            <SidebarOpenIcon class="size-3.5" />
+          {/if}
+        </button>
+      {/snippet}
+    </Tip>
 
     <div class="mx-1 my-1.5 w-px bg-border"></div>
 
