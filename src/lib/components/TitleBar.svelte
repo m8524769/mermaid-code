@@ -53,10 +53,7 @@
 
 {#if platform === 'windows'}
   <div class="flex h-8 shrink-0 items-stretch border-b text-xs select-none">
-    <Tip
-      content={sidebarOpen ? m.hide_sidebar() : m.show_sidebar()}
-      side="bottom"
-      shortcut="Ctrl+B">
+    <Tip content={sidebarOpen ? m.hide_sidebar() : m.show_sidebar()} side="bottom">
       {#snippet children(props)}
         <button {...props} class="px-3 hover:bg-muted" onclick={onToggleSidebar}>
           {#if sidebarOpen}
