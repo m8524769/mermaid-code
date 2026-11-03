@@ -4,7 +4,7 @@ English | [简体中文](README.zh-CN.md)
 
 # Mermaid Code
 
-A local-first Mermaid diagram editor built on [Mermaid Live Editor](https://github.com/mermaid-js/mermaid-live-editor), enhanced with AI agent integration and desktop-native features via [Tauri](https://tauri.app).
+A desktop Mermaid diagram editor app built on [Mermaid Live Editor](https://github.com/mermaid-js/mermaid-live-editor), enhanced with local file management and AI agent integration.
 
 ![Mermaid Code showcase](showcase.png)
 

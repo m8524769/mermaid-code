@@ -4,7 +4,7 @@
 
 # Mermaid Code
 
-一款基于 [Mermaid Live Editor](https://github.com/mermaid-js/mermaid-live-editor) 的本地 Mermaid 图表编辑器，增强了 AI 协作能力并借助 [Tauri](https://tauri.app) 实现了跨平台原生桌面应用体验。
+一款基于 [Mermaid Live Editor](https://github.com/mermaid-js/mermaid-live-editor) 的桌面端 Mermaid 图表编辑器，支持本地文件管理与 AI 协作。
 
 ![Mermaid Code showcase](showcase.zh-CN.png)
 
@@ -14,7 +14,7 @@ Mermaid Code 可与本地 AI Agent（如 Claude Code、Codex 等）无缝协作�
 
 ```
 # 示例：让 AI Agent 根据代码库生成图表
-“请为当前项目生成一张架构图，并保存到 docs/architecture.mmd”
+“请根据当前项目生成一张架构图，并保存到 docs/architecture.mmd”
 ```
 
 Mermaid Code 启动后会实时检测文件内容变更并自动刷新图表，从而打通 AI 生成与视觉反馈之间的闭环，而这是纯网页编辑器中无法实现的。
