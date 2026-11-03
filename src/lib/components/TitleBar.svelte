@@ -30,7 +30,7 @@
     class="flex h-9 shrink-0 items-center border-b select-none"
     style="padding-left: env(titlebar-area-x, 72px)"
     data-tauri-drag-region>
-    <Tip content={sidebarOpen ? m.close_sidebar() : m.open_sidebar()} side="right" shortcut="⌘B">
+    <Tip content={sidebarOpen ? m.hide_sidebar() : m.show_sidebar()} side="right" shortcut="⌘B">
       {#snippet children(props)}
         <button
           {...props}
@@ -54,7 +54,7 @@
 {#if platform === 'windows'}
   <div class="flex h-8 shrink-0 items-stretch border-b text-xs select-none">
     <Tip
-      content={sidebarOpen ? m.close_sidebar() : m.open_sidebar()}
+      content={sidebarOpen ? m.hide_sidebar() : m.show_sidebar()}
       side="bottom"
       shortcut="Ctrl+B">
       {#snippet children(props)}
