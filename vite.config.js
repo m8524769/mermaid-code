@@ -1,6 +1,6 @@
 import adapter from '@sveltejs/adapter-static';
 import 'dotenv/config';
-import { sveltePreprocess } from 'svelte-preprocess';
+import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
 import tailwindcss from '@tailwindcss/vite';
 import { sveltekit } from '@sveltejs/kit/vite';
 import { paraglideVitePlugin } from '@inlang/paraglide-js';
@@ -25,9 +25,7 @@ export default defineConfig({
   plugins: [
     tailwindcss(),
     sveltekit({
-      // Consult https://github.com/sveltejs/svelte-preprocess
-      // for more information about preprocessors
-      preprocess: [sveltePreprocess({})],
+      preprocess: [vitePreprocess()],
       adapter: adapter({ pages: 'dist', fallback: '404.html' })
     }),
 
