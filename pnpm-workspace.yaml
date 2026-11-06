@@ -1,6 +1,5 @@
 minimumReleaseAge: 1440
 allowBuilds:
   '@mermanjs/tree-sitter-mermaid': false
-  svelte-preprocess: false
 overrides:
   dompurify: ^3.4.17
