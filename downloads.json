@@ -1,7 +1,7 @@
 {
   "total": 366,
   "totalUpdateChecks": 3106,
-  "updatedAt": "2026-11-07T10:12:41Z",
+  "updatedAt": "2026-11-08T09:14:41Z",
   "days": [
     {
       "date": "2026-09-12",
@@ -765,6 +765,13 @@
       "byCountry": {
         "CH": 2
       }
+    },
+    {
+      "date": "2026-11-08",
+      "count": 0,
+      "updateChecks": 0,
+      "byPlatform": {},
+      "byCountry": {}
     }
   ]
 }
