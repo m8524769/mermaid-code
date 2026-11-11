@@ -248,8 +248,8 @@ importers:
         specifier: ^0.54.2
         version: 0.54.2(svelte@5.57.3(@typescript-eslint/types@8.72.1))
       web-tree-sitter:
-        specifier: ^0.27.1
-        version: 0.27.1
+        specifier: ^0.27.2
+        version: 0.27.2
     devDependencies:
       '@eslint/js':
         specifier: ^10.0.1
@@ -2922,8 +2922,8 @@ packages:
     resolution: {integrity: sha512-4Nsy8K5Tr6SPDH9jhKJOHf7ChDrc1zufZTVSF7x72hwuEXBqxqk9G6cK+K2NRUtB3iELRJqjXb4JPDMBjMTl2Q==}
     engines: {node: ^22.22.2 || ^24.15.0 || >=26.0.0}
 
-  web-tree-sitter@0.27.1:
-    resolution: {integrity: sha512-qtx0VyUyNRHtL3ze7+v0hCKB/sLcAmY7ZAVp/ZK/bCj0yED8ptvNrr7Vd7DwDyKDWN9baqcUx4uaD2r2ql+6IA==}
+  web-tree-sitter@0.27.2:
+    resolution: {integrity: sha512-ZRo86GKI4aOSBAqOrPmCtriExI3xIzu1sNw/V6v3b4QGxrEmO19FGwbMNdyhw3MJLAZIw0xAV0oSpqX361eAyQ==}
 
   webidl-conversions@8.0.1:
     resolution: {integrity: sha512-BMhLD/Sw+GbJC21C/UgyaZX41nPt8bUTg+jWyDeg7e7YN4xOM05YPSIXceACnXVtqyEw/LMClUQMtMZ+PGGpqQ==}
@@ -5330,7 +5330,7 @@ snapshots:
     dependencies:
       xml-name-validator: 5.0.0
 
-  web-tree-sitter@0.27.1: {}
+  web-tree-sitter@0.27.2: {}
 
   webidl-conversions@8.0.1: {}
 
