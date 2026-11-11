@@ -179,8 +179,8 @@ importers:
         specifier: ^1.0.1
         version: 1.0.1(mermaid@12.3.0)
       '@mermanjs/tree-sitter-mermaid':
-        specifier: ^0.3.2
-        version: 0.3.2
+        specifier: ^0.3.3
+        version: 0.3.3
       '@tauri-apps/plugin-dialog':
         specifier: ^2.8.4
         version: 2.8.4
@@ -695,8 +695,8 @@ packages:
     resolution: {integrity: sha512-j37dj/h6p6pots1L7pLPPNuABEEu9WP4OYg9pW1g+nYG331j0+3canE9OagtYdytYvdSAMG+2fKU5cxep6LgjA==}
     engines: {node: '>=22.12.0'}
 
-  '@mermanjs/tree-sitter-mermaid@0.3.2':
-    resolution: {integrity: sha512-SwQyujn7RhfOFIAAWcBFeLqul8Sg017N+rj4/isznMKdcE38nHfi57KIYwlpWCglY9iBDjFlU13EzTiIt0b7dw==}
+  '@mermanjs/tree-sitter-mermaid@0.3.3':
+    resolution: {integrity: sha512-fFYMuFKNZnZGbzhbpn8Oy64Q1Iq/LKQ20BZM6NqG3YU3Yd9/XEqNd/koOG3usUCr4eEcwLbv6WuZFCZJI3bODA==}
     peerDependencies:
       tree-sitter: ^0.25.0
     peerDependenciesMeta:
@@ -3265,7 +3265,7 @@ snapshots:
     dependencies:
       '@chevrotain/types': 13.2.0
 
-  '@mermanjs/tree-sitter-mermaid@0.3.2':
+  '@mermanjs/tree-sitter-mermaid@0.3.3':
     dependencies:
       node-addon-api: 8.9.2
       node-gyp-build: 4.8.4
