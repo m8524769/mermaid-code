@@ -60,7 +60,8 @@ export default defineConfig({
   // Vitest otherwise resolves Svelte's server build, where $effect is a no-op.
   resolve: process.env.VITEST ? { conditions: ['browser'] } : undefined,
   test: {
-    environment: 'jsdom',
+    // Unit tests are pure logic; anything DOM-related belongs in E2E (tests/**).
+    environment: 'node',
     // in-source testing
     includeSource: ['src/**/*.{js,ts,svelte}'],
     // Ignore E2E tests
