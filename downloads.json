@@ -1,7 +1,7 @@
 {
-  "total": 376,
-  "totalUpdateChecks": 3328,
-  "updatedAt": "2026-11-11T10:59:41Z",
+  "total": 384,
+  "totalUpdateChecks": 3344,
+  "updatedAt": "2026-11-12T11:13:58Z",
   "days": [
     {
       "date": "2026-09-12",
@@ -802,12 +802,25 @@
     {
       "date": "2026-11-11",
       "count": 2,
-      "updateChecks": 4,
+      "updateChecks": 11,
       "byPlatform": {
         "Windows": 2
       },
       "byCountry": {
         "CN": 2
+      }
+    },
+    {
+      "date": "2026-11-12",
+      "count": 8,
+      "updateChecks": 9,
+      "byPlatform": {
+        "Windows": 8
+      },
+      "byCountry": {
+        "CN": 5,
+        "JP": 2,
+        "SK": 1
       }
     }
   ]
