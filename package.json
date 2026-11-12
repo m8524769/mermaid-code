@@ -100,7 +100,7 @@
     "shiki": "^4.6.0",
     "svg-pan-zoom": "3.6.2",
     "svg2roughjs": "^3.2.3",
-    "uuid": "14.0.2",
+    "uuid": "14.0.3",
     "virtua": "^0.54.2",
     "web-tree-sitter": "^0.27.2"
   },
