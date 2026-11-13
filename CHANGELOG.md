@@ -2,6 +2,13 @@
 
 All notable changes to Mermaid Code are documented here.
 
+## [v0.9.6] - 2026-11-13
+
+### Changed
+
+- **Minor UI polish**: clearer tooltip on the sidebar toggle.
+- **Updated Mermaid to 12.3.0**: rendering fixes and layout tweaks — see the [Mermaid 12.3.0 release notes](https://github.com/mermaid-js/mermaid/releases#release-mermaid@12.3.0).
+
 ## [v0.9.5] - 2026-11-01
 
 ### Changed
