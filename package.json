@@ -45,7 +45,7 @@
     "@tauri-apps/cli": "^2.12.4",
     "@types/hammerjs": "^2.0.46",
     "@types/lodash-es": "^4.17.12",
-    "@types/node": "^24.13.3",
+    "@types/node": "^24.19.2",
     "@vitest/coverage-v8": "^5.1.0",
     "@vitest/ui": "^5.1.0",
     "bits-ui": "^2.21.0",
@@ -114,7 +114,7 @@
     ]
   },
   "engines": {
-    "node": ">=24.16.0"
+    "node": ">=24.22.3"
   },
   "packageManager": "pnpm@12.18.0+sha512.9d7882d5dc82147ecfc4e062aa34834e0ad0296710a1837a1115ae012127d36b7109e321ac1598a1dd0a65597681b1e99917e12ed0d749eae91187943363beb3"
 }
