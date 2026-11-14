@@ -225,6 +225,12 @@ Bun.serve({
     }
     const url = new URL(req.url);
     if (url.pathname === '/mcp') {
+      // Stateless server does not offer a standalone GET SSE stream or session termination.
+      // Returning 405 per the MCP Streamable HTTP spec prevents Bun.serve from hanging
+      // mid-headers on an empty ReadableStream when clients (e.g. Go MCP SDK) send GET /mcp.
+      if (req.method !== 'POST') {
+        return new Response('Method Not Allowed', { status: 405, headers: { Allow: 'POST' } });
+      }
       const transport = new WebStandardStreamableHTTPServerTransport({
         sessionIdGenerator: undefined
       });
