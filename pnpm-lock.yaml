@@ -173,8 +173,8 @@ importers:
         specifier: ^5.3.0
         version: 5.3.0
       '@mermaid-js/examples':
-        specifier: ^2.0.0
-        version: 2.0.0
+        specifier: ^2.1.0
+        version: 2.1.0
       '@mermaid-js/layout-tidy-tree':
         specifier: ^1.0.1
         version: 1.0.1(mermaid@12.3.0)
@@ -630,8 +630,8 @@ packages:
   '@lix-js/sdk@0.16.1':
     resolution: {integrity: sha512-TphGW47tPJ52n8Umk46j56veeaz/uLoS9m1pWYWs0UnnbItsntu6hW/alxW/OX1WZA7vXk7d1OP6qIbmluc+kA==}
 
-  '@mermaid-js/examples@2.0.0':
-    resolution: {integrity: sha512-5qXKOb+UiAfYz6SnXSrfEwjLRom0fB4ACN55npjNhuXcM/MEKWJYTmDDd7hKfsRt+pLlPrdhB8m5NEglzDoRVw==}
+  '@mermaid-js/examples@2.1.0':
+    resolution: {integrity: sha512-Obn3CNIX5sGbILKc5+aKyHuN+dKqt/v4RZ1tpZ7TWai8rFNryyLv/TFx4cwc+N9KxHjF3uoY54x0j9QgC1C9rQ==}
     engines: {node: '>=22.12.0'}
 
   '@mermaid-js/layout-tidy-tree@1.0.1':
@@ -3194,7 +3194,7 @@ snapshots:
       '@lix-js/sdk-linux-x64': 0.16.1
       '@lix-js/sdk-win32-x64': 0.16.1
 
-  '@mermaid-js/examples@2.0.0': {}
+  '@mermaid-js/examples@2.1.0': {}
 
   '@mermaid-js/layout-tidy-tree@1.0.1(mermaid@12.3.0)':
     dependencies:
