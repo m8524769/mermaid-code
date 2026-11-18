@@ -2,4 +2,4 @@ minimumReleaseAge: 1440
 allowBuilds:
   '@mermanjs/tree-sitter-mermaid': false
 overrides:
-  dompurify: ^3.4.17
+  dompurify: ^3.4.18
