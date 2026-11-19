@@ -87,6 +87,36 @@ fn find_sidecar(_app: &AppHandle) -> Option<std::path::PathBuf> {
     if path.exists() { Some(path) } else { None }
 }
 
+async fn send_shutdown_request(port: u16) -> bool {
+    use tokio::io::AsyncWriteExt;
+    if let Ok(mut stream) = tokio::net::TcpStream::connect(format!("127.0.0.1:{port}")).await {
+        let req = format!(
+            "POST /shutdown HTTP/1.1\r\nHost: 127.0.0.1:{port}\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
+        );
+        let _ = stream.write_all(req.as_bytes()).await;
+        return true;
+    }
+    false
+}
+
+/// If a previous Mermaid Code process crashed without running Exit cleanup, an
+/// orphaned `mermaid-code-mcp` sidecar may still hold `MCP_SERVER_PORT` with a
+/// stale token. Ask it to shut down and wait briefly for the port to clear.
+async fn clear_stale_sidecar(port: u16) {
+    if !send_shutdown_request(port).await {
+        return;
+    }
+    for _ in 0..15 {
+        tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+        if tokio::net::TcpStream::connect(format!("127.0.0.1:{port}"))
+            .await
+            .is_err()
+        {
+            break;
+        }
+    }
+}
+
 pub struct McpServer {
     shutdown_tx: Option<oneshot::Sender<()>>,
     mcp_process: Option<std::process::Child>,
@@ -122,22 +152,36 @@ impl McpServer {
                 .ok();
         });
 
-        let mcp_process = find_sidecar(&app).and_then(|path| {
+        let mut mcp_process = if let Some(path) = find_sidecar(&app) {
+            clear_stale_sidecar(MCP_SERVER_PORT).await;
             let mut cmd = std::process::Command::new(&path);
-            cmd.env("MCP_TOKEN", &token);
+            cmd.env("MCP_TOKEN", &token)
+                .env("MCP_WATCH_STDIN", "1")
+                // Keep the write end of stdin owned by `Child` so if this process
+                // crashes (SIGABRT/SIGKILL), the OS closes the pipe and the sidecar
+                // exits cleanly instead of becoming an orphan holding port 37079.
+                .stdin(std::process::Stdio::piped());
             #[cfg(windows)]
             {
                 use std::os::windows::process::CommandExt;
                 cmd.creation_flags(0x08000000); // CREATE_NO_WINDOW
             }
             cmd.spawn().ok()
-        });
+        } else {
+            None
+        };
 
         // Verify sidecar is listening, retrying up to 5 seconds
-        if mcp_process.is_some() {
+        if let Some(child) = mcp_process.as_mut() {
             let mut reachable = false;
             for _ in 0..20 {
                 tokio::time::sleep(std::time::Duration::from_millis(250)).await;
+                if let Ok(Some(status)) = child.try_wait() {
+                    let _ = shutdown_tx.send(());
+                    return Err(format!(
+                        "MCP server exited prematurely ({status}) on port {MCP_SERVER_PORT}"
+                    ));
+                }
                 if tokio::net::TcpStream::connect(format!("127.0.0.1:{MCP_SERVER_PORT}"))
                     .await
                     .is_ok()
@@ -147,6 +191,9 @@ impl McpServer {
                 }
             }
             if !reachable {
+                let _ = shutdown_tx.send(());
+                let _ = child.kill();
+                let _ = child.wait();
                 return Err(format!("MCP server failed to start on port {MCP_SERVER_PORT}"));
             }
         }
@@ -169,15 +216,7 @@ impl McpServer {
         }
         let port = MCP_SERVER_PORT;
         tauri::async_runtime::spawn(async move {
-            use tokio::io::AsyncWriteExt;
-            if let Ok(mut stream) = tokio::net::TcpStream::connect(
-                format!("127.0.0.1:{port}")
-            ).await {
-                let req = format!(
-                    "POST /shutdown HTTP/1.1\r\nHost: 127.0.0.1:{port}\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
-                );
-                let _ = stream.write_all(req.as_bytes()).await;
-            }
+            send_shutdown_request(port).await;
         });
     }
 }

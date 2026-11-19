@@ -246,3 +246,12 @@ Bun.serve({
 });
 
 console.log(`Mermaid Code MCP server listening on http://127.0.0.1:${MCP_HTTP_PORT}/mcp`);
+
+// When launched as a sidecar by the desktop app, exit automatically if the
+// parent process terminates unexpectedly and the OS closes the stdin pipe.
+if (process.env.MCP_WATCH_STDIN === '1') {
+  process.stdin.resume();
+  const exitOnParentClose = () => process.exit(0);
+  process.stdin.once('end', exitOnParentClose);
+  process.stdin.once('close', exitOnParentClose);
+}
