@@ -14,385 +14,509 @@
   <meta property="og:image" content="https://mermaid-code.com/showcase.png" />
   <meta property="og:site_name" content="Mermaid Code" />
 
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Changelog — Mermaid Code" />
+  <meta name="twitter:description" content="Release notes and version history for Mermaid Code." />
+  <meta name="twitter:image" content="https://mermaid-code.com/showcase.png" />
+
   <link rel="icon" href="favicon.svg" type="image/svg+xml" />
-  <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-    :root {
-      --bg: #0f1117;
-      --bg2: #161b27;
-      --bg3: #1e2535;
-      --border: #2a3347;
-      --text: #e8edf5;
-      --muted: #8b96aa;
-      --accent: #4f8ef7;
-      --accent2: #7c5cbf;
-      --radius: 10px;
-      --max: 780px;
-    }
-
-    html { scroll-behavior: smooth; }
-
-    body {
-      background: var(--bg);
-      color: var(--text);
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-      font-size: 16px;
-      line-height: 1.6;
-      -webkit-font-smoothing: antialiased;
-    }
-
-    a { color: var(--accent); text-decoration: none; }
-    a:hover { text-decoration: underline; }
-
-    /* NAV — mirrors index.html */
-    nav {
-      position: sticky;
-      top: 0;
-      z-index: 100;
-      background: rgba(15, 17, 23, 0.85);
-      backdrop-filter: blur(12px);
-      border-bottom: 1px solid var(--border);
-    }
-    .nav-inner {
-      max-width: var(--max);
-      margin: 0 auto;
-      padding: 0 24px;
-      height: 56px;
-      display: flex;
-      align-items: center;
-      gap: 16px;
-    }
-    .nav-logo {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-weight: 600;
-      font-size: 15px;
-      color: var(--text);
-    }
-    .nav-logo img { width: 22px; height: 22px; }
-    .nav-spacer { flex: 1; }
-    .nav-links { display: flex; gap: 4px; align-items: center; }
-    .nav-links a {
-      font-size: 14px;
-      color: var(--muted);
-      padding: 6px 10px;
-      border-radius: 6px;
-      transition: color 0.15s, background 0.15s;
-    }
-    .nav-links a:hover { color: var(--text); background: var(--bg3); text-decoration: none; }
-    .nav-links a.active { color: var(--text); }
-
-    /* CONTENT */
-    main {
-      max-width: var(--max);
-      margin: 0 auto;
-      padding: 56px 24px 72px;
-    }
-    .changelog h1 {
-      font-size: clamp(30px, 5vw, 44px);
-      font-weight: 700;
-      letter-spacing: -0.02em;
-      margin-bottom: 8px;
-    }
-    /* Intro paragraph directly after the H1 */
-    .changelog h1 + p {
-      color: var(--muted);
-      font-size: 16px;
-      margin-bottom: 8px;
-    }
-    .changelog h2 {
-      font-size: 22px;
-      font-weight: 700;
-      letter-spacing: -0.01em;
-      margin-top: 48px;
-      padding-bottom: 10px;
-      border-bottom: 1px solid var(--border);
-    }
-    .changelog h3 {
-      font-size: 12px;
-      font-weight: 600;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      color: var(--accent);
-      margin-top: 24px;
-      margin-bottom: 10px;
-    }
-    .changelog ul { list-style: none; padding: 0; }
-    .changelog li {
-      position: relative;
-      padding-left: 20px;
-      margin-bottom: 10px;
-      color: var(--muted);
-      font-size: 15px;
-    }
-    .changelog li::before {
-      content: "";
-      position: absolute;
-      left: 4px;
-      top: 11px;
-      width: 5px;
-      height: 5px;
-      border-radius: 50%;
-      background: var(--accent);
-    }
-    .changelog li strong { color: var(--text); font-weight: 600; }
-    .changelog code {
-      font-family: 'SF Mono', 'Fira Code', Menlo, monospace;
-      font-size: 0.86em;
-      background: var(--bg3);
-      border: 1px solid var(--border);
-      border-radius: 5px;
-      padding: 1px 6px;
-      color: var(--accent);
-    }
-    .changelog hr { display: none; }
-
-    /* FOOTER — mirrors index.html */
-    footer {
-      max-width: var(--max);
-      margin: 0 auto;
-      padding: 32px 24px;
-      display: flex;
-      align-items: center;
-      gap: 16px;
-      flex-wrap: wrap;
-      border-top: 1px solid var(--border);
-    }
-    footer .footer-left { display: flex; align-items: center; gap: 8px; }
-    footer .footer-left img { width: 18px; height: 18px; opacity: 0.7; }
-    footer .footer-left span { font-size: 13px; color: var(--muted); }
-    footer .footer-right { margin-left: auto; display: flex; gap: 16px; }
-    footer .footer-right a { font-size: 13px; color: var(--muted); }
-    footer .footer-right a:hover { color: var(--text); }
-  </style>
+  <link rel="preload" href="fonts/plus-jakarta-sans-latin.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="preload" href="fonts/inter-latin.woff2" as="font" type="font/woff2" crossorigin />
+  <script>try{if(localStorage.getItem('mc-theme')==='dark')document.documentElement.dataset.theme='dark';}catch(e){}</script>
+  <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
 
-<nav>
-  <div class="nav-inner">
+<header class="site-nav">
+  <div class="nav-inner nav-inner--narrow">
     <a class="nav-logo" href="/">
-      <img src="favicon.svg" alt="" />
-      Mermaid Code
+      <img src="favicon.svg" alt="" width="26" height="26" />
+      <span>Mermaid Code</span>
     </a>
     <div class="nav-spacer"></div>
-    <div class="nav-links">
-      <a href="/#features">Features</a>
+    <nav class="nav-links" aria-label="Primary">
+      <a href="/#loop">Workflow</a>
       <a href="/#mcp">MCP</a>
+      <a href="/changelog" class="active">Changelog</a>
+      <a href="https://github.com/m8524769/mermaid-code">GitHub</a>
+    </nav>
+    <div class="nav-actions">
+      <button class="theme-pill" type="button" data-theme-toggle aria-label="Switch to dark blueprint" aria-pressed="false">
+        <span class="theme-pill-opt theme-pill-opt--light" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32 1.41 1.41M2 12h2m16 0h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+        </span>
+        <span class="theme-pill-opt theme-pill-opt--dark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+        </span>
+      </button>
+      <a class="nav-cta" href="/download">Download</a>
+      <button class="nav-menu-btn" type="button" data-menu-toggle aria-label="Toggle navigation menu" aria-expanded="false">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+      </button>
+    </div>
+  </div>
+  <div class="mobile-drawer" data-mobile-drawer>
+    <nav class="mobile-drawer-links" aria-label="Mobile">
+      <a href="/">Home</a>
+      <a href="/#loop">01 / Workflow</a>
+      <a href="/#mcp">02 / Built-in MCP</a>
       <a href="/download">Download</a>
       <a href="/changelog" class="active">Changelog</a>
       <a href="https://github.com/m8524769/mermaid-code">GitHub</a>
-    </div>
+    </nav>
   </div>
-</nav>
+</header>
 
-<main class="changelog">
-<h1>Changelog</h1>
-<p>All notable changes to Mermaid Code are documented here.</p>
-<h2>[v0.9.6] - 2026-11-13</h2>
-<h3>Changed</h3>
+<main>
+  <section class="cl-hero">
+    <div class="container container--narrow">
+      <div class="cl-hero-top">
+        <div>
+          <div class="hero-spec-line" style="margin-bottom:10px">
+            <span style="color:var(--coral)">LATEST · v0.9.6</span>
+            <span class="hero-spec-sep">·</span>
+            <span>64 RELEASES</span>
+          </div>
+          <h1>Changelog</h1>
+          <p>All notable changes to Mermaid Code are documented here.</p>
+        </div>
+        <div class="cl-links">
+          <a href="/download">Download latest →</a>
+          <a href="https://github.com/m8524769/mermaid-code/releases">GitHub Releases</a>
+          <a href="https://github.com/m8524769/mermaid-code/blob/main/CHANGELOG.md">Raw .md</a>
+        </div>
+      </div>
+
+      <div class="timeline">
+<article class="release-node" id="v0.9.6">
+  <div class="draft-frame">
+    <div class="draft-frame-inner release-card">
+      <div class="release-header">
+        <a class="release-ver" href="#v0.9.6">v0.9.6</a>
+        <time class="release-date" datetime="2026-11-13">2026-11-13</time>
+      </div>
+      <h3 class="cat-changed">Changed</h3>
 <ul>
 <li><strong>Minor UI polish</strong>: clearer tooltip on the sidebar toggle.</li>
 <li><strong>Updated Mermaid to 12.3.0</strong>: rendering fixes and layout tweaks — see the <a href="https://github.com/mermaid-js/mermaid/releases#release-mermaid@12.3.0">Mermaid 12.3.0 release notes</a>.</li>
 </ul>
-<h2>[v0.9.5] - 2026-11-01</h2>
-<h3>Changed</h3>
+
+    </div>
+  </div>
+</article>
+<article class="release-node" id="v0.9.5">
+  <div class="draft-frame">
+    <div class="draft-frame-inner release-card">
+      <div class="release-header">
+        <a class="release-ver" href="#v0.9.5">v0.9.5</a>
+        <time class="release-date" datetime="2026-11-01">2026-11-01</time>
+      </div>
+      <h3 class="cat-changed">Changed</h3>
 <ul>
 <li><strong>Sidebar toggle moved to the left on macOS</strong>: the file-sidebar toggle now sits at the left end of the title bar, with some visual polish.</li>
 <li><strong>Easier to grab the panel dividers</strong>: the draggable dividers between panels now have a larger hit area and highlight while you drag them.</li>
 </ul>
-<h3>Fixed</h3>
+<h3 class="cat-fixed">Fixed</h3>
 <ul>
 <li><strong>Codex tool calls render accurately</strong>: Codex tool calls and their results could previously display incorrectly; they now render faithfully, with a red dot marking any that fail.</li>
 <li><strong>Pin to code works again</strong>: pinning settings into a diagram&#39;s frontmatter now updates the code editor.</li>
 </ul>
-<h2>[v0.9.4] - 2026-10-24</h2>
-<h3>Changed</h3>
+
+    </div>
+  </div>
+</article>
+<article class="release-node" id="v0.9.4">
+  <div class="draft-frame">
+    <div class="draft-frame-inner release-card">
+      <div class="release-header">
+        <a class="release-ver" href="#v0.9.4">v0.9.4</a>
+        <time class="release-date" datetime="2026-10-24">2026-10-24</time>
+      </div>
+      <h3 class="cat-changed">Changed</h3>
 <ul>
 <li><strong>Polish across the AI agent panel</strong>: inline code now sits on a subtle background so it stands out from the surrounding text; interrupting the agent mid-task shows a quiet <strong>&quot;Interrupted&quot;</strong> divider instead of a bubble that looked like a message you had typed; and Codex MCP tool calls now read like Claude&#39;s — <strong>&quot;Mermaid-code-mcp · list_diagrams&quot;</strong> instead of a raw underscored id.</li>
 <li><strong>Less overhead when panning and zooming</strong>: moving or zooming a diagram no longer re-parses it each time, trimming background work on large diagrams.</li>
 <li><strong>Cleaner Chinese text in the editor on Windows</strong>: on a Chinese-language Windows system, the editor now renders CJK characters in Microsoft YaHei (Simplified) or Microsoft JhengHei (Traditional) instead of the dated default (SimSun / MingLiU); other languages keep the OS default.</li>
 </ul>
-<h3>Removed</h3>
+<h3 class="cat-removed">Removed</h3>
 <ul>
 <li><strong>Remote-render link on image export</strong>: the PNG/SVG export buttons no longer show a secondary &quot;open on the remote renderer&quot; link; local file export is unchanged.</li>
 </ul>
-<h2>[v0.9.3] - 2026-10-16</h2>
-<h3>Added</h3>
+
+    </div>
+  </div>
+</article>
+<article class="release-node" id="v0.9.3">
+  <div class="draft-frame">
+    <div class="draft-frame-inner release-card">
+      <div class="release-header">
+        <a class="release-ver" href="#v0.9.3">v0.9.3</a>
+        <time class="release-date" datetime="2026-10-16">2026-10-16</time>
+      </div>
+      <h3 class="cat-added">Added</h3>
 <ul>
 <li><strong>Expand long tool results in the AI agent panel</strong>: long tool results are truncated with an ellipsis, with an <strong>&quot;Expand all&quot;</strong> button to reveal the full text (and <strong>&quot;Collapse&quot;</strong> to fold it back).</li>
 <li><strong>Syntax highlighting for the agent&#39;s code blocks in any language</strong>: code the AI agent writes is now highlighted regardless of language — grammars load on demand instead of from a fixed short list — with unknown languages falling back to plain text.</li>
 </ul>
-<h3>Changed</h3>
+<h3 class="cat-changed">Changed</h3>
 <ul>
 <li><strong>Failed tool calls are flagged in the AI agent panel</strong>: the status dot beside a tool result now turns red when the tool returned an error, instead of always showing green, so failures stand out at a glance. Currently supported for Claude Code sessions (Codex not yet covered).</li>
 <li><strong>Tool calls are easier to read in the AI agent panel</strong>: MCP tools now appear as <strong>&quot;Mermaid-code-mcp · list_diagrams&quot;</strong> instead of the raw underscored id (<code>mcp__mermaid-code-mcp__list_diagrams</code>), and more tool calls now show a short, relevant summary beside the tool name.</li>
 <li><strong>Clearer code display in the AI agent panel</strong>: code blocks, inline code, and tool input/output now use a cleaner monospace font at a fixed, consistent size, and inline code no longer shows decorative backtick quotes.</li>
 <li><strong>Updated Mermaid to 12.2.0</strong>: rendering fixes and layout tweaks — see the <a href="https://github.com/mermaid-js/mermaid/releases#release-mermaid@12.2.0">Mermaid 12.2.0 release notes</a>.</li>
 </ul>
-<h2>[v0.9.2] - 2026-10-12</h2>
-<h3>Added</h3>
+
+    </div>
+  </div>
+</article>
+<article class="release-node" id="v0.9.2">
+  <div class="draft-frame">
+    <div class="draft-frame-inner release-card">
+      <div class="release-header">
+        <a class="release-ver" href="#v0.9.2">v0.9.2</a>
+        <time class="release-date" datetime="2026-10-12">2026-10-12</time>
+      </div>
+      <h3 class="cat-added">Added</h3>
 <ul>
 <li><strong>Answer the AI agent&#39;s multiple-choice questions inline</strong>: when the agent asks a question through Claude Code&#39;s AskUserQuestion tool, the panel now shows the choices as selectable options — single- or multi-select — with an <strong>&quot;Other&quot;</strong> field to type your own answer, instead of a plain allow/deny prompt.</li>
 <li><strong>&quot;Scroll to bottom&quot; button in the AI agent panel</strong>: when you scroll up through a long conversation, a button appears to jump back to the latest message and resume following new replies.</li>
 </ul>
-<h3>Changed</h3>
+<h3 class="cat-changed">Changed</h3>
 <ul>
 <li><strong>The AI agent panel stays responsive in long conversations</strong>: the transcript now renders only the messages currently in view, so sessions with thousands of messages open and scroll smoothly instead of freezing. New replies still keep the view pinned to the bottom unless you&#39;ve scrolled up to read history.</li>
 </ul>
-<h2>[v0.9.1] - 2026-10-07</h2>
-<h3>Added</h3>
+
+    </div>
+  </div>
+</article>
+<article class="release-node" id="v0.9.1">
+  <div class="draft-frame">
+    <div class="draft-frame-inner release-card">
+      <div class="release-header">
+        <a class="release-ver" href="#v0.9.1">v0.9.1</a>
+        <time class="release-date" datetime="2026-10-07">2026-10-07</time>
+      </div>
+      <h3 class="cat-added">Added</h3>
 <ul>
 <li><strong>Filter the thumbnail grid by subfolder</strong>: a dropdown beside the file search (thumbnail view) narrows the grid to a chosen subfolder and its descendants, so diagrams organized into subfolders are easier to browse.</li>
 </ul>
-<h3>Changed</h3>
+<h3 class="cat-changed">Changed</h3>
 <ul>
 <li><strong>Updated Mermaid to 12.1.0</strong>: rendering fixes and layout tweaks — see the <a href="https://github.com/mermaid-js/mermaid/releases#release-mermaid@12.1.0">Mermaid 12.1.0 release notes</a>.</li>
 </ul>
-<h3>Fixed</h3>
+<h3 class="cat-fixed">Fixed</h3>
 <ul>
 <li><strong>Light-theme highlighting for arrows and operators</strong>: across diagram types, connectors/arrows (e.g. <code>--&gt;</code>) and operators (e.g. the sequence-diagram &quot;right of&quot;) were painted in keyword blue; they now render as neutral text, matching the dark theme.</li>
 </ul>
-<h2>[v0.9.0] - 2026-10-04</h2>
-<h3>Added</h3>
+
+    </div>
+  </div>
+</article>
+<article class="release-node" id="v0.9.0">
+  <div class="draft-frame">
+    <div class="draft-frame-inner release-card">
+      <div class="release-header">
+        <a class="release-ver" href="#v0.9.0">v0.9.0</a>
+        <time class="release-date" datetime="2026-10-04">2026-10-04</time>
+      </div>
+      <h3 class="cat-added">Added</h3>
 <ul>
 <li><strong>Diagram icons that render offline</strong>: the <a href="https://icon-sets.iconify.design/logos">SVG Logos</a> and <a href="https://icon-sets.iconify.design/fa7-solid">Font Awesome 7</a> icon packs are now bundled and registered out of the box, so flowchart icon shapes (e.g. <code>@{ icon: &quot;logos:aws&quot; }</code>) render with no CDN fetch. Use them via the <code>logos:</code>, <code>fas:</code>/<code>far:</code>/<code>fab:</code> prefixes.</li>
 <li><strong><code>search_icons</code> MCP tool</strong>: AI agents connected to the built-in MCP server can look up the exact icon name for a concept (e.g. &quot;kubernetes&quot;, &quot;aws s3&quot;) before adding it to a diagram, instead of guessing names that may not exist.</li>
 <li><strong>Copy button on the syntax error panel</strong>: copy the parser error message in one click when a diagram fails to render.</li>
 <li><strong>Syntax highlighting for Agentflow and Usecase diagrams</strong>: the editor&#39;s Mermaid grammar was updated to <a href="https://github.com/Latias94/merman/releases/tag/tree-sitter-mermaid-v0.2.0">tree-sitter-mermaid 0.2.0</a>, adding accurate highlighting for Mermaid 12&#39;s new Agentflow and Usecase diagram types.</li>
 </ul>
-<h3>Fixed</h3>
+<h3 class="cat-fixed">Fixed</h3>
 <ul>
 <li><strong>The AI agent now uses the permission mode you select</strong>: picking a specific mode (such as manual approval) could previously send no mode at all, letting the agent fall back to its own default — possibly a more permissive one than you chose. The selected mode is now always sent explicitly.</li>
 <li><strong>cmd/ctrl-click opens editor links in your browser</strong>: modifier-clicking a URL in the editor now opens it externally, instead of doing nothing.</li>
 </ul>
-<h2>[v0.8.4] - 2026-10-01</h2>
-<h3>Added</h3>
+
+    </div>
+  </div>
+</article>
+<article class="release-node" id="v0.8.4">
+  <div class="draft-frame">
+    <div class="draft-frame-inner release-card">
+      <div class="release-header">
+        <a class="release-ver" href="#v0.8.4">v0.8.4</a>
+        <time class="release-date" datetime="2026-10-01">2026-10-01</time>
+      </div>
+      <h3 class="cat-added">Added</h3>
 <ul>
 <li><strong>Localized diagram type names in Chinese</strong>: with the app language set to Simplified Chinese, the diagram names in the Sample Diagrams panel and the Docs button tooltip are now translated, covering all diagram types</li>
 </ul>
-<h3>Fixed</h3>
+<h3 class="cat-fixed">Fixed</h3>
 <ul>
 <li><strong>The Docs button opens the right page for each diagram type</strong>: ports the upstream fix (<a href="https://github.com/mermaid-js/mermaid-live-editor/pull/2055">mermaid-live-editor#2055</a>)</li>
 </ul>
-<h2>[v0.8.3] - 2026-09-25</h2>
-<h3>Fixed</h3>
+
+    </div>
+  </div>
+</article>
+<article class="release-node" id="v0.8.3">
+  <div class="draft-frame">
+    <div class="draft-frame-inner release-card">
+      <div class="release-header">
+        <a class="release-ver" href="#v0.8.3">v0.8.3</a>
+        <time class="release-date" datetime="2026-09-25">2026-09-25</time>
+      </div>
+      <h3 class="cat-fixed">Fixed</h3>
 <ul>
 <li><strong>Files opened from the OS now work anywhere on disk</strong>: double-click, &quot;Open with&quot;, drag-and-drop, and Open Recent failed to open files outside your home folder. Such paths are now granted filesystem access, so they open reliably. Thanks to <a href="https://github.com/slb1988">@slb1988</a> for <a href="https://github.com/m8524769/mermaid-code/pull/34">#34</a></li>
 <li><strong>Vim Save / Save As on a new draft keeps what you typed</strong>: saving an unsaved draft from Vim mode (<code>:w</code>, <code>:wq</code>, or Save As) now writes the current editor contents instead of an earlier validated snapshot, so your most recent edits aren&#39;t lost</li>
 <li><strong>macOS: the file sidebar scrollbar is no longer hidden behind content</strong>: on macOS the auto-hiding overlay scrollbar in the file sidebar painted behind the tree rows and thumbnail cards, so it looked covered; it now appears on top of them while scrolling</li>
 </ul>
-<h2>[v0.8.2] - 2026-09-20</h2>
-<h3>Fixed</h3>
+
+    </div>
+  </div>
+</article>
+<article class="release-node" id="v0.8.2">
+  <div class="draft-frame">
+    <div class="draft-frame-inner release-card">
+      <div class="release-header">
+        <a class="release-ver" href="#v0.8.2">v0.8.2</a>
+        <time class="release-date" datetime="2026-09-20">2026-09-20</time>
+      </div>
+      <h3 class="cat-fixed">Fixed</h3>
 <ul>
 <li><strong>Windows updates no longer fail when the MCP server is enabled</strong>: if the built-in MCP server was turned on, updating on Windows could stop with an &quot;Error opening file for writing&quot; error because the MCP background process was still running and holding a lock on its own file. The updater now shuts that process down before installing — and the installer clears any leftover instance as a safeguard — so updates complete cleanly. The MCP server restarts automatically after the update if it was enabled.</li>
 </ul>
-<h2>[v0.8.1] - 2026-09-19</h2>
-<h3>Fixed</h3>
+
+    </div>
+  </div>
+</article>
+<article class="release-node" id="v0.8.1">
+  <div class="draft-frame">
+    <div class="draft-frame-inner release-card">
+      <div class="release-header">
+        <a class="release-ver" href="#v0.8.1">v0.8.1</a>
+        <time class="release-date" datetime="2026-09-19">2026-09-19</time>
+      </div>
+      <h3 class="cat-fixed">Fixed</h3>
 <ul>
 <li><strong>Faster startup when reopening multiple tabs</strong>: restoring a folder with several open tabs no longer renders every tab&#39;s diagram one after another — only the active diagram renders on launch, so the app becomes responsive noticeably sooner when many diagrams were left open</li>
 </ul>
-<h2>[v0.8.0] - 2026-09-17</h2>
-<h3>Changed</h3>
+
+    </div>
+  </div>
+</article>
+<article class="release-node" id="v0.8.0">
+  <div class="draft-frame">
+    <div class="draft-frame-inner release-card">
+      <div class="release-header">
+        <a class="release-ver" href="#v0.8.0">v0.8.0</a>
+        <time class="release-date" datetime="2026-09-17">2026-09-17</time>
+      </div>
+      <h3 class="cat-changed">Changed</h3>
 <ul>
 <li><strong>Updated to Mermaid 12, changing default diagram appearance</strong>: diagrams that don&#39;t set <code>theme</code>, <code>look</code>, or <code>layout</code> explicitly now render with Mermaid 12&#39;s new defaults — a refreshed theme/look and the ELK layout engine (previously Dagre). See the <a href="https://github.com/mermaid-js/mermaid/releases#release-mermaid@12.0.0">Mermaid 12.0.0 release notes</a> for details and the full list of affected types. To keep the previous appearance, set <code>theme: default</code>, <code>look: classic</code>, and <code>layout: dagre</code> in the diagram config (front matter or the Config panel).</li>
 <li><strong>Dark mode covers the new theme</strong>: switching between light and dark now maps the new <code>redux-color</code> theme to its dark variant (<code>redux-dark-color</code>), alongside the existing theme pairings.</li>
 </ul>
-<h3>Removed</h3>
+<h3 class="cat-removed">Removed</h3>
 <ul>
 <li><strong>ZenUML support</strong>: the ZenUML diagram type is no longer supported</li>
 </ul>
-<h2>[v0.7.5] - 2026-09-13</h2>
-<h3>Changed</h3>
+
+    </div>
+  </div>
+</article>
+<article class="release-node" id="v0.7.5">
+  <div class="draft-frame">
+    <div class="draft-frame-inner release-card">
+      <div class="release-header">
+        <a class="release-ver" href="#v0.7.5">v0.7.5</a>
+        <time class="release-date" datetime="2026-09-13">2026-09-13</time>
+      </div>
+      <h3 class="cat-changed">Changed</h3>
 <ul>
 <li><strong>Faster, more reliable auto-updates</strong>: the in-app updater now fetches updates from a global CDN (Cloudflare R2) instead of GitHub, so checking for and downloading updates is quicker and more dependable worldwide</li>
 </ul>
-<h2>[v0.7.4] - 2026-09-12</h2>
-<h3>Added</h3>
+
+    </div>
+  </div>
+</article>
+<article class="release-node" id="v0.7.4">
+  <div class="draft-frame">
+    <div class="draft-frame-inner release-card">
+      <div class="release-header">
+        <a class="release-ver" href="#v0.7.4">v0.7.4</a>
+        <time class="release-date" datetime="2026-09-12">2026-09-12</time>
+      </div>
+      <h3 class="cat-added">Added</h3>
 <ul>
 <li><strong>Fira Code editor font with ligatures</strong>: the code editor now ships with Fira Code (self-hosted, works offline), so link syntax like <code>--&gt;</code>, <code>-&gt;&gt;</code>, and <code>==&gt;</code> renders as connected arrow glyphs; moving the caret onto an arrow temporarily reveals its raw characters for precise editing</li>
 <li><strong>Localized code editor in Chinese</strong>: with the app language set to Simplified Chinese, the editor&#39;s own menus (context menu, command palette, tooltips) are now translated as well — applied on the next launch</li>
 </ul>
-<h3>Changed</h3>
+<h3 class="cat-changed">Changed</h3>
 <ul>
 <li><strong>Language-switch hint</strong>: after changing the app language, a short note explains that some parts of the interface (the editor and the native menu) finish updating after a restart, so the lag doesn&#39;t look like a bug</li>
 <li><strong>Small UI refinements</strong>: minor polish in the file sidebar and thumbnail grid</li>
 </ul>
-<h2>[v0.7.3] - 2026-09-10</h2>
-<h3>Added</h3>
+
+    </div>
+  </div>
+</article>
+<article class="release-node" id="v0.7.3">
+  <div class="draft-frame">
+    <div class="draft-frame-inner release-card">
+      <div class="release-header">
+        <a class="release-ver" href="#v0.7.3">v0.7.3</a>
+        <time class="release-date" datetime="2026-09-10">2026-09-10</time>
+      </div>
+      <h3 class="cat-added">Added</h3>
 <ul>
 <li><strong>Syntax highlighting for every diagram type</strong>: newer diagram types that previously had little or no highlighting — mindmap, timeline, block-beta, and others — now get accurate coloring</li>
 <li><strong>Color preview swatches</strong>: inline color chips for <code>style</code> and <code>classDef</code> colors, with a click-to-edit color picker</li>
 </ul>
-<h3>Changed</h3>
+<h3 class="cat-changed">Changed</h3>
 <ul>
 <li><strong>Tree-sitter powered highlighting</strong>: the editor&#39;s syntax highlighting is now driven by the tree-sitter Mermaid grammar (<a href="https://github.com/Latias94/merman/tree/main/distribution/tree-sitter-mermaid">@mermanjs/tree-sitter-mermaid</a>) for semantically accurate coloring, with the previous tokenizer kept as a fallback so highlighting still works while the grammar loads; light and dark theme colors were unified across both layers to avoid any color flicker</li>
 <li><strong>File sidebar search</strong>: added a button to quickly clear the current file search query</li>
 <li><strong>Small UI refinements</strong>: various minor polish across the interface</li>
 </ul>
-<h2>[v0.7.2] - 2026-09-06</h2>
-<h3>Added</h3>
+
+    </div>
+  </div>
+</article>
+<article class="release-node" id="v0.7.2">
+  <div class="draft-frame">
+    <div class="draft-frame-inner release-card">
+      <div class="release-header">
+        <a class="release-ver" href="#v0.7.2">v0.7.2</a>
+        <time class="release-date" datetime="2026-09-06">2026-09-06</time>
+      </div>
+      <h3 class="cat-added">Added</h3>
 <ul>
 <li><strong>Custom download folder</strong>: the Actions panel now lets you pick a folder for PNG/SVG exports and remembers it across restarts. Exports write straight to the chosen folder, ask before overwriting an existing file, and surface an error if the save fails; a reset button restores the default download folder</li>
 </ul>
-<h3>Changed</h3>
+<h3 class="cat-changed">Changed</h3>
 <ul>
 <li><strong>Share dialog consolidation</strong>: the Kroki link and Markdown embed code moved out of the Actions panel into the Share dialog, each with a note that the diagram is sent to an external rendering service (kroki.io / mermaid.ink)</li>
 <li><strong>Gist loading removed</strong>: the app no longer loads diagrams from GitHub Gist URLs</li>
 </ul>
-<h3>Fixed</h3>
+<h3 class="cat-fixed">Fixed</h3>
 <ul>
 <li><strong>Share privacy note</strong>: corrected the wording to accurately describe that a shareable link encodes the diagram in the link itself rather than uploading it to a server</li>
 </ul>
-<h2>[v0.7.1] - 2026-09-02</h2>
-<h3>Fixed</h3>
+
+    </div>
+  </div>
+</article>
+<article class="release-node" id="v0.7.1">
+  <div class="draft-frame">
+    <div class="draft-frame-inner release-card">
+      <div class="release-header">
+        <a class="release-ver" href="#v0.7.1">v0.7.1</a>
+        <time class="release-date" datetime="2026-09-02">2026-09-02</time>
+      </div>
+      <h3 class="cat-fixed">Fixed</h3>
 <ul>
 <li><strong>Tab zoom &amp; position preserved</strong>: switching between open tabs no longer resets the diagram&#39;s zoom and pan — each tab keeps its own viewport</li>
 <li><strong>Thumbnail refresh on save</strong>: saving changes to a diagram now updates its thumbnail in the file grid, instead of showing the previously rendered version</li>
 </ul>
-<h2>[v0.7.0] - 2026-09-01</h2>
-<h3>Added</h3>
+
+    </div>
+  </div>
+</article>
+<article class="release-node" id="v0.7.0">
+  <div class="draft-frame">
+    <div class="draft-frame-inner release-card">
+      <div class="release-header">
+        <a class="release-ver" href="#v0.7.0">v0.7.0</a>
+        <time class="release-date" datetime="2026-09-01">2026-09-01</time>
+      </div>
+      <h3 class="cat-added">Added</h3>
 <ul>
 <li><strong>Internationalization (English &amp; Simplified Chinese)</strong>: the entire interface is now localized, including the native menu bar and system dialogs. A language switcher in the menu changes the app language instantly — UI text updates live without a reload, while the native menu picks up the change on the next launch. On first launch the app follows your system language and falls back to English</li>
 </ul>
-<h2>[v0.6.2] - 2026-08-30</h2>
-<h3>Changed</h3>
+
+    </div>
+  </div>
+</article>
+<article class="release-node" id="v0.6.2">
+  <div class="draft-frame">
+    <div class="draft-frame-inner release-card">
+      <div class="release-header">
+        <a class="release-ver" href="#v0.6.2">v0.6.2</a>
+        <time class="release-date" datetime="2026-08-30">2026-08-30</time>
+      </div>
+      <h3 class="cat-changed">Changed</h3>
 <ul>
 <li><strong>Mermaid.js updated to 11.17.2</strong> (from 11.16.1), along with other dependency updates</li>
 </ul>
-<h2>[v0.6.1] - 2026-08-27</h2>
-<h3>Fixed</h3>
+
+    </div>
+  </div>
+</article>
+<article class="release-node" id="v0.6.1">
+  <div class="draft-frame">
+    <div class="draft-frame-inner release-card">
+      <div class="release-header">
+        <a class="release-ver" href="#v0.6.1">v0.6.1</a>
+        <time class="release-date" datetime="2026-08-27">2026-08-27</time>
+      </div>
+      <h3 class="cat-fixed">Fixed</h3>
 <ul>
 <li><strong>Preview refresh on external writes</strong>: files saved via an atomic write (temp file + rename) — how AI agents (Claude Code/Codex) and many editors save — now reload the open tab and refresh the live preview, instead of being mistaken for a rename and ignored</li>
 </ul>
-<h2>[v0.6.0] - 2026-08-23</h2>
-<h3>Added</h3>
+
+    </div>
+  </div>
+</article>
+<article class="release-node" id="v0.6.0">
+  <div class="draft-frame">
+    <div class="draft-frame-inner release-card">
+      <div class="release-header">
+        <a class="release-ver" href="#v0.6.0">v0.6.0</a>
+        <time class="release-date" datetime="2026-08-23">2026-08-23</time>
+      </div>
+      <h3 class="cat-added">Added</h3>
 <ul>
 <li><strong>Codex agent (experimental)</strong>: a second built-in AI agent alongside Claude Code, backed by a single persistent <code>codex app-server</code> process that starts when Codex is selected and lives until the app exits. Chat, multi-turn conversations, tool-use visibility, token usage, and permission modes work like Claude Code</li>
 <li><strong>Codex session management</strong>: list, resume, and archive Codex sessions per folder through the app-server, sorted by most recently updated; explicit session names are shown when set</li>
 <li><strong>Permission modes for Codex</strong>: Manual, Edit automatically, Plan, and Auto map to Codex&#39;s approval policy and sandbox, and can be switched mid-session</li>
 <li><strong>Agent selector</strong>: switch between Claude Code and Codex from the Agent panel header</li>
 </ul>
-<h3>Changed</h3>
+<h3 class="cat-changed">Changed</h3>
 <ul>
 <li><strong>MCP server</strong> rejects requests that carry an <code>Origin</code> header, guarding against cross-site (browser-originated) access</li>
 </ul>
-<h3>Fixed</h3>
+<h3 class="cat-fixed">Fixed</h3>
 <ul>
 <li><strong>Folder rename focus</strong>: renaming a folder in the file tree sidebar no longer mishandles focus</li>
 </ul>
-<h2>[v0.5.1] - 2026-08-16</h2>
-<h3>Changed</h3>
+
+    </div>
+  </div>
+</article>
+<article class="release-node" id="v0.5.1">
+  <div class="draft-frame">
+    <div class="draft-frame-inner release-card">
+      <div class="release-header">
+        <a class="release-ver" href="#v0.5.1">v0.5.1</a>
+        <time class="release-date" datetime="2026-08-16">2026-08-16</time>
+      </div>
+      <h3 class="cat-changed">Changed</h3>
 <ul>
 <li><strong>MCP server</strong> now binds to <code>127.0.0.1</code> (local loopback only) instead of all network interfaces</li>
 </ul>
-<h3>Fixed</h3>
+<h3 class="cat-fixed">Fixed</h3>
 <ul>
 <li><strong>Editor tabs react to external file changes</strong>: deleting or renaming an open <code>.mmd</code> file outside the app now closes or updates its tab (including macOS &quot;move to Trash&quot;); deleting the last open file falls back to the Draft tab</li>
 </ul>
-<h2>[v0.5.0] - 2026-08-14</h2>
-<h3>Added</h3>
+
+    </div>
+  </div>
+</article>
+<article class="release-node" id="v0.5.0">
+  <div class="draft-frame">
+    <div class="draft-frame-inner release-card">
+      <div class="release-header">
+        <a class="release-ver" href="#v0.5.0">v0.5.0</a>
+        <time class="release-date" datetime="2026-08-14">2026-08-14</time>
+      </div>
+      <h3 class="cat-added">Added</h3>
 <ul>
 <li><strong>AI Agent panel</strong>: built-in Claude Code integration — chat with Claude Code directly inside the app without switching to a terminal; supports multi-turn conversations, session history, and resuming previous sessions per folder</li>
 <li><strong>Tool use visibility</strong>: tool calls and their results are displayed inline in the conversation as collapsible items, showing the tool name, input, and output</li>
@@ -402,87 +526,187 @@
 <li><strong>Recent agent working directories</strong>: folder picker in the Agent panel remembers recently used directories for quick switching</li>
 <li><strong>Active file name in Navbar</strong>: displays the current diagram file name (without extension) in the top navigation bar</li>
 </ul>
-<h3>Changed</h3>
+<h3 class="cat-changed">Changed</h3>
 <ul>
 <li><strong>Presentation mode</strong>: all toolbar overlays are now hidden in presentation mode for a clean fullscreen view</li>
 </ul>
-<h2>[v0.4.7] - 2026-08-10</h2>
-<h3>Fixed</h3>
+
+    </div>
+  </div>
+</article>
+<article class="release-node" id="v0.4.7">
+  <div class="draft-frame">
+    <div class="draft-frame-inner release-card">
+      <div class="release-header">
+        <a class="release-ver" href="#v0.4.7">v0.4.7</a>
+        <time class="release-date" datetime="2026-08-10">2026-08-10</time>
+      </div>
+      <h3 class="cat-fixed">Fixed</h3>
 <ul>
 <li><strong>Copy/paste on macOS</strong>: added the Edit menu (Cut, Copy, Paste, Select All, Undo, Redo) to the macOS menu bar, restoring keyboard shortcuts that were previously non-functional</li>
 </ul>
-<h2>[v0.4.6] - 2026-08-09</h2>
-<h3>Added</h3>
+
+    </div>
+  </div>
+</article>
+<article class="release-node" id="v0.4.6">
+  <div class="draft-frame">
+    <div class="draft-frame-inner release-card">
+      <div class="release-header">
+        <a class="release-ver" href="#v0.4.6">v0.4.6</a>
+        <time class="release-date" datetime="2026-08-09">2026-08-09</time>
+      </div>
+      <h3 class="cat-added">Added</h3>
 <ul>
 <li><strong>View in Finder/Explorer after export</strong>: a toast notification with a <strong>View</strong> button appears after exporting PNG or SVG, opening the file&#39;s location in Finder (macOS) or Explorer (Windows) via <code>tauri-plugin-opener</code></li>
 </ul>
-<h3>Fixed</h3>
+<h3 class="cat-fixed">Fixed</h3>
 <ul>
 <li><strong>Save draft via Ctrl+S</strong>: pressing Ctrl+S (or ⌘S on macOS) in the Monaco editor on the Draft tab now correctly triggers Save As instead of doing nothing</li>
 </ul>
-<h2>[v0.4.5] - 2026-08-08</h2>
-<h3>Added</h3>
+
+    </div>
+  </div>
+</article>
+<article class="release-node" id="v0.4.5">
+  <div class="draft-frame">
+    <div class="draft-frame-inner release-card">
+      <div class="release-header">
+        <a class="release-ver" href="#v0.4.5">v0.4.5</a>
+        <time class="release-date" datetime="2026-08-08">2026-08-08</time>
+      </div>
+      <h3 class="cat-added">Added</h3>
 <ul>
 <li><strong>Sidebar toggle in macOS title bar</strong>: a sidebar toggle button is now embedded in the custom macOS title bar area for quick access without reaching the main toolbar</li>
 </ul>
-<h3>Changed</h3>
+<h3 class="cat-changed">Changed</h3>
 <ul>
 <li><strong>macOS title bar style</strong>: adjusted spacing and layout of the custom macOS title bar</li>
 </ul>
-<h2>[v0.4.4] - 2026-08-07</h2>
-<h3>Added</h3>
+
+    </div>
+  </div>
+</article>
+<article class="release-node" id="v0.4.4">
+  <div class="draft-frame">
+    <div class="draft-frame-inner release-card">
+      <div class="release-header">
+        <a class="release-ver" href="#v0.4.4">v0.4.4</a>
+        <time class="release-date" datetime="2026-08-07">2026-08-07</time>
+      </div>
+      <h3 class="cat-added">Added</h3>
 <ul>
 <li><strong>Open Recent</strong>: File menu now lists recently opened folders and files; selecting an item reopens it directly</li>
 </ul>
-<h3>Changed</h3>
+<h3 class="cat-changed">Changed</h3>
 <ul>
 <li><strong>Skip duplicate folder open</strong>: opening a folder that is already open no longer reloads it</li>
 </ul>
-<h2>[v0.4.3] - 2026-08-04</h2>
-<h3>Added</h3>
+
+    </div>
+  </div>
+</article>
+<article class="release-node" id="v0.4.3">
+  <div class="draft-frame">
+    <div class="draft-frame-inner release-card">
+      <div class="release-header">
+        <a class="release-ver" href="#v0.4.3">v0.4.3</a>
+        <time class="release-date" datetime="2026-08-04">2026-08-04</time>
+      </div>
+      <h3 class="cat-added">Added</h3>
 <ul>
 <li><strong>Custom title bar on Windows</strong>: native title bar replaced with a custom one; includes File/View/Window/Help menu buttons, sidebar toggle, drag region, and window controls (minimize/maximize/close) using Segoe MDL2 Assets icons</li>
 <li><strong>Help menu</strong>: GitHub Repository, Report an Issue, and What&#39;s New links accessible from the menu bar</li>
 </ul>
-<h2>[v0.4.2] - 2026-08-03</h2>
-<h3>Added</h3>
+
+    </div>
+  </div>
+</article>
+<article class="release-node" id="v0.4.2">
+  <div class="draft-frame">
+    <div class="draft-frame-inner release-card">
+      <div class="release-header">
+        <a class="release-ver" href="#v0.4.2">v0.4.2</a>
+        <time class="release-date" datetime="2026-08-03">2026-08-03</time>
+      </div>
+      <h3 class="cat-added">Added</h3>
 <ul>
 <li><strong>Native menu bar</strong>: custom File, View, and Window menus with keyboard shortcuts; menu actions wired to frontend (Open File, Open Folder, Save, Save As, Close Tab, Toggle File Explorer, Toggle Editor, Toggle Presentation Mode)</li>
 </ul>
-<h2>[v0.4.1] - 2026-08-03</h2>
-<h3>Added</h3>
+
+    </div>
+  </div>
+</article>
+<article class="release-node" id="v0.4.1">
+  <div class="draft-frame">
+    <div class="draft-frame-inner release-card">
+      <div class="release-header">
+        <a class="release-ver" href="#v0.4.1">v0.4.1</a>
+        <time class="release-date" datetime="2026-08-03">2026-08-03</time>
+      </div>
+      <h3 class="cat-added">Added</h3>
 <ul>
 <li><strong>MCP token authentication</strong>: MCP bridge server now generates a random per-session token passed to the sidecar via environment variable; all bridge requests require <code>Authorization: Bearer &lt;token&gt;</code></li>
 </ul>
-<h3>Removed</h3>
+<h3 class="cat-removed">Removed</h3>
 <ul>
 <li><strong>Unused tests</strong>: removed DOM-dependent test files that were no longer maintained</li>
 </ul>
-<h2>[v0.4.0] - 2026-08-02</h2>
-<h3>Added</h3>
+
+    </div>
+  </div>
+</article>
+<article class="release-node" id="v0.4.0">
+  <div class="draft-frame">
+    <div class="draft-frame-inner release-card">
+      <div class="release-header">
+        <a class="release-ver" href="#v0.4.0">v0.4.0</a>
+        <time class="release-date" datetime="2026-08-02">2026-08-02</time>
+      </div>
+      <h3 class="cat-added">Added</h3>
 <ul>
 <li><strong>MCP Server Integration</strong>: built-in MCP server (port 37079) exposes <code>preview_diagram</code> and <code>list_diagrams</code> tools; AI agents can preview diagrams in the Draft tab and list all open <code>.mmd</code> files; enable via the main menu toggle</li>
 <li><strong>MCP HTTP bridge</strong>: internal axum server (port 37078) bridges MCP requests to the Tauri frontend</li>
 </ul>
-<h3>Changed</h3>
+<h3 class="cat-changed">Changed</h3>
 <ul>
 <li><strong>Linux packages</strong>: <code>.AppImage</code> is no longer provided due to a compatibility issue between Bun&#39;s statically-linked sidecar binary and <code>linuxdeploy</code>; <code>.deb</code> and <code>.rpm</code> packages are still available</li>
 </ul>
-<h2>[v0.3.13] - 2026-07-27</h2>
-<h3>Fixed</h3>
+
+    </div>
+  </div>
+</article>
+<article class="release-node" id="v0.3.13">
+  <div class="draft-frame">
+    <div class="draft-frame-inner release-card">
+      <div class="release-header">
+        <a class="release-ver" href="#v0.3.13">v0.3.13</a>
+        <time class="release-date" datetime="2026-07-27">2026-07-27</time>
+      </div>
+      <h3 class="cat-fixed">Fixed</h3>
 <ul>
 <li><strong>Navigation guard on Windows</strong>: allow <code>tauri://</code>, <code>http://tauri.localhost</code>, <code>https://tauri.localhost</code>, and <code>data:</code> URLs in addition to blob URLs so the app loads correctly on Windows</li>
 <li><strong>Save race condition</strong>: take a snapshot of the code before writing to disk so that rapid edits no longer cause <code>isDirty</code> to be incorrectly cleared</li>
 <li><strong>YAML frontmatter parsing on Windows</strong>: regex now handles <code>\r\n</code> line endings in frontmatter blocks</li>
 <li><strong>Path parsing</strong>: file name extraction now uses a cross-platform regex (<code>/[/\\]/</code>) instead of splitting on <code>/</code> then <code>\</code></li>
 </ul>
-<h2>[v0.3.12] - 2026-07-27</h2>
-<h3>Added</h3>
+
+    </div>
+  </div>
+</article>
+<article class="release-node" id="v0.3.12">
+  <div class="draft-frame">
+    <div class="draft-frame-inner release-card">
+      <div class="release-header">
+        <a class="release-ver" href="#v0.3.12">v0.3.12</a>
+        <time class="release-date" datetime="2026-07-27">2026-07-27</time>
+      </div>
+      <h3 class="cat-added">Added</h3>
 <ul>
 <li><strong>Content Security Policy (CSP)</strong>: configured CSP for the WebView to restrict resource loading</li>
 <li><strong>External link confirmation</strong>: clicking a diagram link now shows a &quot;Do you trust this link?&quot; dialog before opening in the system browser</li>
 </ul>
-<h3>Fixed</h3>
+<h3 class="cat-fixed">Fixed</h3>
 <ul>
 <li><strong>PNG export with external links</strong>: diagrams containing <code>click href</code> links can now be exported as PNG; external hrefs are stripped from the canvas SVG to prevent canvas taint</li>
 <li><strong>External link navigation</strong>: links in diagrams no longer navigate inside the app; they open in the system browser instead</li>
@@ -492,256 +716,566 @@
 <li><strong>Delete directory on Windows</strong>: deleting a directory now correctly closes all tabs whose files are inside it (fixed path separator mismatch on Windows)</li>
 <li><strong>Rename directory</strong>: renaming a directory now correctly updates paths of all open tabs inside it and re-registers file watchers</li>
 </ul>
-<h2>[v0.3.11] - 2026-07-25</h2>
-<h3>Added</h3>
+
+    </div>
+  </div>
+</article>
+<article class="release-node" id="v0.3.11">
+  <div class="draft-frame">
+    <div class="draft-frame-inner release-card">
+      <div class="release-header">
+        <a class="release-ver" href="#v0.3.11">v0.3.11</a>
+        <time class="release-date" datetime="2026-07-25">2026-07-25</time>
+      </div>
+      <h3 class="cat-added">Added</h3>
 <ul>
 <li><strong>Window state persistence</strong>: window size and position are now saved and restored on next launch</li>
 </ul>
-<h3>Fixed</h3>
+<h3 class="cat-fixed">Fixed</h3>
 <ul>
 <li><strong>&quot;Open with&quot; tab activation</strong>: opening a file via &quot;Open with Mermaid Code&quot; now correctly activates the corresponding tab instead of staying on the previously active tab</li>
 </ul>
-<h2>[v0.3.10] - 2026-07-21</h2>
-<h3>Fixed</h3>
+
+    </div>
+  </div>
+</article>
+<article class="release-node" id="v0.3.10">
+  <div class="draft-frame">
+    <div class="draft-frame-inner release-card">
+      <div class="release-header">
+        <a class="release-ver" href="#v0.3.10">v0.3.10</a>
+        <time class="release-date" datetime="2026-07-21">2026-07-21</time>
+      </div>
+      <h3 class="cat-fixed">Fixed</h3>
 <ul>
 <li><strong>&quot;Open with&quot; on macOS</strong>: fixed file association so that double-clicking or using &quot;Open with Mermaid Code&quot; in Finder correctly opens the file on first launch</li>
 <li><strong>&quot;Open with&quot; on Windows</strong>: fixed file association for first launch when the app is not already running</li>
 </ul>
-<h2>[v0.3.8] - 2026-07-20</h2>
-<h3>Added</h3>
+
+    </div>
+  </div>
+</article>
+<article class="release-node" id="v0.3.8">
+  <div class="draft-frame">
+    <div class="draft-frame-inner release-card">
+      <div class="release-header">
+        <a class="release-ver" href="#v0.3.8">v0.3.8</a>
+        <time class="release-date" datetime="2026-07-20">2026-07-20</time>
+      </div>
+      <h3 class="cat-added">Added</h3>
 <ul>
 <li><strong>Syntax error display</strong>: syntax error message now appears above the VIM status bar, integrated into the editor</li>
 </ul>
-<h3>Fixed</h3>
+<h3 class="cat-fixed">Fixed</h3>
 <ul>
 <li><strong>Editor undo loop</strong>: fixed undo/redo cycling between the last two states when typing</li>
 <li><strong>Auto-save false alarm</strong>: auto-saving a file no longer triggers &quot;modified externally but has unsaved changes&quot; notification</li>
 </ul>
-<h3>Changed</h3>
+<h3 class="cat-changed">Changed</h3>
 <ul>
 <li><strong>Build output directory</strong>: changed from <code>docs/</code> to <code>dist/</code></li>
 <li><strong>Removed web support</strong>: app is now desktop-only; CodeMirror removed</li>
 <li><strong>Removed analytics</strong>: Plausible Analytics and all usage statistics removed</li>
 </ul>
-<h2>[v0.3.7] - 2026-07-20</h2>
-<h3>Added</h3>
+
+    </div>
+  </div>
+</article>
+<article class="release-node" id="v0.3.7">
+  <div class="draft-frame">
+    <div class="draft-frame-inner release-card">
+      <div class="release-header">
+        <a class="release-ver" href="#v0.3.7">v0.3.7</a>
+        <time class="release-date" datetime="2026-07-20">2026-07-20</time>
+      </div>
+      <h3 class="cat-added">Added</h3>
 <ul>
 <li><strong>Draft tab</strong>: always-visible &quot;Draft&quot; tab for unsaved work; prompts to save before quitting if draft has content</li>
 <li><strong>Editor expand button</strong>: when the editor pane is collapsed, a button appears on the left edge of the preview to expand it</li>
 </ul>
-<h3>Changed</h3>
+<h3 class="cat-changed">Changed</h3>
 <ul>
 <li><strong>TabBar</strong>: always visible; shows a &quot;＋&quot; button when no files are open; standalone style (rounded, bordered) when sidebar is collapsed</li>
 </ul>
-<h2>[v0.3.6] - 2026-07-17</h2>
-<h3>Added</h3>
+
+    </div>
+  </div>
+</article>
+<article class="release-node" id="v0.3.6">
+  <div class="draft-frame">
+    <div class="draft-frame-inner release-card">
+      <div class="release-header">
+        <a class="release-ver" href="#v0.3.6">v0.3.6</a>
+        <time class="release-date" datetime="2026-07-17">2026-07-17</time>
+      </div>
+      <h3 class="cat-added">Added</h3>
 <ul>
 <li><strong>Sub-directory file watching</strong>: clicking a file from a sub-directory in grid view now registers a file watcher for that directory</li>
 </ul>
-<h3>Fixed</h3>
+<h3 class="cat-fixed">Fixed</h3>
 <ul>
 <li><strong>Sub-directory watching</strong>: fixed file change detection for files outside the root directory</li>
 </ul>
-<h2>[v0.3.5] - 2026-07-14</h2>
-<h3>Changed</h3>
+
+    </div>
+  </div>
+</article>
+<article class="release-node" id="v0.3.5">
+  <div class="draft-frame">
+    <div class="draft-frame-inner release-card">
+      <div class="release-header">
+        <a class="release-ver" href="#v0.3.5">v0.3.5</a>
+        <time class="release-date" datetime="2026-07-14">2026-07-14</time>
+      </div>
+      <h3 class="cat-changed">Changed</h3>
 <ul>
 <li><strong>Presentation mode</strong>: full-screen now hides the editor pane; ESC or macOS green button exits correctly</li>
 </ul>
-<h2>[v0.3.4] - 2026-07-13</h2>
-<h3>Added</h3>
+
+    </div>
+  </div>
+</article>
+<article class="release-node" id="v0.3.4">
+  <div class="draft-frame">
+    <div class="draft-frame-inner release-card">
+      <div class="release-header">
+        <a class="release-ver" href="#v0.3.4">v0.3.4</a>
+        <time class="release-date" datetime="2026-07-13">2026-07-13</time>
+      </div>
+      <h3 class="cat-added">Added</h3>
 <ul>
 <li><strong>Config reset button</strong>: added a Reset button in the Config tab to restore default Mermaid config</li>
 </ul>
-<h3>Changed</h3>
+<h3 class="cat-changed">Changed</h3>
 <ul>
 <li><strong>Homebrew tap auto-update</strong>: GitHub Actions workflow now automatically updates the Homebrew tap on release</li>
 </ul>
-<h2>[v0.3.3] - 2026-07-13</h2>
-<h3>Added</h3>
+
+    </div>
+  </div>
+</article>
+<article class="release-node" id="v0.3.3">
+  <div class="draft-frame">
+    <div class="draft-frame-inner release-card">
+      <div class="release-header">
+        <a class="release-ver" href="#v0.3.3">v0.3.3</a>
+        <time class="release-date" datetime="2026-07-13">2026-07-13</time>
+      </div>
+      <h3 class="cat-added">Added</h3>
 <ul>
 <li><strong>Homebrew tap</strong>: available via <code>brew tap m8524769/tap &amp;&amp; brew install --cask mermaid-code</code></li>
 </ul>
-<h3>Fixed</h3>
+<h3 class="cat-fixed">Fixed</h3>
 <ul>
 <li><strong>macOS relaunch after update</strong>: app now correctly relaunches after installing an update</li>
 </ul>
-<h2>[v0.3.2] - 2026-07-13</h2>
-<h3>Changed</h3>
+
+    </div>
+  </div>
+</article>
+<article class="release-node" id="v0.3.2">
+  <div class="draft-frame">
+    <div class="draft-frame-inner release-card">
+      <div class="release-header">
+        <a class="release-ver" href="#v0.3.2">v0.3.2</a>
+        <time class="release-date" datetime="2026-07-13">2026-07-13</time>
+      </div>
+      <h3 class="cat-changed">Changed</h3>
 <ul>
 <li><strong>Update flow</strong>: download and install are now separate steps; &quot;Install &amp; Restart&quot; button appears after download completes</li>
 </ul>
-<h2>[v0.3.1] - 2026-07-13</h2>
-<h3>Added</h3>
+
+    </div>
+  </div>
+</article>
+<article class="release-node" id="v0.3.1">
+  <div class="draft-frame">
+    <div class="draft-frame-inner release-card">
+      <div class="release-header">
+        <a class="release-ver" href="#v0.3.1">v0.3.1</a>
+        <time class="release-date" datetime="2026-07-13">2026-07-13</time>
+      </div>
+      <h3 class="cat-added">Added</h3>
 <ul>
 <li><strong>Update progress</strong>: download progress shown inline next to the version badge</li>
 <li><strong>✓ latest badge</strong>: shown next to version number when the app is confirmed up to date</li>
 </ul>
-<h2>[v0.3.0] - 2026-07-12</h2>
-<h3>Added</h3>
+
+    </div>
+  </div>
+</article>
+<article class="release-node" id="v0.3.0">
+  <div class="draft-frame">
+    <div class="draft-frame-inner release-card">
+      <div class="release-header">
+        <a class="release-ver" href="#v0.3.0">v0.3.0</a>
+        <time class="release-date" datetime="2026-07-12">2026-07-12</time>
+      </div>
+      <h3 class="cat-added">Added</h3>
 <ul>
 <li><strong>Auto-update</strong>: app checks for updates on launch and prompts the user to install; a version badge appears next to the title when an update is available, clicking it triggers the install</li>
 </ul>
-<h2>[v0.2.5] - 2026-07-12</h2>
-<h3>Added</h3>
+
+    </div>
+  </div>
+</article>
+<article class="release-node" id="v0.2.5">
+  <div class="draft-frame">
+    <div class="draft-frame-inner release-card">
+      <div class="release-header">
+        <a class="release-ver" href="#v0.2.5">v0.2.5</a>
+        <time class="release-date" datetime="2026-07-12">2026-07-12</time>
+      </div>
+      <h3 class="cat-added">Added</h3>
 <ul>
 <li><strong>Version info</strong>: app version is now displayed next to the title in the navbar</li>
 <li><strong>Single instance</strong>: launching a second instance focuses the existing window instead of opening a new one</li>
 <li><strong>File associations</strong>: <code>.mmd</code> and <code>.mermaid</code> files are now associated with Mermaid Code on Windows</li>
 </ul>
-<h2>[v0.2.4] - 2026-07-11</h2>
-<h3>Added</h3>
+
+    </div>
+  </div>
+</article>
+<article class="release-node" id="v0.2.4">
+  <div class="draft-frame">
+    <div class="draft-frame-inner release-card">
+      <div class="release-header">
+        <a class="release-ver" href="#v0.2.4">v0.2.4</a>
+        <time class="release-date" datetime="2026-07-11">2026-07-11</time>
+      </div>
+      <h3 class="cat-added">Added</h3>
 <ul>
 <li><strong>Vim mode</strong>: <code>:q</code> closes the current tab (exits the app when no tabs are open); <code>:wq</code> saves and closes; <code>H</code>/<code>L</code> mapped to <code>^</code>/<code>$</code>; <code>jk</code> mapped to <code>&lt;Esc&gt;</code> in insert mode</li>
 <li><strong>Export filename</strong>: PNG and SVG exports now use the current file&#39;s name instead of a timestamp</li>
 <li><strong>Download notification</strong>: a toast shows the download folder path after exporting PNG or SVG</li>
 <li><strong>Rename warning</strong>: renaming a file to an unsupported extension now prompts for confirmation</li>
 </ul>
-<h3>Fixed</h3>
+<h3 class="cat-fixed">Fixed</h3>
 <ul>
 <li><strong><code>:q</code> permission</strong>: added <code>core:window:allow-close</code> capability so <code>:q</code> can close the window</li>
 </ul>
-<h2>[v0.2.3] - 2026-07-10</h2>
-<h3>Added</h3>
+
+    </div>
+  </div>
+</article>
+<article class="release-node" id="v0.2.3">
+  <div class="draft-frame">
+    <div class="draft-frame-inner release-card">
+      <div class="release-header">
+        <a class="release-ver" href="#v0.2.3">v0.2.3</a>
+        <time class="release-date" datetime="2026-07-10">2026-07-10</time>
+      </div>
+      <h3 class="cat-added">Added</h3>
 <ul>
 <li><strong>Drag and drop</strong>: drag <code>.mmd</code>/<code>.mermaid</code> files or folders onto the app window to open them</li>
 </ul>
-<h2>[v0.2.2] - 2026-07-10</h2>
-<h3>Added</h3>
+
+    </div>
+  </div>
+</article>
+<article class="release-node" id="v0.2.2">
+  <div class="draft-frame">
+    <div class="draft-frame-inner release-card">
+      <div class="release-header">
+        <a class="release-ver" href="#v0.2.2">v0.2.2</a>
+        <time class="release-date" datetime="2026-07-10">2026-07-10</time>
+      </div>
+      <h3 class="cat-added">Added</h3>
 <ul>
 <li><strong><code>look</code> config field</strong>: Config tab now includes a Look selector (<code>classic</code> / <code>neo</code>)</li>
 <li><strong>Thumbnail stale tracking</strong>: changing the config immediately re-renders the current file&#39;s thumbnail; other files&#39; thumbnails are refreshed on next click</li>
 </ul>
-<h3>Changed</h3>
+<h3 class="cat-changed">Changed</h3>
 <ul>
 <li>Default mermaid config changed from <code>{&quot;theme&quot;: &quot;default&quot;}</code> to <code>{}</code> (same behavior, cleaner)</li>
 </ul>
-<h2>[v0.2.1] - 2026-07-10</h2>
-<h3>Added</h3>
+
+    </div>
+  </div>
+</article>
+<article class="release-node" id="v0.2.1">
+  <div class="draft-frame">
+    <div class="draft-frame-inner release-card">
+      <div class="release-header">
+        <a class="release-ver" href="#v0.2.1">v0.2.1</a>
+        <time class="release-date" datetime="2026-07-10">2026-07-10</time>
+      </div>
+      <h3 class="cat-added">Added</h3>
 <ul>
 <li><strong>Sidebar search bar</strong>: filter files by filename in both tree and grid views; search auto-clears when switching folders</li>
 <li><strong>Dirty indicator in thumbnail view</strong>: unsaved files now show the orange dot in the thumbnail grid, matching the tree view</li>
 </ul>
-<h3>Fixed</h3>
+<h3 class="cat-fixed">Fixed</h3>
 <ul>
 <li><strong>Thumbnail rename sorting</strong>: renaming a file no longer incorrectly pins it to the top of the grid</li>
 </ul>
-<h2>[v0.2.0] - 2026-07-10</h2>
-<h3>Added</h3>
+
+    </div>
+  </div>
+</article>
+<article class="release-node" id="v0.2.0">
+  <div class="draft-frame">
+    <div class="draft-frame-inner release-card">
+      <div class="release-header">
+        <a class="release-ver" href="#v0.2.0">v0.2.0</a>
+        <time class="release-date" datetime="2026-07-10">2026-07-10</time>
+      </div>
+      <h3 class="cat-added">Added</h3>
 <ul>
 <li><strong>Thumbnail grid view</strong>: sidebar now supports a thumbnail grid view showing SVG previews of all <code>.mmd</code>/<code>.mermaid</code> files in the opened folder (including subdirectories); switch between tree and grid view with the toggle buttons in the sidebar header; view preference is persisted</li>
 <li><strong>Onboarding tooltip</strong>: first-time users see a tooltip pointing to the File Explorer button after 3 seconds, which disappears once the sidebar is opened</li>
 </ul>
-<h3>Fixed</h3>
+<h3 class="cat-fixed">Fixed</h3>
 <ul>
 <li><strong>Editor horizontal scrollbar</strong>: VIM status bar no longer overlaps the Monaco editor&#39;s horizontal scrollbar</li>
 <li><strong>Ignored files</strong>: <code>.DS_Store</code>, <code>Thumbs.db</code>, and <code>desktop.ini</code> are now excluded from the file tree</li>
 </ul>
-<h2>[v0.1.13] - 2026-07-09</h2>
-<h3>Added</h3>
+
+    </div>
+  </div>
+</article>
+<article class="release-node" id="v0.1.13">
+  <div class="draft-frame">
+    <div class="draft-frame-inner release-card">
+      <div class="release-header">
+        <a class="release-ver" href="#v0.1.13">v0.1.13</a>
+        <time class="release-date" datetime="2026-07-09">2026-07-09</time>
+      </div>
+      <h3 class="cat-added">Added</h3>
 <ul>
 <li><strong>Relative line numbers in Vim mode</strong>: editor switches to <code>lineNumbers: &#39;relative&#39;</code> when Vim mode is enabled, restores to absolute on disable</li>
 </ul>
-<h3>Fixed</h3>
+<h3 class="cat-fixed">Fixed</h3>
 <ul>
 <li><strong>ZenUML infinite reload loop</strong>: switching away from ZenUML no longer triggers repeated page reloads</li>
 <li><strong>Pin to code preserves existing frontmatter</strong>: other fields (e.g. <code>title</code>, nested <code>flowchart</code> config) are no longer overwritten when pinning theme/layout/fontFamily</li>
 </ul>
-<h3>Changed</h3>
+<h3 class="cat-changed">Changed</h3>
 <ul>
 <li><strong>ZenUML removed from Sample Diagrams</strong>: due to global style injection side effects that cannot be cleaned up without a page reload</li>
 </ul>
-<h2>[v0.1.12] - 2026-07-09</h2>
-<h3>Added</h3>
+
+    </div>
+  </div>
+</article>
+<article class="release-node" id="v0.1.12">
+  <div class="draft-frame">
+    <div class="draft-frame-inner release-card">
+      <div class="release-header">
+        <a class="release-ver" href="#v0.1.12">v0.1.12</a>
+        <time class="release-date" datetime="2026-07-09">2026-07-09</time>
+      </div>
+      <h3 class="cat-added">Added</h3>
 <ul>
 <li><strong>Pin to code</strong>: Config tab now has a &quot;Pin to code&quot; button that inserts the current config as YAML frontmatter into the diagram code</li>
 </ul>
-<h3>Changed</h3>
+<h3 class="cat-changed">Changed</h3>
 <ul>
 <li><strong><code>@mermaid-js/layout-elk</code> upgraded to 0.2.2</strong></li>
 </ul>
-<h2>[v0.1.11] - 2026-07-09</h2>
-<h3>Added</h3>
+
+    </div>
+  </div>
+</article>
+<article class="release-node" id="v0.1.11">
+  <div class="draft-frame">
+    <div class="draft-frame-inner release-card">
+      <div class="release-header">
+        <a class="release-ver" href="#v0.1.11">v0.1.11</a>
+        <time class="release-date" datetime="2026-07-09">2026-07-09</time>
+      </div>
+      <h3 class="cat-added">Added</h3>
 <ul>
 <li><strong>Config form</strong>: theme, layout, and font family can now be set via a visual form at the top of the Config tab, synchronized with the JSON editor below</li>
 </ul>
-<h2>[v0.1.10] - 2026-07-09</h2>
-<h3>Added</h3>
+
+    </div>
+  </div>
+</article>
+<article class="release-node" id="v0.1.10">
+  <div class="draft-frame">
+    <div class="draft-frame-inner release-card">
+      <div class="release-header">
+        <a class="release-ver" href="#v0.1.10">v0.1.10</a>
+        <time class="release-date" datetime="2026-07-09">2026-07-09</time>
+      </div>
+      <h3 class="cat-added">Added</h3>
 <ul>
 <li><strong>Theme hint in Config tab</strong>: available mermaid theme names are now listed as badges at the top of the Config editor</li>
 </ul>
-<h3>Fixed</h3>
+<h3 class="cat-fixed">Fixed</h3>
 <ul>
 <li><strong>Config tab empty on first open</strong>: switching to the Config tab now correctly populates the editor with the current mermaid config</li>
 <li><strong>Dirty indicator dot</strong>: replaced Unicode <code>●</code> with a CSS <code>rounded-full</code> element for consistent cross-platform sizing</li>
 </ul>
-<h2>[v0.1.9] - 2026-07-08</h2>
-<h3>Fixed</h3>
+
+    </div>
+  </div>
+</article>
+<article class="release-node" id="v0.1.9">
+  <div class="draft-frame">
+    <div class="draft-frame-inner release-card">
+      <div class="release-header">
+        <a class="release-ver" href="#v0.1.9">v0.1.9</a>
+        <time class="release-date" datetime="2026-07-08">2026-07-08</time>
+      </div>
+      <h3 class="cat-fixed">Fixed</h3>
 <ul>
 <li><strong>Deleted folder closes tabs</strong>: deleting a folder now automatically closes all tabs whose files were inside it</li>
 <li><strong>UI polish</strong>: muted icon colors on inactive states for sidebar buttons, file tree action buttons, tab bar close button, and New File button; hover states now use consistent foreground color</li>
 </ul>
-<h3>Changed</h3>
+<h3 class="cat-changed">Changed</h3>
 <ul>
 <li>Zoom scroll sensitivity increased from <code>0.1</code> (library default) to <code>0.2</code></li>
 <li>Sidebar title tooltip now shows the full folder path on hover</li>
 </ul>
-<h2>[v0.1.8] - 2026-07-08</h2>
-<h3>Fixed</h3>
+
+    </div>
+  </div>
+</article>
+<article class="release-node" id="v0.1.8">
+  <div class="draft-frame">
+    <div class="draft-frame-inner release-card">
+      <div class="release-header">
+        <a class="release-ver" href="#v0.1.8">v0.1.8</a>
+        <time class="release-date" datetime="2026-07-08">2026-07-08</time>
+      </div>
+      <h3 class="cat-fixed">Fixed</h3>
 <ul>
 <li><strong>Copy Image</strong>: works correctly in Tauri desktop mode via a custom Rust command; the PNG is decoded on the Rust side and written to the system clipboard using <code>arboard</code>, bypassing WKWebView&#39;s restriction on <code>navigator.clipboard.write</code></li>
 </ul>
-<h2>[v0.1.7] - 2026-07-08</h2>
-<h3>Fixed</h3>
+
+    </div>
+  </div>
+</article>
+<article class="release-node" id="v0.1.7">
+  <div class="draft-frame">
+    <div class="draft-frame-inner release-card">
+      <div class="release-header">
+        <a class="release-ver" href="#v0.1.7">v0.1.7</a>
+        <time class="release-date" datetime="2026-07-08">2026-07-08</time>
+      </div>
+      <h3 class="cat-fixed">Fixed</h3>
 <ul>
 <li><strong>Per-tab undo isolation</strong>: each tab now uses its own Monaco model; switching tabs no longer leaks undo history from other files</li>
 <li><strong>Vim clipboard</strong>: <code>y</code>/<code>d</code>/<code>c</code> operations now correctly write to the system clipboard via unnamed register override</li>
 <li><strong>Per-tab pan/zoom state</strong>: viewport position is saved and restored per tab; panning/zooming in one tab no longer affects others</li>
 <li><strong>File tree actions</strong>: replaced context menu (broken in Tauri) with inline hover action buttons</li>
 </ul>
-<h2>[v0.1.6] - 2026-07-08</h2>
-<h3>Fixed</h3>
+
+    </div>
+  </div>
+</article>
+<article class="release-node" id="v0.1.6">
+  <div class="draft-frame">
+    <div class="draft-frame-inner release-card">
+      <div class="release-header">
+        <a class="release-ver" href="#v0.1.6">v0.1.6</a>
+        <time class="release-date" datetime="2026-07-08">2026-07-08</time>
+      </div>
+      <h3 class="cat-fixed">Fixed</h3>
 <ul>
 <li><strong>File rename</strong>: extension is preserved automatically when the user omits it; text selection excludes the extension so only the stem is selected</li>
 </ul>
-<h2>[v0.1.5] - 2026-07-08</h2>
-<h3>Fixed</h3>
+
+    </div>
+  </div>
+</article>
+<article class="release-node" id="v0.1.5">
+  <div class="draft-frame">
+    <div class="draft-frame-inner release-card">
+      <div class="release-header">
+        <a class="release-ver" href="#v0.1.5">v0.1.5</a>
+        <time class="release-date" datetime="2026-07-08">2026-07-08</time>
+      </div>
+      <h3 class="cat-fixed">Fixed</h3>
 <ul>
 <li>Sidebar now shows &quot;This folder is empty.&quot; when the opened folder has no supported files</li>
 <li>Tab tooltip shows the full file path</li>
 <li>File watcher no longer causes UI lag when opening large directories</li>
 </ul>
-<h2>[v0.1.4] - 2026-07-08</h2>
-<h3>Changed</h3>
+
+    </div>
+  </div>
+</article>
+<article class="release-node" id="v0.1.4">
+  <div class="draft-frame">
+    <div class="draft-frame-inner release-card">
+      <div class="release-header">
+        <a class="release-ver" href="#v0.1.4">v0.1.4</a>
+        <time class="release-date" datetime="2026-07-08">2026-07-08</time>
+      </div>
+      <h3 class="cat-changed">Changed</h3>
 <ul>
 <li>Bumped GitHub Actions versions</li>
 <li>Minor release workflow configuration fixes</li>
 </ul>
-<h2>[v0.1.3] - 2026-07-07</h2>
-<h3>Changed</h3>
+
+    </div>
+  </div>
+</article>
+<article class="release-node" id="v0.1.3">
+  <div class="draft-frame">
+    <div class="draft-frame-inner release-card">
+      <div class="release-header">
+        <a class="release-ver" href="#v0.1.3">v0.1.3</a>
+        <time class="release-date" datetime="2026-07-07">2026-07-07</time>
+      </div>
+      <h3 class="cat-changed">Changed</h3>
 <ul>
 <li>Release workflow now uses GitHub&#39;s native auto-generated release notes</li>
 </ul>
-<h2>[v0.1.2] - 2026-07-07</h2>
-<h3>Added</h3>
+
+    </div>
+  </div>
+</article>
+<article class="release-node" id="v0.1.2">
+  <div class="draft-frame">
+    <div class="draft-frame-inner release-card">
+      <div class="release-header">
+        <a class="release-ver" href="#v0.1.2">v0.1.2</a>
+        <time class="release-date" datetime="2026-07-07">2026-07-07</time>
+      </div>
+      <h3 class="cat-added">Added</h3>
 <ul>
 <li><strong>Save / Save As buttons</strong>: toolbar Save button in Tauri desktop mode; Save As dialog when no tab is active</li>
 <li><strong>File type association</strong>: <code>.mmd</code> and <code>.mermaid</code> registered via <code>Info.plist</code></li>
 <li><strong>Date-stamped default names</strong>: new files default to <code>Diagram YYYY-MM-DD at HH.MM.SS.mmd</code>; new folders to <code>New Folder YYYY-MM-DD at HH.MM.SS</code></li>
 <li><strong>Auto-expand on new file</strong>: creating a file inside a collapsed directory now expands that directory automatically</li>
 </ul>
-<h3>Fixed</h3>
+<h3 class="cat-fixed">Fixed</h3>
 <ul>
 <li>Tab persistence no longer overwrites the current folder&#39;s tab list when opening an individual file from a different directory</li>
 </ul>
-<h2>[v0.1.1] - 2026-07-07</h2>
-<h3>Added</h3>
+
+    </div>
+  </div>
+</article>
+<article class="release-node" id="v0.1.1">
+  <div class="draft-frame">
+    <div class="draft-frame-inner release-card">
+      <div class="release-header">
+        <a class="release-ver" href="#v0.1.1">v0.1.1</a>
+        <time class="release-date" datetime="2026-07-07">2026-07-07</time>
+      </div>
+      <h3 class="cat-added">Added</h3>
 <ul>
 <li><strong>Vim mode</strong>: Monaco editor supports Vim keybindings (<code>monaco-vim</code>); <code>:w</code> triggers file save</li>
 <li><strong>Full-screen preview</strong>: new &quot;Full Screen&quot; button opens the diagram preview in a separate Tauri WebviewWindow (or new browser tab on web)</li>
 </ul>
-<h2>[v0.1.0] - 2026-07-07</h2>
-<p>Initial release of Mermaid Code, forked from mermaid-live-editor.</p>
-<h3>Added</h3>
+
+    </div>
+  </div>
+</article>
+<article class="release-node" id="v0.1.0">
+  <div class="draft-frame">
+    <div class="draft-frame-inner release-card">
+      <div class="release-header">
+        <a class="release-ver" href="#v0.1.0">v0.1.0</a>
+        <time class="release-date" datetime="2026-07-07">2026-07-07</time>
+      </div>
+      <p>Initial release of Mermaid Code, forked from mermaid-live-editor.</p>
+<h3 class="cat-added">Added</h3>
 <ul>
 <li><strong>Tauri desktop app</strong>: packaged as a native app for macOS, Windows, and Linux using Tauri v2</li>
 <li><strong>File manager sidebar</strong>: open a local folder and browse, create, rename, and delete <code>.mmd</code> and <code>.mermaid</code> files</li>
@@ -755,19 +1289,29 @@
 <li><strong>Multi-platform release workflow</strong>: GitHub Actions builds and publishes installers for macOS, Windows, and Linux</li>
 </ul>
 
+    </div>
+  </div>
+</article>
+      </div>
+    </div>
+  </section>
 </main>
 
-<footer>
-  <div class="footer-left">
-    <img src="favicon.svg" alt="" />
-    <span>Mermaid Code — Fork of <a href="https://github.com/mermaid-js/mermaid-live-editor" style="color:var(--muted)">mermaid-live-editor</a></span>
-  </div>
-  <div class="footer-right">
-    <a href="/">Home</a>
-    <a href="https://github.com/m8524769/mermaid-code/releases">Releases</a>
-    <a href="https://github.com/m8524769/mermaid-code/blob/main/CHANGELOG.md">Source</a>
+<footer class="site-footer">
+  <div class="footer-inner footer-inner--narrow">
+    <div class="footer-left">
+      <img src="favicon.svg" alt="" width="18" height="18" />
+      <span>Mermaid Code — Fork of <a href="https://github.com/mermaid-js/mermaid-live-editor">mermaid-live-editor</a></span>
+    </div>
+    <div class="footer-right">
+      <a href="/">Home</a>
+      <a href="/download">Download</a>
+      <a href="https://github.com/m8524769/mermaid-code/releases">Releases</a>
+      <a href="https://github.com/m8524769/mermaid-code/blob/main/CHANGELOG.md">Source</a>
+    </div>
   </div>
 </footer>
 
+<script src="site.js" defer></script>
 </body>
 </html>

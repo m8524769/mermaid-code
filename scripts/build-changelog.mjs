@@ -5,7 +5,7 @@
 // Pages — there is no site build step. To keep CHANGELOG.md as the single
 // source of truth while still showing release notes ON the site (good for SEO
 // and offline-cacheable), we convert Markdown -> HTML at build time here and
-// wrap it in a template that reuses index.html's dark theme.
+// wrap it in the shared site/styles.css + site/site.js layout.
 //
 // Usage:
 //   node scripts/build-changelog.mjs         # -> site/changelog.html
@@ -30,10 +30,68 @@ const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0'
   now.getDate()
 ).padStart(2, '0')}`;
 
-const markdown = readFileSync(changelogPath, 'utf8');
-// GitHub-flavored rendering; the CHANGELOG only uses headings, lists, inline
-// code, bold, links and horizontal rules, all handled by marked's defaults.
-const body = marked.parse(markdown, { gfm: true });
+const markdown = readFileSync(changelogPath, 'utf8').replace(/\r\n/g, '\n');
+
+const escapeHtml = (str) =>
+  str
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;');
+
+// Split into individual `## ...` release blocks while preserving any intro text.
+const lines = markdown.split('\n');
+const sections = [];
+const introLines = [];
+let current = null;
+
+for (const line of lines) {
+  const h2 = line.match(/^##\s+(.+)$/);
+  if (h2) {
+    if (current) sections.push(current);
+    current = { heading: h2[1].trim(), bodyLines: [] };
+  } else if (current) {
+    current.bodyLines.push(line);
+  } else if (!line.startsWith('# ')) {
+    introLines.push(line);
+  }
+}
+if (current) sections.push(current);
+
+const introText = introLines.join('\n').trim() || 'All notable changes to Mermaid Code.';
+
+const decorateCategoryHeadings = (htmlFragment) =>
+  htmlFragment.replace(/<h3>(Added|Changed|Fixed|Removed)<\/h3>/gi, (_, label) => {
+    const cls = `cat-${label.toLowerCase()}`;
+    return `<h3 class="${cls}">${label}</h3>`;
+  });
+
+const latestMatch = sections[0]?.heading.match(/^\[?([^\]]+)\]?\s*(?:-\s*(.+))?$/);
+const latestVersion = latestMatch ? latestMatch[1].trim() : '';
+
+const renderedEntries = sections
+  .map((sec) => {
+    const match = sec.heading.match(/^\[?([^\]]+)\]?\s*-\s*(.+)$/);
+    const version = match ? match[1].trim() : sec.heading;
+    const date = match ? match[2].trim() : '';
+    const slug = version.toLowerCase().replace(/[^a-z0-9.-]+/g, '-');
+    const bodyHtml = decorateCategoryHeadings(
+      marked.parse(sec.bodyLines.join('\n').trim(), { gfm: true })
+    );
+
+    return `<article class="release-node" id="${escapeHtml(slug)}">
+  <div class="draft-frame">
+    <div class="draft-frame-inner release-card">
+      <div class="release-header">
+        <a class="release-ver" href="#${escapeHtml(slug)}">${escapeHtml(version)}</a>
+        ${date ? `<time class="release-date" datetime="${escapeHtml(date)}">${escapeHtml(date)}</time>` : ''}
+      </div>
+      ${bodyHtml}
+    </div>
+  </div>
+</article>`;
+  })
+  .join('\n');
 
 const html = `<!DOCTYPE html>
 <html lang="en">
@@ -51,195 +109,102 @@ const html = `<!DOCTYPE html>
   <meta property="og:image" content="https://mermaid-code.com/showcase.png" />
   <meta property="og:site_name" content="Mermaid Code" />
 
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Changelog — Mermaid Code" />
+  <meta name="twitter:description" content="Release notes and version history for Mermaid Code." />
+  <meta name="twitter:image" content="https://mermaid-code.com/showcase.png" />
+
   <link rel="icon" href="favicon.svg" type="image/svg+xml" />
-  <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-    :root {
-      --bg: #0f1117;
-      --bg2: #161b27;
-      --bg3: #1e2535;
-      --border: #2a3347;
-      --text: #e8edf5;
-      --muted: #8b96aa;
-      --accent: #4f8ef7;
-      --accent2: #7c5cbf;
-      --radius: 10px;
-      --max: 780px;
-    }
-
-    html { scroll-behavior: smooth; }
-
-    body {
-      background: var(--bg);
-      color: var(--text);
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-      font-size: 16px;
-      line-height: 1.6;
-      -webkit-font-smoothing: antialiased;
-    }
-
-    a { color: var(--accent); text-decoration: none; }
-    a:hover { text-decoration: underline; }
-
-    /* NAV — mirrors index.html */
-    nav {
-      position: sticky;
-      top: 0;
-      z-index: 100;
-      background: rgba(15, 17, 23, 0.85);
-      backdrop-filter: blur(12px);
-      border-bottom: 1px solid var(--border);
-    }
-    .nav-inner {
-      max-width: var(--max);
-      margin: 0 auto;
-      padding: 0 24px;
-      height: 56px;
-      display: flex;
-      align-items: center;
-      gap: 16px;
-    }
-    .nav-logo {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-weight: 600;
-      font-size: 15px;
-      color: var(--text);
-    }
-    .nav-logo img { width: 22px; height: 22px; }
-    .nav-spacer { flex: 1; }
-    .nav-links { display: flex; gap: 4px; align-items: center; }
-    .nav-links a {
-      font-size: 14px;
-      color: var(--muted);
-      padding: 6px 10px;
-      border-radius: 6px;
-      transition: color 0.15s, background 0.15s;
-    }
-    .nav-links a:hover { color: var(--text); background: var(--bg3); text-decoration: none; }
-    .nav-links a.active { color: var(--text); }
-
-    /* CONTENT */
-    main {
-      max-width: var(--max);
-      margin: 0 auto;
-      padding: 56px 24px 72px;
-    }
-    .changelog h1 {
-      font-size: clamp(30px, 5vw, 44px);
-      font-weight: 700;
-      letter-spacing: -0.02em;
-      margin-bottom: 8px;
-    }
-    /* Intro paragraph directly after the H1 */
-    .changelog h1 + p {
-      color: var(--muted);
-      font-size: 16px;
-      margin-bottom: 8px;
-    }
-    .changelog h2 {
-      font-size: 22px;
-      font-weight: 700;
-      letter-spacing: -0.01em;
-      margin-top: 48px;
-      padding-bottom: 10px;
-      border-bottom: 1px solid var(--border);
-    }
-    .changelog h3 {
-      font-size: 12px;
-      font-weight: 600;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      color: var(--accent);
-      margin-top: 24px;
-      margin-bottom: 10px;
-    }
-    .changelog ul { list-style: none; padding: 0; }
-    .changelog li {
-      position: relative;
-      padding-left: 20px;
-      margin-bottom: 10px;
-      color: var(--muted);
-      font-size: 15px;
-    }
-    .changelog li::before {
-      content: "";
-      position: absolute;
-      left: 4px;
-      top: 11px;
-      width: 5px;
-      height: 5px;
-      border-radius: 50%;
-      background: var(--accent);
-    }
-    .changelog li strong { color: var(--text); font-weight: 600; }
-    .changelog code {
-      font-family: 'SF Mono', 'Fira Code', Menlo, monospace;
-      font-size: 0.86em;
-      background: var(--bg3);
-      border: 1px solid var(--border);
-      border-radius: 5px;
-      padding: 1px 6px;
-      color: var(--accent);
-    }
-    .changelog hr { display: none; }
-
-    /* FOOTER — mirrors index.html */
-    footer {
-      max-width: var(--max);
-      margin: 0 auto;
-      padding: 32px 24px;
-      display: flex;
-      align-items: center;
-      gap: 16px;
-      flex-wrap: wrap;
-      border-top: 1px solid var(--border);
-    }
-    footer .footer-left { display: flex; align-items: center; gap: 8px; }
-    footer .footer-left img { width: 18px; height: 18px; opacity: 0.7; }
-    footer .footer-left span { font-size: 13px; color: var(--muted); }
-    footer .footer-right { margin-left: auto; display: flex; gap: 16px; }
-    footer .footer-right a { font-size: 13px; color: var(--muted); }
-    footer .footer-right a:hover { color: var(--text); }
-  </style>
+  <link rel="preload" href="fonts/plus-jakarta-sans-latin.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="preload" href="fonts/inter-latin.woff2" as="font" type="font/woff2" crossorigin />
+  <script>try{if(localStorage.getItem('mc-theme')==='dark')document.documentElement.dataset.theme='dark';}catch(e){}</script>
+  <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
 
-<nav>
-  <div class="nav-inner">
+<header class="site-nav">
+  <div class="nav-inner nav-inner--narrow">
     <a class="nav-logo" href="/">
-      <img src="favicon.svg" alt="" />
-      Mermaid Code
+      <img src="favicon.svg" alt="" width="26" height="26" />
+      <span>Mermaid Code</span>
     </a>
     <div class="nav-spacer"></div>
-    <div class="nav-links">
-      <a href="/#features">Features</a>
+    <nav class="nav-links" aria-label="Primary">
+      <a href="/#loop">Workflow</a>
       <a href="/#mcp">MCP</a>
+      <a href="/changelog" class="active">Changelog</a>
+      <a href="https://github.com/m8524769/mermaid-code">GitHub</a>
+    </nav>
+    <div class="nav-actions">
+      <button class="theme-pill" type="button" data-theme-toggle aria-label="Switch to dark blueprint" aria-pressed="false">
+        <span class="theme-pill-opt theme-pill-opt--light" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32 1.41 1.41M2 12h2m16 0h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+        </span>
+        <span class="theme-pill-opt theme-pill-opt--dark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+        </span>
+      </button>
+      <a class="nav-cta" href="/download">Download</a>
+      <button class="nav-menu-btn" type="button" data-menu-toggle aria-label="Toggle navigation menu" aria-expanded="false">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+      </button>
+    </div>
+  </div>
+  <div class="mobile-drawer" data-mobile-drawer>
+    <nav class="mobile-drawer-links" aria-label="Mobile">
+      <a href="/">Home</a>
+      <a href="/#loop">01 / Workflow</a>
+      <a href="/#mcp">02 / Built-in MCP</a>
       <a href="/download">Download</a>
       <a href="/changelog" class="active">Changelog</a>
       <a href="https://github.com/m8524769/mermaid-code">GitHub</a>
-    </div>
+    </nav>
   </div>
-</nav>
+</header>
 
-<main class="changelog">
-${body}
+<main>
+  <section class="cl-hero">
+    <div class="container container--narrow">
+      <div class="cl-hero-top">
+        <div>
+          <div class="hero-spec-line" style="margin-bottom:10px">
+            <span style="color:var(--coral)">${latestVersion ? `LATEST · ${escapeHtml(latestVersion)}` : 'RELEASE LOG'}</span>
+            <span class="hero-spec-sep">·</span>
+            <span>${sections.length} RELEASES</span>
+          </div>
+          <h1>Changelog</h1>
+          <p>${escapeHtml(introText)}</p>
+        </div>
+        <div class="cl-links">
+          <a href="/download">Download latest →</a>
+          <a href="https://github.com/m8524769/mermaid-code/releases">GitHub Releases</a>
+          <a href="https://github.com/m8524769/mermaid-code/blob/main/CHANGELOG.md">Raw .md</a>
+        </div>
+      </div>
+
+      <div class="timeline">
+${renderedEntries}
+      </div>
+    </div>
+  </section>
 </main>
 
-<footer>
-  <div class="footer-left">
-    <img src="favicon.svg" alt="" />
-    <span>Mermaid Code — Fork of <a href="https://github.com/mermaid-js/mermaid-live-editor" style="color:var(--muted)">mermaid-live-editor</a></span>
-  </div>
-  <div class="footer-right">
-    <a href="/">Home</a>
-    <a href="https://github.com/m8524769/mermaid-code/releases">Releases</a>
-    <a href="https://github.com/m8524769/mermaid-code/blob/main/CHANGELOG.md">Source</a>
+<footer class="site-footer">
+  <div class="footer-inner footer-inner--narrow">
+    <div class="footer-left">
+      <img src="favicon.svg" alt="" width="18" height="18" />
+      <span>Mermaid Code — Fork of <a href="https://github.com/mermaid-js/mermaid-live-editor">mermaid-live-editor</a></span>
+    </div>
+    <div class="footer-right">
+      <a href="/">Home</a>
+      <a href="/download">Download</a>
+      <a href="https://github.com/m8524769/mermaid-code/releases">Releases</a>
+      <a href="https://github.com/m8524769/mermaid-code/blob/main/CHANGELOG.md">Source</a>
+    </div>
   </div>
 </footer>
 
+<script src="site.js" defer></script>
 </body>
 </html>
 `;

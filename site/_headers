@@ -20,3 +20,5 @@
   Cache-Control: public, max-age=604800
 /*.ico
   Cache-Control: public, max-age=604800
+/fonts/*.woff2
+  Cache-Control: public, max-age=604800

@@ -15,6 +15,7 @@
     "gen:icon-index": "bun run scripts/gen-icon-index.ts",
     "release": "sh scripts/release.sh",
     "build:changelog": "node scripts/build-changelog.mjs",
+    "preview:site": "node scripts/preview-site.mjs",
     "stats:downloads": "node --env-file-if-exists=.env.local scripts/download-stats.mjs --open",
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
     "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
