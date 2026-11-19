@@ -94,6 +94,7 @@ async fn send_shutdown_request(port: u16) -> bool {
             "POST /shutdown HTTP/1.1\r\nHost: 127.0.0.1:{port}\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
         );
         let _ = stream.write_all(req.as_bytes()).await;
+        let _ = stream.shutdown().await;
         return true;
     }
     false
@@ -103,15 +104,17 @@ async fn send_shutdown_request(port: u16) -> bool {
 /// orphaned `mermaid-code-mcp` sidecar may still hold `MCP_SERVER_PORT` with a
 /// stale token. Ask it to shut down and wait briefly for the port to clear.
 async fn clear_stale_sidecar(port: u16) {
+    // Fast-path check with bind (<1ms on all platforms, avoiding Windows' ~2s
+    // loopback SYN retry when the port is already free).
+    if TcpListener::bind(format!("127.0.0.1:{port}")).await.is_ok() {
+        return;
+    }
     if !send_shutdown_request(port).await {
         return;
     }
     for _ in 0..15 {
         tokio::time::sleep(std::time::Duration::from_millis(100)).await;
-        if tokio::net::TcpStream::connect(format!("127.0.0.1:{port}"))
-            .await
-            .is_err()
-        {
+        if TcpListener::bind(format!("127.0.0.1:{port}")).await.is_ok() {
             break;
         }
     }
@@ -210,13 +213,20 @@ impl McpServer {
         if let Some(tx) = self.shutdown_tx.take() {
             let _ = tx.send(());
         }
-        if let Some(mut child) = self.mcp_process.take() {
+        let had_child = if let Some(mut child) = self.mcp_process.take() {
             let _ = child.kill();
             let _ = child.wait(); // Reap exit status to avoid zombie process
+            true
+        } else {
+            false
+        };
+        // Only send HTTP /shutdown when we did not own the child (e.g. external dev server).
+        // Avoids racing with an immediate restart or hitting Windows' ~2s refused-connect delay.
+        if !had_child {
+            let port = MCP_SERVER_PORT;
+            tauri::async_runtime::spawn(async move {
+                send_shutdown_request(port).await;
+            });
         }
-        let port = MCP_SERVER_PORT;
-        tauri::async_runtime::spawn(async move {
-            send_shutdown_request(port).await;
-        });
     }
 }
