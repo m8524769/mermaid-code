@@ -1,6 +1,6 @@
 // Modified from https://github.com/Yash-Singh1/monaco-mermaid/blob/main/index.ts
 
-import type * as Monaco from 'monaco-editor';
+import type * as Monaco from 'monaco-editor/editor';
 import { computeSemanticTokens, getSemanticTokenTypes } from './treeSitterHighlight';
 import { activeScheme } from './editorThemes';
 

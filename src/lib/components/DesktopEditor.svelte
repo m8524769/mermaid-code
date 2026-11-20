@@ -9,9 +9,15 @@
   import { errorDebug } from '#lib/util/util.js';
   import debounce from 'lodash-es/debounce';
   import { mode } from 'mode-watcher';
-  import * as monaco from 'monaco-editor';
-  import monacoEditorWorker from 'monaco-editor/esm/vs/editor/editor.worker?worker';
-  import monacoJsonWorker from 'monaco-editor/esm/vs/language/json/json.worker?worker';
+  import * as monaco from 'monaco-editor/editor';
+  import 'monaco-editor/features/register.all';
+  // Work around monaco-editor 0.57's features/register.all omitting documentSemanticTokens
+  // (needed for Tree-sitter semantic highlighting in monacoExtra.ts).
+  import 'monaco-editor/editor/contrib/semanticTokens/browser/documentSemanticTokens';
+  import { jsonDefaults } from 'monaco-editor/languages/features/json/register';
+  import 'monaco-editor/languages/definitions/javascript/register';
+  import monacoEditorWorker from 'monaco-editor/editor/editor.worker?worker';
+  import monacoJsonWorker from 'monaco-editor/languages/features/json/json.worker?worker';
   import { initVimMode, VimMode } from 'monaco-vim';
   import { onMount } from 'svelte';
   import ExclamationCircleIcon from '~icons/material-symbols/error-outline-rounded';
@@ -301,7 +307,7 @@
       throw new Error('divEl is undefined');
     }
 
-    monaco.json.jsonDefaults.setDiagnosticsOptions({
+    jsonDefaults.setDiagnosticsOptions({
       validate: true,
       enableSchemaRequest: true,
       schemas: [

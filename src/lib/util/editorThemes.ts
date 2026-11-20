@@ -1,4 +1,4 @@
-import type * as Monaco from 'monaco-editor';
+import type * as Monaco from 'monaco-editor/editor';
 
 // Color schemes for the Monaco `mermaid` editor, kept here so the palette can be
 // tweaked or swapped without touching the tokenizer/semantic-highlighting logic
