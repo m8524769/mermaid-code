@@ -1,0 +1,68 @@
+# Mermaid Code
+
+> A desktop Mermaid diagram editor built for AI-first workflows on macOS and Windows. Diagrams live as plain `.mmd` / `.mermaid` files on your local filesystem — edit side-by-side with the built-in Claude Code or Codex sidebar, connect external AI agents via the built-in MCP server, and see live SVG previews update automatically when files change on disk. Free, open-source, and 100% local (no cloud sync, no telemetry).
+
+## Pages & Docs
+
+- [Homepage](https://mermaid-code.com/): Product overview, AI workflow, MCP setup, and installation
+- [Download](https://mermaid-code.com/download): Latest installers for macOS (Apple Silicon & Intel), Windows, and experimental Linux builds
+- [Changelog](https://mermaid-code.com/changelog): Release notes and version history
+- [GitHub Repository](https://github.com/m8524769/mermaid-code): Source code and issue tracker
+- [README (Markdown)](https://raw.githubusercontent.com/m8524769/mermaid-code/main/README.md): Full documentation in plain Markdown
+- [CHANGELOG (Markdown)](https://raw.githubusercontent.com/m8524769/mermaid-code/main/CHANGELOG.md): Full release history in plain Markdown
+
+## Install
+
+Direct latest installers (auto-updates once installed):
+- macOS (Apple Silicon): https://releases.mermaid-code.com/latest/Mermaid.Code_aarch64.dmg
+- macOS (Intel): https://releases.mermaid-code.com/latest/Mermaid.Code_x64.dmg
+- Windows (x64 .exe): https://releases.mermaid-code.com/latest/Mermaid.Code_x64-setup.exe
+- Windows (x64 .msi): https://releases.mermaid-code.com/latest/Mermaid.Code_x64_en-US.msi
+- Linux (experimental, untested): https://releases.mermaid-code.com/latest/Mermaid.Code_amd64.deb / https://releases.mermaid-code.com/latest/Mermaid.Code-1.x86_64.rpm
+
+Homebrew (macOS):
+```sh
+brew tap m8524769/tap
+brew install --cask mermaid-code
+```
+
+macOS first-launch note: The app is unsigned. Open **System Settings → Privacy & Security** and click **Open Anyway**, or run:
+```sh
+xattr -dr com.apple.quarantine "/Applications/Mermaid Code.app"
+```
+
+## Built-in MCP Server
+
+Enable inside Mermaid Code via **Menu → MCP Server**. It listens on `http://localhost:37079/mcp` (Streamable HTTP, no Node.js or Python required).
+
+Available tools:
+- `list_diagrams`: Returns the opened folder, list of `.mmd` files, and the active tab.
+- `preview_diagram`: Previews generated Mermaid code in the Draft tab without writing to disk.
+- `search_icons`: Resolves concepts (e.g. `"postgres"`, `"kubernetes"`) to exact built-in icon names (`logos:`, `fas:`, `far:`, `fab:`) that render offline.
+
+Client configurations:
+- Claude Code (`~/.claude.json`): `claude mcp add --transport http --scope user mermaid-code-mcp http://localhost:37079/mcp`
+- Codex (`~/.codex/config.toml`): `codex mcp add mermaid-code-mcp --url http://localhost:37079/mcp`
+- OpenCode (`~/.config/opencode/opencode.json`): `opencode mcp add mermaid-code-mcp --url http://localhost:37079/mcp --global`
+- Hermes (`~/.hermes/config.yaml`):
+  ```yaml
+  mcp_servers:
+    mermaid-code-mcp:
+      url: "http://localhost:37079/mcp"
+  ```
+- Antigravity (`~/.gemini/config/mcp_config.json`):
+  ```json
+  {
+    "mcpServers": {
+      "mermaid-code-mcp": {
+        "url": "http://localhost:37079/mcp"
+      }
+    }
+  }
+  ```
+
+## Key Capabilities
+
+- **AI-first workflow**: Built-in Claude Code and Codex sidebar with per-folder session history and inline follow-up questions; automatic preview reload when external agents modify files on disk (preserving pan/zoom).
+- **Local file manager**: Open any folder as a file tree or live SVG thumbnail grid with subfolder filtering, drag & drop, OS "Open with" support for `.mmd` / `.mermaid`, multi-tab restore per folder, auto-save, and quit guard.
+- **Editor & styling**: Syntax highlighting for all Mermaid diagram types, diagram-aware keyword autocomplete, click-to-edit inline color swatches, Vim mode, visual config panel (theme, look, layout, font) with **Pin to code**, and built-in offline icon packs (SVG Logos & Font Awesome).
