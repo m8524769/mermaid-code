@@ -141,8 +141,9 @@
     <div class="shrink-0 border-b bg-muted/40 px-3 py-2 text-xs">
       <div class="flex flex-col gap-2">
         <div class="flex items-center gap-2">
-          <label class="w-20 shrink-0 text-muted-foreground" for="cfg-theme"
-            >{m.config_theme()}</label>
+          <label class="w-20 shrink-0 text-muted-foreground" for="cfg-theme">
+            {m.config_theme()}
+          </label>
           <select
             id="cfg-theme"
             class="flex-1 rounded border bg-background px-1.5 py-0.5 text-xs"
@@ -156,12 +157,15 @@
           {#if isOverridden('theme')}
             <span
               class="shrink-0 text-yellow-500"
-              title={m.config_overridden({ value: frontmatterConfig.theme })}>⚠</span>
+              title={m.config_overridden({ value: frontmatterConfig.theme })}>
+              ⚠
+            </span>
           {/if}
         </div>
         <div class="flex items-center gap-2">
-          <label class="w-20 shrink-0 text-muted-foreground" for="cfg-look"
-            >{m.config_look()}</label>
+          <label class="w-20 shrink-0 text-muted-foreground" for="cfg-look">
+            {m.config_look()}
+          </label>
           <select
             id="cfg-look"
             class="flex-1 rounded border bg-background px-1.5 py-0.5 text-xs"
@@ -175,12 +179,15 @@
           {#if isOverridden('look')}
             <span
               class="shrink-0 text-yellow-500"
-              title={m.config_overridden({ value: frontmatterConfig.look })}>⚠</span>
+              title={m.config_overridden({ value: frontmatterConfig.look })}>
+              ⚠
+            </span>
           {/if}
         </div>
         <div class="flex items-center gap-2">
-          <label class="w-20 shrink-0 text-muted-foreground" for="cfg-layout"
-            >{m.config_layout()}</label>
+          <label class="w-20 shrink-0 text-muted-foreground" for="cfg-layout">
+            {m.config_layout()}
+          </label>
           <select
             id="cfg-layout"
             class="flex-1 rounded border bg-background px-1.5 py-0.5 text-xs"
@@ -194,12 +201,15 @@
           {#if isOverridden('layout')}
             <span
               class="shrink-0 text-yellow-500"
-              title={m.config_overridden({ value: frontmatterConfig.layout })}>⚠</span>
+              title={m.config_overridden({ value: frontmatterConfig.layout })}>
+              ⚠
+            </span>
           {/if}
         </div>
         <div class="flex items-center gap-2">
-          <label class="w-20 shrink-0 text-muted-foreground" for="cfg-font"
-            >{m.config_font()}</label>
+          <label class="w-20 shrink-0 text-muted-foreground" for="cfg-font">
+            {m.config_font()}
+          </label>
           <input
             id="cfg-font"
             type="text"
@@ -210,7 +220,9 @@
           {#if isOverridden('fontFamily')}
             <span
               class="shrink-0 text-yellow-500"
-              title={m.config_overridden({ value: frontmatterConfig.fontFamily })}>⚠</span>
+              title={m.config_overridden({ value: frontmatterConfig.fontFamily })}>
+              ⚠
+            </span>
           {/if}
         </div>
         <div class="flex justify-end gap-1">

@@ -797,7 +797,9 @@
                 <span
                   class="ml-auto shrink-0 truncate font-mono text-[10px] text-muted-foreground/50"
                   style="max-width:8rem"
-                  title={folder}>{folder}</span>
+                  title={folder}>
+                  {folder}
+                </span>
               </button>
             </Popover.Close>
           {/each}
@@ -1069,8 +1071,9 @@
                     class="flex cursor-pointer items-baseline gap-1.5 px-3 py-1.5 select-none hover:text-foreground">
                     <span class="size-1.5 shrink-0 self-center rounded-full bg-muted-foreground/50"
                     ></span>
-                    <span class="shrink-0 font-medium whitespace-nowrap text-muted-foreground"
-                      >{displayToolName(msg.toolName)}</span>
+                    <span class="shrink-0 font-medium whitespace-nowrap text-muted-foreground">
+                      {displayToolName(msg.toolName)}
+                    </span>
                     {#if msg.text}
                       {@const input = (() => {
                         try {
@@ -1083,7 +1086,9 @@
                       {#if label}
                         <span
                           class={['truncate text-muted-foreground/60', label.mono && 'font-mono']}
-                          style="max-width:24rem">{label.text}</span>
+                          style="max-width:24rem">
+                          {label.text}
+                        </span>
                       {/if}
                     {/if}
                   </summary>
@@ -1160,8 +1165,9 @@
               </div>
             </div>
             {#if outputTokens > 0}
-              <span class="text-xs text-muted-foreground/60"
-                >{outputTokens.toLocaleString()} tokens</span>
+              <span class="text-xs text-muted-foreground/60">
+                {outputTokens.toLocaleString()} tokens
+              </span>
             {/if}
           </div>
         {/if}
@@ -1195,8 +1201,9 @@
       <div
         class="flex items-center gap-3 border-t border-red-400/40 bg-red-50/80 px-3 py-2.5 dark:bg-red-950/30">
         <div class="flex min-w-0 flex-1 flex-col gap-0.5">
-          <span class="text-xs font-medium text-red-800 dark:text-red-300"
-            >{m.agent_cli_not_installed({ agent: selectedAgent.label })}</span>
+          <span class="text-xs font-medium text-red-800 dark:text-red-300">
+            {m.agent_cli_not_installed({ agent: selectedAgent.label })}
+          </span>
           <span class="text-xs text-red-700/70 dark:text-red-400/70">
             <button
               class="underline underline-offset-2 hover:text-red-800 dark:hover:text-red-300"
@@ -1220,10 +1227,12 @@
       <div
         class="flex items-center gap-3 border-t border-amber-400/40 bg-amber-50/80 px-3 py-2.5 dark:bg-amber-950/30">
         <div class="flex min-w-0 flex-1 flex-col gap-0.5">
-          <span class="text-xs font-medium text-amber-800 dark:text-amber-300"
-            >{m.agent_mcp_disabled()}</span>
-          <span class="text-xs text-amber-700/70 dark:text-amber-400/70"
-            >{m.agent_mcp_cannot_edit()}</span>
+          <span class="text-xs font-medium text-amber-800 dark:text-amber-300">
+            {m.agent_mcp_disabled()}
+          </span>
+          <span class="text-xs text-amber-700/70 dark:text-amber-400/70">
+            {m.agent_mcp_cannot_edit()}
+          </span>
         </div>
         <button
           onclick={async () => {
@@ -1246,7 +1255,9 @@
           onclick={() => {
             agentState.getSlice(selectedAgentId).errorMsg = null;
           }}
-          class="shrink-0 opacity-60 hover:opacity-100">✕</button>
+          class="shrink-0 opacity-60 hover:opacity-100">
+          ✕
+        </button>
       </div>
     {/if}
 

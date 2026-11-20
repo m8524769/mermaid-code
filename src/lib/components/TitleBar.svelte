@@ -67,14 +67,18 @@
 
     <div class="mx-1 my-1.5 w-px bg-border"></div>
 
-    <button class="px-3 hover:bg-muted" onclick={(e) => popupMenu(e, 'file')}
-      >{m.menu_file()}</button>
-    <button class="px-3 hover:bg-muted" onclick={(e) => popupMenu(e, 'view')}
-      >{m.menu_view()}</button>
-    <button class="px-3 hover:bg-muted" onclick={(e) => popupMenu(e, 'window')}
-      >{m.menu_window()}</button>
-    <button class="px-3 hover:bg-muted" onclick={(e) => popupMenu(e, 'help')}
-      >{m.menu_help()}</button>
+    <button class="px-3 hover:bg-muted" onclick={(e) => popupMenu(e, 'file')}>
+      {m.menu_file()}
+    </button>
+    <button class="px-3 hover:bg-muted" onclick={(e) => popupMenu(e, 'view')}>
+      {m.menu_view()}
+    </button>
+    <button class="px-3 hover:bg-muted" onclick={(e) => popupMenu(e, 'window')}>
+      {m.menu_window()}
+    </button>
+    <button class="px-3 hover:bg-muted" onclick={(e) => popupMenu(e, 'help')}>
+      {m.menu_help()}
+    </button>
 
     <div class="flex-1" data-tauri-drag-region></div>
 
