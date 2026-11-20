@@ -87,6 +87,43 @@ fn find_sidecar(_app: &AppHandle) -> Option<std::path::PathBuf> {
     if path.exists() { Some(path) } else { None }
 }
 
+async fn send_shutdown_request(port: u16) -> bool {
+    use tokio::io::AsyncWriteExt;
+    if let Ok(mut stream) = tokio::net::TcpStream::connect(format!("127.0.0.1:{port}")).await {
+        let req = format!(
+            "POST /shutdown HTTP/1.1\r\nHost: 127.0.0.1:{port}\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
+        );
+        let _ = stream.write_all(req.as_bytes()).await;
+        let _ = stream.shutdown().await;
+        return true;
+    }
+    false
+}
+
+/// If a previous Mermaid Code process crashed without running Exit cleanup, an
+/// orphaned `mermaid-code-mcp` sidecar may still hold `MCP_SERVER_PORT` with a
+/// stale token. Ask it to shut down and wait briefly for the port to clear.
+/// Returns `Err` if the port remains occupied after cleanup.
+async fn clear_stale_sidecar(port: u16) -> Result<(), String> {
+    // Fast-path check with bind (<1ms on all platforms, avoiding Windows' ~2s
+    // loopback SYN retry when the port is already free).
+    if TcpListener::bind(format!("127.0.0.1:{port}")).await.is_ok() {
+        return Ok(());
+    }
+    if send_shutdown_request(port).await {
+        for _ in 0..15 {
+            tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+            if TcpListener::bind(format!("127.0.0.1:{port}")).await.is_ok() {
+                return Ok(());
+            }
+        }
+    } else if TcpListener::bind(format!("127.0.0.1:{port}")).await.is_ok() {
+        // The occupant exited between our initial bind check and connect attempt.
+        return Ok(());
+    }
+    Err(format!("Port {port} is already in use"))
+}
+
 pub struct McpServer {
     shutdown_tx: Option<oneshot::Sender<()>>,
     mcp_process: Option<std::process::Child>,
@@ -99,6 +136,13 @@ impl McpServer {
         let listener = TcpListener::bind(format!("127.0.0.1:{TAURI_AXUM_PORT}"))
             .await
             .map_err(|e| format!("Port {TAURI_AXUM_PORT} unavailable: {e}"))?;
+
+        let sidecar_path = find_sidecar(&app);
+        if sidecar_path.is_some() {
+            // Ensure port 37079 is free before starting the callback server or
+            // spawning the sidecar; if still occupied, `listener` drops cleanly.
+            clear_stale_sidecar(MCP_SERVER_PORT).await?;
+        }
 
         let token = Uuid::new_v4().to_string();
         let context = Arc::new(std::sync::Mutex::new(ContextData::default()));
@@ -122,22 +166,41 @@ impl McpServer {
                 .ok();
         });
 
-        let mcp_process = find_sidecar(&app).and_then(|path| {
+        let mut mcp_process = if let Some(path) = sidecar_path {
             let mut cmd = std::process::Command::new(&path);
-            cmd.env("MCP_TOKEN", &token);
+            cmd.env("MCP_TOKEN", &token)
+                .env("MCP_WATCH_STDIN", "1")
+                // Keep the write end of stdin owned by `Child` so if this process
+                // crashes (SIGABRT/SIGKILL), the OS closes the pipe and the sidecar
+                // exits cleanly instead of becoming an orphan holding port 37079.
+                .stdin(std::process::Stdio::piped());
             #[cfg(windows)]
             {
                 use std::os::windows::process::CommandExt;
                 cmd.creation_flags(0x08000000); // CREATE_NO_WINDOW
             }
-            cmd.spawn().ok()
-        });
+            match cmd.spawn() {
+                Ok(child) => Some(child),
+                Err(e) => {
+                    let _ = shutdown_tx.send(());
+                    return Err(format!("Failed to start MCP sidecar: {e}"));
+                }
+            }
+        } else {
+            None
+        };
 
         // Verify sidecar is listening, retrying up to 5 seconds
-        if mcp_process.is_some() {
+        if let Some(child) = mcp_process.as_mut() {
             let mut reachable = false;
             for _ in 0..20 {
                 tokio::time::sleep(std::time::Duration::from_millis(250)).await;
+                if let Ok(Some(status)) = child.try_wait() {
+                    let _ = shutdown_tx.send(());
+                    return Err(format!(
+                        "MCP server exited prematurely ({status}) on port {MCP_SERVER_PORT}"
+                    ));
+                }
                 if tokio::net::TcpStream::connect(format!("127.0.0.1:{MCP_SERVER_PORT}"))
                     .await
                     .is_ok()
@@ -147,6 +210,9 @@ impl McpServer {
                 }
             }
             if !reachable {
+                let _ = shutdown_tx.send(());
+                let _ = child.kill();
+                let _ = child.wait();
                 return Err(format!("MCP server failed to start on port {MCP_SERVER_PORT}"));
             }
         }
@@ -163,21 +229,20 @@ impl McpServer {
         if let Some(tx) = self.shutdown_tx.take() {
             let _ = tx.send(());
         }
-        if let Some(mut child) = self.mcp_process.take() {
+        let had_child = if let Some(mut child) = self.mcp_process.take() {
             let _ = child.kill();
             let _ = child.wait(); // Reap exit status to avoid zombie process
+            true
+        } else {
+            false
+        };
+        // Only send HTTP /shutdown when we did not own the child (e.g. external dev server).
+        // Avoids racing with an immediate restart or hitting Windows' ~2s refused-connect delay.
+        if !had_child {
+            let port = MCP_SERVER_PORT;
+            tauri::async_runtime::spawn(async move {
+                send_shutdown_request(port).await;
+            });
         }
-        let port = MCP_SERVER_PORT;
-        tauri::async_runtime::spawn(async move {
-            use tokio::io::AsyncWriteExt;
-            if let Ok(mut stream) = tokio::net::TcpStream::connect(
-                format!("127.0.0.1:{port}")
-            ).await {
-                let req = format!(
-                    "POST /shutdown HTTP/1.1\r\nHost: 127.0.0.1:{port}\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
-                );
-                let _ = stream.write_all(req.as_bytes()).await;
-            }
-        });
     }
 }

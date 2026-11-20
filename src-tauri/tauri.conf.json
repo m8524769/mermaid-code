@@ -59,6 +59,16 @@
         "installerHooks": "./installer-hooks.nsh"
       }
     },
+    "linux": {
+      "deb": {
+        "depends": ["zenity"],
+        "recommends": ["xdg-desktop-portal"]
+      },
+      "rpm": {
+        "depends": ["zenity"],
+        "recommends": ["xdg-desktop-portal"]
+      }
+    },
     "fileAssociations": [
       {
         "ext": ["mmd", "mermaid"],
