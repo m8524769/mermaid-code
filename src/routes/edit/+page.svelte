@@ -353,7 +353,9 @@
         if (isAgentCollapsed) agentPane?.expand();
         else agentPane?.collapse();
       }}
-      title={m.chat_with_ai()}>{m.ask_ai()}</Button>
+      title={m.chat_with_ai()}>
+      {m.ask_ai()}
+    </Button>
   </Navbar>
 
   <div class="flex flex-1 flex-col overflow-hidden" bind:clientWidth={width}>

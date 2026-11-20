@@ -31,8 +31,9 @@
       {content}
       {#if shortcut}
         <kbd
-          class="-mx-0.5 -my-0.5 rounded-md border bg-background px-2 py-1 font-mono text-xs leading-none text-foreground"
-          >{shortcut}</kbd>
+          class="-mx-0.5 -my-0.5 rounded-md border bg-background px-2 py-1 font-mono text-xs leading-none text-foreground">
+          {shortcut}
+        </kbd>
       {/if}
     </Tooltip.Content>
   </Tooltip.Portal>
