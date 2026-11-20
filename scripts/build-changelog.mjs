@@ -101,6 +101,7 @@ const html = `<!DOCTYPE html>
   <title>Changelog — Mermaid Code</title>
   <meta name="description" content="Release notes and version history for Mermaid Code, the desktop Mermaid diagram editor built for AI-first workflows." />
   <link rel="canonical" href="https://mermaid-code.com/changelog" />
+  <link rel="alternate" type="text/plain" href="/llms.txt" title="LLMs.txt" />
 
   <meta property="og:type" content="website" />
   <meta property="og:url" content="https://mermaid-code.com/changelog" />
@@ -200,6 +201,7 @@ ${renderedEntries}
       <a href="/download">Download</a>
       <a href="https://github.com/m8524769/mermaid-code/releases">Releases</a>
       <a href="https://github.com/m8524769/mermaid-code/blob/main/CHANGELOG.md">Source</a>
+      <a href="/llms.txt">llms.txt</a>
     </div>
   </div>
 </footer>
