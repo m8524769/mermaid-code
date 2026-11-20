@@ -1,0 +1,37 @@
+diff --git a/dist/index.cjs b/dist/index.cjs
+index 15129c295adc499924eb27dad7a230615ad14176..42307c099732838772b86fc67cf4c50fd4f8a21b 100644
+--- a/dist/index.cjs
++++ b/dist/index.cjs
+@@ -1,5 +1,5 @@
+-let monaco_editor_esm_vs_editor_editor_api = require("monaco-editor/esm/vs/editor/editor.api");
+-let monaco_editor_esm_vs_editor_common_commands_shiftCommand = require("monaco-editor/esm/vs/editor/common/commands/shiftCommand");
++let monaco_editor_esm_vs_editor_editor_api = require("monaco-editor/editor/editor.api");
++let monaco_editor_esm_vs_editor_common_commands_shiftCommand = require("monaco-editor/editor/common/commands/shiftCommand");
+ 
+ //#region src/cm_adapter.ts
+ /**
+diff --git a/dist/index.mjs b/dist/index.mjs
+index bb2e8e00e0fb7ece8fb1d946d3aa25077ffac64b..f2dfe63c95a5ba9ccf397d8c852a73a45bf7c19d 100644
+--- a/dist/index.mjs
++++ b/dist/index.mjs
+@@ -1,5 +1,5 @@
+-import { KeyCode, Position, Range, Selection, SelectionDirection, editor } from "monaco-editor/esm/vs/editor/editor.api";
+-import { ShiftCommand } from "monaco-editor/esm/vs/editor/common/commands/shiftCommand";
++import { KeyCode, Position, Range, Selection, SelectionDirection, editor } from "monaco-editor/editor/editor.api";
++import { ShiftCommand } from "monaco-editor/editor/common/commands/shiftCommand";
+ 
+ //#region src/cm_adapter.ts
+ /**
+diff --git a/dist/monaco-vim.umd.js b/dist/monaco-vim.umd.js
+index 8509a46c10afc68688244a3c6df30c8d3529e46c..7651f131c5df34b4bcf0383c7c47d8553f54ad7a 100644
+--- a/dist/monaco-vim.umd.js
++++ b/dist/monaco-vim.umd.js
+@@ -1,6 +1,6 @@
+ (function(global, factory) {
+-  typeof exports === 'object' && typeof module !== 'undefined' ?  factory(exports, require('monaco-editor/esm/vs/editor/editor.api')) :
+-  typeof define === 'function' && define.amd ? define(['exports', 'monaco-editor/esm/vs/editor/editor.api'], factory) :
++  typeof exports === 'object' && typeof module !== 'undefined' ?  factory(exports, require('monaco-editor/editor/editor.api')) :
++  typeof define === 'function' && define.amd ? define(['exports', 'monaco-editor/editor/editor.api'], factory) :
+   (global = typeof globalThis !== 'undefined' ? globalThis : global || self, factory((global.MonacoVim = {}), global.monaco));
+ })(this, function(exports, monaco_editor_esm_vs_editor_editor_api) {
+ 

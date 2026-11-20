@@ -29,7 +29,7 @@
   // the built-in default). Language changes take effect on the next launch.
   const desktopEditor = (async () => {
     if (getLocale() === 'zh-CN') {
-      await import('monaco-editor/esm/nls.messages.zh-cn.js');
+      await import('monaco-editor/nls/lang/zh-cn');
     }
     return (await import('#lib/components/DesktopEditor.svelte')).default;
   })();
