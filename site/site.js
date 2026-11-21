@@ -9,19 +9,31 @@
     const isDark = root.dataset.theme === 'dark';
     document.querySelectorAll('[data-theme-toggle]').forEach((btn) => {
       btn.setAttribute('aria-pressed', String(isDark));
-      btn.setAttribute(
-        'aria-label',
-        isDark ? 'Switch to light drafting paper' : 'Switch to dark blueprint'
-      );
-      btn.setAttribute(
-        'title',
-        isDark ? 'Switch to light drafting paper' : 'Switch to dark blueprint'
-      );
+      btn.setAttribute('aria-label', isDark ? 'Switch to light mode' : 'Switch to dark mode');
+      btn.setAttribute('title', isDark ? 'Switch to light mode' : 'Switch to dark mode');
     });
+  };
+
+  const prefetched = new Set();
+  const prefetchAlternateShowcase = () => {
+    const stage = document.getElementById('hero-showcase');
+    if (!stage) return;
+    const isDark = root.dataset.theme === 'dark';
+    const pic = stage.querySelector(isDark ? '.showcase-pic--light' : '.showcase-pic--dark');
+    if (!pic) return;
+    const src =
+      pic.querySelector('source[type="image/webp"]')?.getAttribute('srcset') ||
+      pic.querySelector('img')?.getAttribute('src');
+    if (!src || prefetched.has(src)) return;
+    prefetched.add(src);
+    const img = new Image();
+    img.src = src;
   };
 
   syncThemeButtons();
   document.querySelectorAll('[data-theme-toggle]').forEach((btn) => {
+    btn.addEventListener('pointerenter', prefetchAlternateShowcase, { passive: true });
+    btn.addEventListener('focus', prefetchAlternateShowcase, { passive: true });
     btn.addEventListener('click', () => {
       root.classList.add('theme-switching');
       const next = root.dataset.theme === 'dark' ? 'light' : 'dark';
