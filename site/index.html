@@ -138,9 +138,13 @@
           </div>
 
           <div class="showcase-viewport showcase-viewport--hero" id="showcase-viewport" data-focus="full">
-            <picture>
-              <source srcset="showcase.webp" type="image/webp" />
-              <img src="showcase.png" alt="Mermaid Code desktop app showing diagram thumbnails, live SVG flowchart preview, and built-in Claude Code sidebar" width="3584" height="2182" fetchpriority="high" />
+            <picture class="showcase-pic showcase-pic--light">
+              <source srcset="showcase.webp?v=2" type="image/webp" />
+              <img src="showcase.png?v=2" alt="Mermaid Code desktop app showing diagram thumbnails, live SVG flowchart preview, and built-in Claude Code sidebar" width="3024" height="1896" fetchpriority="high" />
+            </picture>
+            <picture class="showcase-pic showcase-pic--dark">
+              <source srcset="showcase-dark.webp" type="image/webp" />
+              <img src="showcase-dark.png" alt="Mermaid Code desktop app in dark mode showing diagram thumbnails, live SVG flowchart preview, and built-in Claude Code sidebar" width="3024" height="1896" loading="lazy" />
             </picture>
           </div>
         </div>
