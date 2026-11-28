@@ -11,7 +11,7 @@
   import { mode } from 'mode-watcher';
   import * as monaco from 'monaco-editor/editor';
   import 'monaco-editor/features/register.all';
-  // Work around monaco-editor 0.57's features/register.all omitting documentSemanticTokens
+  // Work around monaco-editor 0.57+'s features/register.all omitting documentSemanticTokens
   // (needed for Tree-sitter semantic highlighting in monacoExtra.ts).
   import 'monaco-editor/editor/contrib/semanticTokens/browser/documentSemanticTokens';
   import { jsonDefaults } from 'monaco-editor/languages/features/json/register';
