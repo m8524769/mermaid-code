@@ -2,6 +2,17 @@
 
 All notable changes to Mermaid Code are documented here.
 
+## [v0.9.7] - 2026-11-28
+
+### Changed
+
+- **Updated Mermaid to 12.4.0**: rendering fixes and layout tweaks — see the [Mermaid 12.4.0 release notes](https://github.com/mermaid-js/mermaid/releases#release-mermaid@12.4.0).
+
+### Fixed
+
+- **MCP server recovers cleanly after a crash**: the built-in MCP server now exits automatically if Mermaid Code terminates unexpectedly, and any stale background instance still holding port `37079` is cleared before starting a new one.
+- **Antigravity no longer fails to connect to the MCP server**: non-POST requests to the stateless `/mcp` endpoint now return `405 Method Not Allowed` per the MCP Streamable HTTP specification, fixing unexpected EOF errors in Antigravity and other clients that probe `GET /mcp` (such as those built on the Go MCP SDK).
+
 ## [v0.9.6] - 2026-11-13
 
 ### Changed
