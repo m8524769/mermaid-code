@@ -199,7 +199,7 @@ importers:
         version: 2.1.0
       '@mermaid-js/layout-tidy-tree':
         specifier: ^1.0.1
-        version: 1.0.1(mermaid@12.3.0)
+        version: 1.0.1(mermaid@12.4.0)
       '@mermanjs/tree-sitter-mermaid':
         specifier: ^0.3.5
         version: 0.3.5
@@ -240,8 +240,8 @@ importers:
         specifier: ^18.3.0
         version: 18.3.0
       mermaid:
-        specifier: ^12.3.0
-        version: 12.3.0
+        specifier: ^12.4.0
+        version: 12.4.0
       mode-watcher:
         specifier: ^1.1.0
         version: 1.1.0(svelte@5.59.2(@typescript-eslint/types@8.74.0))
@@ -2128,8 +2128,8 @@ packages:
   mdast-util-to-hast@13.2.1:
     resolution: {integrity: sha512-cctsq2wp5vTsLIcaymblUriiTcZd0CwWtCbLvrOzYCDZoWyMNV8sZ7krj09FSnsiJi3WVsHLM4k6Dq/yaPyCXA==}
 
-  mermaid@12.3.0:
-    resolution: {integrity: sha512-4113TdXeLAsMruJ79OpFL5O8+LTFXhQqZ260rF3tgUmiNAtRm4Uume04I+65PRN6yZ69J4f8rVYWW8zRk65UYw==}
+  mermaid@12.4.0:
+    resolution: {integrity: sha512-j2gvsGUFeS/53WdYLl9H5G2YtMZX9G/PlCvV3E5Pf4j5XSnK19DwazU6wki7OTcKeYKed7+qujRDLhy8NV2zBg==}
     engines: {node: '>=22.12.0'}
 
   micromark-util-character@2.1.1:
@@ -3200,10 +3200,10 @@ snapshots:
 
   '@mermaid-js/examples@2.1.0': {}
 
-  '@mermaid-js/layout-tidy-tree@1.0.1(mermaid@12.3.0)':
+  '@mermaid-js/layout-tidy-tree@1.0.1(mermaid@12.4.0)':
     dependencies:
       d3: 7.9.0
-      mermaid: 12.3.0
+      mermaid: 12.4.0
 
   '@mermaid-js/parser@2.0.1':
     dependencies:
@@ -4651,7 +4651,7 @@ snapshots:
       unist-util-visit: 5.1.0
       vfile: 6.0.3
 
-  mermaid@12.3.0:
+  mermaid@12.4.0:
     dependencies:
       '@braintree/sanitize-url': 7.1.2
       '@iconify/utils': 3.1.7
