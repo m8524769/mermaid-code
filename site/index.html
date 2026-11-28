@@ -22,7 +22,10 @@
   <meta name="twitter:description" content="Desktop Mermaid diagram editor with AI agent integration. Diagrams live as plain .mmd files — AI agents can read and write them directly." />
   <meta name="twitter:image" content="https://mermaid-code.com/showcase.png" />
 
-  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+  <link rel="icon" href="/favicon.ico" sizes="48x48" />
+  <link rel="icon" href="/favicon-96x96.png" type="image/png" sizes="96x96" />
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180" />
   <link rel="preload" href="fonts/plus-jakarta-sans-latin.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="preload" href="fonts/inter-latin.woff2" as="font" type="font/woff2" crossorigin />
   <script>try{if(localStorage.getItem('mc-theme')==='dark')document.documentElement.dataset.theme='dark';}catch(e){}</script>
@@ -32,20 +35,29 @@
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
-    "@type": "SoftwareApplication",
-    "name": "Mermaid Code",
-    "url": "https://mermaid-code.com",
-    "description": "A desktop Mermaid diagram editor built for AI-first workflows. Open .mmd files locally, preview instantly, and let AI agents write diagrams directly to your filesystem.",
-    "applicationCategory": "DeveloperApplication",
-    "operatingSystem": "macOS, Windows",
-    "screenshot": "https://mermaid-code.com/showcase.png",
-    "offers": {
-      "@type": "Offer",
-      "price": "0",
-      "priceCurrency": "USD"
-    },
-    "downloadUrl": "https://mermaid-code.com/download",
-    "license": "https://github.com/m8524769/mermaid-code/blob/main/LICENSE"
+    "@graph": [
+      {
+        "@type": "WebSite",
+        "name": "Mermaid Code",
+        "url": "https://mermaid-code.com/"
+      },
+      {
+        "@type": "SoftwareApplication",
+        "name": "Mermaid Code",
+        "url": "https://mermaid-code.com",
+        "description": "A desktop Mermaid diagram editor built for AI-first workflows. Open .mmd files locally, preview instantly, and let AI agents write diagrams directly to your filesystem.",
+        "applicationCategory": "DeveloperApplication",
+        "operatingSystem": "macOS, Windows",
+        "screenshot": "https://mermaid-code.com/showcase.png",
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD"
+        },
+        "downloadUrl": "https://mermaid-code.com/download",
+        "license": "https://github.com/m8524769/mermaid-code/blob/main/LICENSE"
+      }
+    ]
   }
   </script>
 </head>
