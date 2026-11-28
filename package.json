@@ -46,7 +46,7 @@
     "@tauri-apps/cli": "^2.12.4",
     "@types/hammerjs": "^2.0.46",
     "@types/lodash-es": "^4.17.12",
-    "@types/node": "^24.19.2",
+    "@types/node": "^24.19.4",
     "@vitest/coverage-v8": "^5.1.2",
     "@vitest/ui": "^5.1.2",
     "bits-ui": "^2.22.0",
