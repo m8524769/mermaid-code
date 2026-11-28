@@ -3,6 +3,6 @@ minimumReleaseAge: 1440
 allowBuilds:
   '@mermanjs/tree-sitter-mermaid': false
 overrides:
-  dompurify: ^3.4.18
+  dompurify: ^3.5.0
 patchedDependencies:
   monaco-vim@0.4.4: patches/monaco-vim@0.4.4.patch
